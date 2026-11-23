@@ -88,6 +88,7 @@ let activeView = "overview";
 let activeRuleType = "whitelist";
 let ruleSearch = "";
 let ruleSort = "recent";
+let ruleGrouped = false;
 let noticeTimer = null;
 
 /* ------------------------------------------------------------------ */
@@ -118,6 +119,7 @@ function renderRules() {
     activeRuleType,
     search: ruleSearch,
     sort: ruleSort,
+    grouped: ruleGrouped,
     matchedHost: matchedRuleHost(),
     onRemove: (host, type) => {
       void removeDomainRule(host, type).catch(reportRuleError);
@@ -722,6 +724,13 @@ async function initialize() {
   });
   ui.ruleSort.addEventListener("change", () => {
     ruleSort = ui.ruleSort.value === "name" ? "name" : "recent";
+    renderRules();
+  });
+  ui.ruleGroup.addEventListener("change", () => {
+    ruleGrouped = ui.ruleGroup.checked;
+    // A grouping preference is a view choice, so it is deliberately not persisted:
+    // it must never look like an edit that would advance updatedAt and trigger an
+    // upload to other devices.
     renderRules();
   });
   ui.clearRules.addEventListener("click", () => {

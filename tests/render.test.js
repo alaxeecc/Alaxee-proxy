@@ -18,6 +18,8 @@ import {
   describeModeHelp,
   describeRoute,
   describeSiteHint,
+  groupRules,
+  groupingKey,
   proxyStateClass,
   renderCurrentPage,
   renderEndpointLine,
@@ -518,4 +520,95 @@ test("cancelling a restore hides the preview and clears the file input", () => {
   clearRestorePlan(ui);
   assert.equal(ui.restorePreview.hidden, true);
   assert.equal(ui.importBackupFile.value, "");
+});
+
+/* -------------------------------------------------------------------------- */
+/* Grouping                                                                   */
+/* -------------------------------------------------------------------------- */
+
+test("hosts are grouped under their registrable domain", () => {
+  const cases = [
+    ["example.com", "example.com"],
+    ["www.example.com", "example.com"],
+    ["a.b.example.com", "example.com"],
+    ["api.github.com", "github.com"],
+    ["127.0.0.1", "127.0.0.1"],
+    ["[::1]", "[::1]"],
+    ["localhost", "localhost"]
+  ];
+  for (const [host, expected] of cases) assert.equal(groupingKey(host), expected, host);
+});
+
+test("compound public suffixes keep three labels so unrelated sites do not merge", () => {
+  // Without this, amazon.co.uk and bbc.co.uk would both group under "co.uk".
+  assert.equal(groupingKey("amazon.co.uk"), "amazon.co.uk");
+  assert.equal(groupingKey("www.amazon.co.uk"), "amazon.co.uk");
+  assert.equal(groupingKey("bbc.co.uk"), "bbc.co.uk");
+  assert.equal(groupingKey("x.com.au"), "x.com.au");
+});
+
+test("grouping preserves the order rules would otherwise appear in", () => {
+  const entries = [
+    { host: "b.example.com", includeSubdomains: true },
+    { host: "a.other.com", includeSubdomains: true },
+    { host: "a.example.com", includeSubdomains: true }
+  ];
+  const groups = groupRules(entries);
+  assert.deepEqual(groups.map((group) => group.key), ["example.com", "other.com"]);
+  assert.equal(groups[0].entries.length, 2);
+  // First appearance defines group order, and members keep their relative order.
+  assert.deepEqual(groups[0].entries.map((entry) => entry.host), ["b.example.com", "a.example.com"]);
+});
+
+test("grouped rendering emits one heading per domain plus every rule row", () => {
+  const ui = fakeUi();
+  renderRules(ui, {
+    settings: { ...BASE, whitelist: [
+      { host: "a.example.com", includeSubdomains: true },
+      { host: "b.example.com", includeSubdomains: true },
+      { host: "c.other.com", includeSubdomains: true }
+    ] },
+    activeRuleType: "whitelist",
+    grouped: true,
+    onRemove: () => {}
+  });
+  const headings = ui.ruleList.children.filter((row) => row.className === "rule-group-heading");
+  const rows = ui.ruleList.children.filter((row) => row.className === "whitelist-item");
+  assert.equal(headings.length, 2);
+  assert.equal(rows.length, 3);
+  const exampleHeading = headings.find((row) => row.children[0].textContent === "example.com");
+  assert.ok(exampleHeading, "the example.com group has a heading");
+  assert.equal(exampleHeading.children[1].textContent, "2", "heading carries the group size");
+});
+
+test("ungrouped rendering adds no headings", () => {
+  const ui = fakeUi();
+  renderRules(ui, {
+    settings: { ...BASE, whitelist: [{ host: "a.example.com", includeSubdomains: true }] },
+    activeRuleType: "whitelist",
+    grouped: false,
+    onRemove: () => {}
+  });
+  assert.equal(ui.ruleList.children.filter((row) => row.className === "rule-group-heading").length, 0);
+  assert.equal(ui.ruleList.children.length, 1);
+});
+
+test("grouping composes with search and sort instead of replacing them", () => {
+  const ui = fakeUi();
+  renderRules(ui, {
+    settings: { ...BASE, whitelist: [
+      { host: "z.example.com", includeSubdomains: true },
+      { host: "a.example.com", includeSubdomains: true },
+      { host: "m.other.com", includeSubdomains: true }
+    ] },
+    activeRuleType: "whitelist",
+    grouped: true,
+    sort: "name",
+    search: "example",
+    onRemove: () => {}
+  });
+  const rows = ui.ruleList.children.filter((row) => row.className === "whitelist-item");
+  assert.equal(rows.length, 2, "search still filters");
+  assert.equal(rows[0].children[0].children[0].textContent, "a.example.com", "sort still applies");
+  assert.equal(ui.ruleList.children.filter((row) => row.className === "rule-group-heading").length, 1);
 });

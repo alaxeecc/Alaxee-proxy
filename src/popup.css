@@ -467,7 +467,15 @@ html.full-page .view-nav {
 .danger-button { min-height: 34px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: 9px; background: transparent; color: var(--danger); font-size: 11px; font-weight: 700; }
 
 /* --- rule search + sort --------------------------------------------------- */
-.rule-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 7px; margin: 0 0 9px; }
+.rule-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto 96px; gap: 7px; margin: 0 0 9px; align-items: center; }
+.group-toggle { display: inline-flex; align-items: center; gap: 5px; position: relative; color: var(--muted); font-size: 10px; white-space: nowrap; cursor: pointer; }
+.group-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.group-toggle input:checked + .custom-check { border-color: var(--accent); background: var(--accent); }
+.group-toggle input:checked + .custom-check::after { content: "✓"; display: block; margin-top: -1px; color: #fff; text-align: center; font-size: 10px; }
+.rule-group-heading { display: flex; align-items: center; gap: 6px; margin: 9px 0 4px; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .4px; }
+.rule-group-heading:first-child { margin-top: 0; }
+.rule-group-heading::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.rule-group-count { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
 .search-field { position: relative; display: block; min-width: 0; }
 .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
 .search-field input {

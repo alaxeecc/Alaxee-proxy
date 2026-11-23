@@ -82,6 +82,7 @@ export function createUi() {
     clearRules: $("clearRulesButton"),
     ruleSearch: $("ruleSearch"),
     ruleSort: $("ruleSort"),
+    ruleGroup: $("ruleGroupToggle"),
     pasteAddress: $("pasteAddressInput"),
     portSuggestions: $("portSuggestions"),
     pasteAddressButton: $("pasteAddressButton"),
@@ -297,6 +298,56 @@ export function totalRuleCount(settings) {
 }
 
 /**
+ * Groups rules for display.
+ *
+ * The list runs to 500 entries and, at the default order, is roughly twelve
+ * screens long - search finds one rule, but nothing gives a sense of the shape of
+ * the list. Grouping by registrable domain turns it into a browsable outline:
+ * every amazon.co.uk / amazon.de / amazon.com entry lands under one "amazon" group.
+ *
+ * The grouping key is a heuristic, not a public-suffix lookup: shipping the PSL
+ * would be a large data file for a cosmetic purpose. `co.uk`-style second-level
+ * suffixes are handled by keeping the last two labels when the tail is a known
+ * compound suffix. A wrong grouping only affects labels, never routing.
+ */
+const COMPOUND_SUFFIXES = new Set([
+  "co.uk", "org.uk", "ac.uk", "gov.uk", "co.jp", "or.jp", "ne.jp", "com.au",
+  "net.au", "org.au", "co.nz", "com.br", "com.cn", "com.hk", "co.kr", "com.tw",
+  "co.in", "com.sg", "com.mx", "co.za"
+]);
+
+/** The label a host is grouped under, or its own host when it cannot be grouped. */
+export function groupingKey(host) {
+  const value = String(host ?? "").toLowerCase();
+  // IP literals and IPv6 have no registrable domain; group them under themselves.
+  if (!value || value.startsWith("[") || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(value)) return value;
+
+  const labels = value.split(".");
+  if (labels.length <= 2) return value;
+
+  const tail2 = labels.slice(-2).join(".");
+  if (COMPOUND_SUFFIXES.has(tail2) && labels.length >= 3) return labels.slice(-3).join(".");
+  // Everything under one second-level domain shares a group.
+  return tail2;
+}
+
+/**
+ * Splits visible rules into ordered groups.
+ *
+ * @returns {Array<{key: string, entries: object[]}>} in the same order the rules
+ *   would otherwise appear, so switching grouping on never reshuffles the list.
+ */
+export function groupRules(entries) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = groupingKey(entry.host);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
+  }
+  return [...groups].map(([key, members]) => ({ key, entries: members }));
+}
+
+/**
  * Filters and orders the visible rules without touching the stored order.
  *
  * Sorting is a view concern: the PAC compares rule sets, not sequences, so
@@ -325,7 +376,7 @@ export function renderRuleCounts(ui, settings, activeRuleType) {
  *          matchedHost?: string|null,
  *          onRemove: (host: string, type: string) => void}} view
  */
-export function renderRules(ui, { settings, activeRuleType, search = "", sort = "recent", matchedHost = null, onRemove }) {
+export function renderRules(ui, { settings, activeRuleType, search = "", sort = "recent", grouped = false, matchedHost = null, onRemove }) {
   const all = ruleEntries(settings, activeRuleType);
   const entries = visibleRules(all, { search, sort });
   const isBlacklist = activeRuleType === "blacklist";
@@ -339,39 +390,60 @@ export function renderRules(ui, { settings, activeRuleType, search = "", sort = 
   ui.totalRuleCount.textContent = String(totalRuleCount(settings));
 
   const fragment = document.createDocumentFragment();
-  for (const entry of entries) {
-    const item = document.createElement("li");
-    item.className = "whitelist-item";
 
-    const detail = document.createElement("div");
-    detail.className = "rule-detail";
-    const domain = document.createElement("div");
-    domain.className = "whitelist-domain";
-    domain.textContent = entry.host;
-    const meta = document.createElement("div");
-    meta.className = "whitelist-meta";
-    meta.textContent = entry.includeSubdomains ? "主域名及其子域名" : "仅此主机名";
-    const type = document.createElement("span");
-    type.className = `rule-type-label ${isBlacklist ? "rule-type-proxy" : "rule-type-direct"}`;
-    type.textContent = isBlacklist ? "强制代理" : "直连";
-    detail.append(domain, meta);
-    if (matchedHost && entry.host === matchedHost) {
-      const badge = document.createElement("span");
-      badge.className = "rule-match-badge";
-      badge.textContent = "当前网站命中";
-      detail.append(badge);
+  // Grouped rendering emits a heading per group and then the same rows as before,
+  // so the row markup (and its remove handler) is defined once below.
+  const sections = grouped
+    ? groupRules(entries).map((group) => ({ heading: group.key, entries: group.entries }))
+    : [{ heading: null, entries }];
+
+  for (const section of sections) {
+    if (section.heading) {
+      const heading = document.createElement("li");
+      heading.className = "rule-group-heading";
+      heading.setAttribute("role", "presentation");
+      const name = document.createElement("span");
+      name.textContent = section.heading;
+      const count = document.createElement("span");
+      count.className = "rule-group-count";
+      count.textContent = String(section.entries.length);
+      heading.append(name, count);
+      fragment.append(heading);
     }
-    detail.append(type);
+      for (const entry of section.entries) {
+      const item = document.createElement("li");
+      item.className = "whitelist-item";
 
-    const remove = document.createElement("button");
-    remove.className = "remove-button";
-    remove.type = "button";
-    remove.textContent = "×";
-    remove.setAttribute("aria-label", `移除 ${entry.host}`);
-    remove.addEventListener("click", () => onRemove(entry.host, activeRuleType));
+      const detail = document.createElement("div");
+      detail.className = "rule-detail";
+      const domain = document.createElement("div");
+      domain.className = "whitelist-domain";
+      domain.textContent = entry.host;
+      const meta = document.createElement("div");
+      meta.className = "whitelist-meta";
+      meta.textContent = entry.includeSubdomains ? "主域名及其子域名" : "仅此主机名";
+      const type = document.createElement("span");
+      type.className = `rule-type-label ${isBlacklist ? "rule-type-proxy" : "rule-type-direct"}`;
+      type.textContent = isBlacklist ? "强制代理" : "直连";
+      detail.append(domain, meta);
+      if (matchedHost && entry.host === matchedHost) {
+        const badge = document.createElement("span");
+        badge.className = "rule-match-badge";
+        badge.textContent = "当前网站命中";
+        detail.append(badge);
+      }
+      detail.append(type);
 
-    item.append(detail, remove);
-    fragment.append(item);
+      const remove = document.createElement("button");
+      remove.className = "remove-button";
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", `移除 ${entry.host}`);
+      remove.addEventListener("click", () => onRemove(entry.host, activeRuleType));
+
+      item.append(detail, remove);
+      fragment.append(item);
+    }
   }
   ui.ruleList.append(fragment);
 }
