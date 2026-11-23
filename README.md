@@ -75,6 +75,12 @@ npm run package:extension
 
 `npm run package:extension` 会在 `dist/` 生成仅包含扩展运行文件的商店 ZIP，不会把测试、文档和 Git 元数据打进商店包。
 
+商店包的文件清单不再手工维护。`scripts/runtime-files.mjs` 从 `manifest.json` 出发，沿 ES module import、HTML 引用和图标字面量推导出运行文件闭包，`scripts/package-extension.py` 直接使用该闭包，并在打包后重新读取 ZIP 校验文件集合。因此：
+
+- 新增模块只要被现有代码 import，就会自动进包，不会出现「构建成功但文件缺失」；
+- 引用不存在的文件、或引入未打包的裸 import（npm 依赖）时，打包会直接失败并列出具体路径；
+- 打包脚本需要 Node.js 20+ 与 Python 3 同时可用，因为闭包由 Node 计算。
+
 ## 发布和自动更新
 
 - 初次上架：必须在 Microsoft Partner Center 创建 Edge Add-ons 产品、填写商店信息和隐私/权限声明，并提交首次审核。

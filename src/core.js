@@ -81,24 +81,6 @@ export function createDomainEntry(host, includeSubdomains = true) {
   return { host: normalizeHostname(host), includeSubdomains: Boolean(includeSubdomains) };
 }
 
-export function createWhitelistEntry(host, includeSubdomains = true) {
-  return createDomainEntry(host, includeSubdomains);
-}
-
-export function createBlacklistEntry(host, includeSubdomains = true) {
-  return createDomainEntry(host, includeSubdomains);
-}
-
-export function buildBypassList(entries) {
-  const normalized = normalizeDomainEntries(entries);
-  const patterns = new Set();
-  for (const entry of normalized) {
-    patterns.add(entry.host);
-    if (entry.includeSubdomains && !isIpLiteral(entry.host)) patterns.add(`*.${entry.host}`);
-  }
-  return [...patterns].sort((a, b) => a.localeCompare(b));
-}
-
 export function isIpLiteral(host) {
   return host.startsWith("[") || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
 }

@@ -1,6 +1,16 @@
 # Manual verification checklist
 
-The automated Node tests cover pure validation and proxy-rule generation. They do not emulate the Edge extension runtime or prove that a local Clash/Mihomo process is listening. Complete this checklist on the target Windows + Edge + Clash setup before relying on the extension daily.
+The automated Node tests cover pure validation, proxy-rule generation, and the actual behaviour of the generated PAC script. They do not emulate the Edge extension runtime or prove that a local Clash/Mihomo process is listening. Complete this checklist on the target Windows + Edge + Clash setup before relying on the extension daily.
+
+## What the automated tests do and do not prove
+
+Automated coverage:
+
+- `tests/pac.test.js` **executes** the generated `FindProxyForURL` rather than pattern-matching its source. This covers whitelist/blacklist routing, blacklist priority, DNS label boundaries, IPv4 and IPv6 literals, and hostname-injection resistance.
+- `tests/core.test.js` covers hostname validation, proxy endpoint validation, and route inference.
+- `tests/package.test.js` derives the runtime file closure from `manifest.json`, asserts every reference resolves, and compares the built ZIP against that closure.
+
+Not covered, and therefore still requires manual checks below: the real Chromium proxy stack, service-worker lifecycle, per-tab icon behaviour, and whether a Clash listener is actually reachable.
 
 ## First install
 
@@ -39,4 +49,4 @@ The automated Node tests cover pure validation and proxy-rule generation. They d
 
 ## Package entry-point regression test
 
-`npm run check` verifies that the manifest popup path, options page, icons, and all local CSS/JavaScript references point to files that exist in the package. It also guards against linking the Settings page directly to the popup document and checks that the popup owns a single bounded scroll container.
+`npm run check` syntax-checks every shipped script and then runs `scripts/runtime-files.mjs`, which walks forward from `manifest.json` and fails on any reference it cannot resolve. `npm test` additionally builds the ZIP and compares its contents against that derived closure, so a package that is quietly missing a module cannot pass CI.

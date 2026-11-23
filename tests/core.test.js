@@ -2,11 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_SETTINGS,
-  buildBypassList,
+  createDomainEntry,
   buildChromeProxyConfig,
   buildPacScript,
-  createBlacklistEntry,
-  createWhitelistEntry,
   getPageHostname,
   inferActiveMode,
   isHostBlacklisted,
@@ -88,18 +86,13 @@ test("normalizes whitelist and blacklist separately, caps entries and deduplicat
 });
 
 test("matches apex and subdomains only on DNS label boundaries", () => {
-  const whitelist = [createWhitelistEntry("example.com", true)];
+  const whitelist = [createDomainEntry("example.com", true)];
   assert.equal(isHostWhitelisted("example.com", whitelist), true);
   assert.equal(isHostWhitelisted("a.example.com", whitelist), true);
   assert.equal(isHostWhitelisted("notexample.com", whitelist), false);
   assert.equal(isHostWhitelisted("example.com.evil.test", whitelist), false);
-  assert.equal(isHostWhitelisted("a.example.com", [createWhitelistEntry("example.com", false)]), false);
-  assert.equal(isHostBlacklisted("a.example.com", [createBlacklistEntry("example.com", true)]), true);
-});
-
-test("builds the existing Chromium bypass list for whitelist entries", () => {
-  assert.deepEqual(buildBypassList([createWhitelistEntry("example.com", true)]), ["*.example.com", "example.com"]);
-  assert.deepEqual(buildBypassList([createWhitelistEntry("example.com", false)]), ["example.com"]);
+  assert.equal(isHostWhitelisted("a.example.com", [createDomainEntry("example.com", false)]), false);
+  assert.equal(isHostBlacklisted("a.example.com", [createDomainEntry("example.com", true)]), true);
 });
 
 test("direct and system modes without force-proxy exceptions preserve native modes", () => {
