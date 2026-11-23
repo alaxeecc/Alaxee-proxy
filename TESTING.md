@@ -69,6 +69,17 @@ Not covered, and therefore still requires manual checks below: the real Chromium
 - [ ] Confirm a stored `mode: "system"` becomes **直接连接** with a notice explaining why the mode is gone.
 - [ ] Confirm the toolbar icons switch to the new `proxy` artwork.
 
+## Cross-device sync (opt-in)
+
+- [ ] Confirm sync is off after a fresh install, and that the privacy block is shown.
+- [ ] Confirm nothing is written to sync storage before the switch is turned on (`chrome.storage.sync.get(null)` in a service-worker console returns nothing under `alaxee.sync.`).
+- [ ] Turn sync on and confirm the status line reports how many rules were uploaded.
+- [ ] On a second device signed into the same Microsoft account, install the extension, turn sync on, and confirm the rules arrive and the proxy is applied.
+- [ ] Edit a rule on device A, wait a few seconds, open device B, and confirm it adopts the change without needing a restart.
+- [ ] Confirm device B does not immediately re-upload (the status line should say it matches, not that it uploaded).
+- [ ] Turn sync off on one device and confirm further edits stay local.
+- [ ] If sync is disabled by browser policy, confirm the failure is reported rather than silent.
+
 ## Package entry-point regression test
 
 `npm run check` syntax-checks every shipped script and then runs `scripts/runtime-files.mjs`, which walks forward from `manifest.json` and fails on any reference it cannot resolve. `npm test` additionally builds the ZIP and compares its contents against that derived closure, so a package that is quietly missing a module cannot pass CI.

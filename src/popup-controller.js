@@ -28,6 +28,15 @@ import {
   planImport
 } from "./backup.js";
 import {
+  META_KEY,
+  SYNC_PREFIX,
+  buildSyncItems,
+  describeSyncStatus,
+  readSyncState,
+  settingsDiffer,
+  staleChunkKeys
+} from "./sync.js";
+import {
   applyPastedAddress,
   clearRestorePlan,
   createUi,
@@ -45,6 +54,7 @@ import {
   renderStatusPermission as renderStatusPermissionView,
   renderPortSuggestions,
   renderRestorePlan,
+  renderSyncPanel,
   renderTroubleshooting,
   renderViewSwitch,
   showNotice
@@ -161,9 +171,12 @@ async function loadSettings() {
   // storage and every surface has to re-derive it on every read.
   if (changed) await chromeCall(chrome.storage.local, "set", { settings });
 
+  syncEnabled = settings.syncEnabled === true;
+
   renderConnectionFields(ui, settings);
   renderRules();
   renderModes();
+  renderSyncPanel(ui, { enabled: syncEnabled, status: null, pendingUpload: false });
 
   if (legacyMode === "clash") {
     sendNotice("已从旧版本升级：原来的「Clash 代理」模式现在叫「走代理服务器」，规则和行为都没有变。", "warning");
@@ -177,9 +190,10 @@ async function saveSettings(nextSettings) {
   // The throw happens before any write, so a rejected edit leaves state intact.
   const whitelist = normalizeDomainEntriesStrict(nextSettings.whitelist ?? settings.whitelist);
   const blacklist = normalizeDomainEntriesStrict(nextSettings.blacklist ?? settings.blacklist);
-  settings = { ...settings, ...nextSettings, whitelist, blacklist };
+  settings = { ...settings, ...nextSettings, whitelist, blacklist, updatedAt: Date.now() };
   await chromeCall(chrome.storage.local, "set", { settings });
   syncRuleCounts();
+  if (syncEnabled) scheduleUpload();
 }
 
 function reportRuleError(error) {
@@ -418,6 +432,148 @@ function exportBackup() {
 
 let pendingRestore = null;
 
+/* ------------------------------------------------------------------ */
+/* Cross-device sync                                                   */
+/*                                                                     */
+/* Opt-in by design: nothing is written to chrome.storage.sync until   */
+/* the user turns it on. See src/sync.js for why the payload is split  */
+/* and checksummed.                                                    */
+/* ------------------------------------------------------------------ */
+
+let syncEnabled = false;
+let syncStatusText = null;
+let syncTimer = null;
+// The record last seen in the sync area. Comparing against it is what stops the
+// two surfaces (popup and settings page) from re-uploading what they just read.
+let lastSyncedShape = null;
+
+/** Reads the opt-in flag and pushes the current settings if sync is on. */
+async function uploadIfEnabled({ force = false } = {}) {
+  if (!syncEnabled) return;
+  // Adopting a synced record also writes settings, which schedules an upload. That
+  // upload would push back exactly what was just read, and on every device at once.
+  // Comparing against what we last saw in the sync area breaks the loop.
+  if (!force && lastSyncedShape && !settingsDiffer(lastSyncedShape, settings)) {
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    return;
+  }
+  try {
+    const generation = Date.now().toString(36);
+    const deviceId = chrome.runtime.id.slice(0, 8);
+    const { items } = buildSyncItems(settings, { generation, deviceId });
+
+    // Read the area first so the previous generation's chunks can be removed in the
+    // same operation. Left behind, they accumulate against the 512-item cap until
+    // every write starts failing.
+    const area = await chromeCall(chrome.storage.sync, "get", null);
+    const stale = staleChunkKeys(area, generation);
+    // META_KEY is written last: a reader that sees new metadata with old chunks
+    // fails the checksum and keeps its local settings, which is the safe outcome.
+    await chromeCall(chrome.storage.sync, "set", items);
+    if (stale.length > 0) await chromeCall(chrome.storage.sync, "remove", stale);
+
+    lastSyncedShape = { ...settings };
+    syncStatusText = `已上传：${settings.whitelist.length + settings.blacklist.length} 条规则通过浏览器账号同步。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+  } catch (error) {
+    // A quota or rate-limit failure must not be silent: the user turned sync on and
+    // is entitled to know it is not working.
+    syncStatusText = `上传失败：${error.message}。本机设置不受影响。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    sendNotice(syncStatusText, "error");
+  }
+}
+
+/** Debounced so a burst of rule edits becomes one upload. */
+function scheduleUpload() {
+  if (!syncEnabled) return;
+  renderSyncPanel(ui, { enabled: true, pendingUpload: true });
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncTimer = null;
+    void uploadIfEnabled();
+  }, 900);
+}
+
+/**
+ * Applies the synced record on startup, then decides the direction of travel.
+ *
+ * Local wins when the two disagree and the local record is newer than the synced
+ * one: the user may have edited this device while offline or before turning sync
+ * on. Otherwise the synced record is adopted, because that is what "sync" means to
+ * the person who just enabled it on a second machine.
+ */
+async function reconcileSync({ silent = true } = {}) {
+  const area = await chromeCall(chrome.storage.sync, "get", null);
+  const result = readSyncState(area);
+
+  if (!result.ok) {
+    syncStatusText = describeSyncStatus(result);
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    if (result.reason === "empty") await uploadIfEnabled();
+    return;
+  }
+
+  const synced = result.settings;
+  if (!settingsDiffer(synced, settings)) {
+    lastSyncedShape = { ...settings };
+    syncStatusText = `本机设置与同步数据一致（最后更新 ${new Date(result.meta.updatedAt).toLocaleString()}）。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    return;
+  }
+
+  const syncedAt = Date.parse(result.meta.updatedAt);
+  const localWrite = Number(settings.updatedAt ?? 0);
+  const localIsNewer = Number.isFinite(syncedAt) && Number.isFinite(localWrite) && localWrite > syncedAt;
+
+  if (localIsNewer) {
+    syncStatusText = "本机设置比同步数据更新，正在上传本机版本。";
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: true });
+    await uploadIfEnabled();
+    return;
+  }
+
+  try {
+    const whitelist = normalizeDomainEntriesStrict(synced.whitelist);
+    const blacklist = normalizeDomainEntriesStrict(synced.blacklist);
+    const adopted = { ...settings, ...synced, whitelist, blacklist };
+    // Apply and persist without re-uploading: this record came from the sync area.
+    if (requiresProxyEndpoint(adopted) && !isConfigured(adopted)) {
+      await saveSettings(adopted);
+    } else if (activeMode) {
+      await applyMode(adopted.mode, adopted);
+    } else {
+      await saveSettings(adopted);
+    }
+    renderConnectionFields(ui, settings);
+    renderModes();
+    renderRules();
+    renderCurrentPage();
+    lastSyncedShape = { ...settings };
+    syncStatusText = `已从其他设备同步：${whitelist.length} 条直连、${blacklist.length} 条代理规则。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    if (!silent) sendNotice(syncStatusText, "success");
+    else sendNotice(`已应用其他设备同步过来的设置（${whitelist.length + blacklist.length} 条规则）。`, "success");
+  } catch (error) {
+    syncStatusText = `同步数据无法应用：${error.message}。本机设置保持不变。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+  }
+}
+
+async function setSyncEnabled(enabled) {
+  syncEnabled = Boolean(enabled);
+  await saveSettings({ syncEnabled });
+  if (!syncEnabled) {
+    syncStatusText = null;
+    renderSyncPanel(ui, { enabled: false, status: null, pendingUpload: false });
+    sendNotice("已关闭跨设备同步。之前同步的数据仍留在浏览器账号里，可在设置中说明的方式清除；本机设置不受影响。", "warning");
+    return;
+  }
+  renderSyncPanel(ui, { enabled: true, status: "正在检查同步数据…", pendingUpload: false });
+  sendNotice("已开启跨设备同步。只同步设置和域名规则，不同步浏览数据。", "success");
+  await reconcileSync({ silent: true });
+}
+
 /** Reads the chosen file and previews what importing it would do. Never applies. */
 async function previewRestore(file) {
   if (!file) return;
@@ -486,6 +642,7 @@ async function initialize() {
     await inspectCurrentPage();
     await readProxyState();
     switchView(activeView);
+    if (syncEnabled) await reconcileSync({ silent: true });
   } catch (error) {
     sendNotice(`插件初始化失败：${error.message}`, "error");
   }
@@ -578,6 +735,17 @@ async function initialize() {
     ui.pasteAddressHint.textContent = `${port}：${hint}。这只是常见默认值，请对照你的代理软件确认后再保存。`;
   });
   renderTroubleshooting(ui);
+  ui.syncEnable.addEventListener("click", () => {
+    void setSyncEnabled(true).catch((error) => sendNotice(`开启同步失败：${error.message}`, "error"));
+  });
+  ui.syncDisable.addEventListener("click", () => {
+    void setSyncEnabled(false).catch((error) => sendNotice(`关闭同步失败：${error.message}`, "error"));
+  });
+  ui.syncNow.addEventListener("click", () => {
+    // Explicit user action: upload even if the shapes look equal, because the user
+    // may be repairing a sync area they cleared or corrupted.
+    void uploadIfEnabled({ force: true });
+  });
   ui.exportBackup.addEventListener("click", exportBackup);
   ui.importBackup.addEventListener("click", () => ui.importBackupFile.click());
   ui.importBackupFile.addEventListener("change", () => {

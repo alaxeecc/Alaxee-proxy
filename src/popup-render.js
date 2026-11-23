@@ -93,6 +93,13 @@ export function createUi() {
     restorePreview: $("restorePreview"),
     restoreSummary: $("restoreSummary"),
     confirmRestore: $("confirmRestoreButton"),
+    syncPanel: $("syncPanel"),
+    syncTag: $("syncTag"),
+    syncPrivacy: $("syncPrivacy"),
+    syncStatus: $("syncStatus"),
+    syncEnable: $("syncEnableButton"),
+    syncDisable: $("syncDisableButton"),
+    syncNow: $("syncNowButton"),
     cancelRestore: $("cancelRestoreButton"),
     localBypassToggle: $("localBypassToggle"),
     bypassWarning: $("bypassWarning"),
@@ -457,6 +464,38 @@ export function clearRestorePlan(ui) {
   ui.restorePreview.hidden = true;
   ui.restoreSummary.replaceChildren();
   ui.importBackupFile.value = "";
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cross-device sync                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Renders the opt-in panel.
+ *
+ * The privacy block is only shown while sync is off: once the user has read it and
+ * turned sync on, repeating the warning in every popup is noise. It stays one click
+ * away because the turn-off button is always visible, and the state is never
+ * silently re-enabled.
+ */
+export function renderSyncPanel(ui, { enabled, status, pendingUpload }) {
+  ui.syncPanel.classList.toggle("sync-enabled", Boolean(enabled));
+  ui.syncTag.textContent = enabled ? "已开启" : "关闭";
+  ui.syncTag.parentElement.dataset.state = enabled ? "set" : "unset";
+  ui.syncEnable.hidden = Boolean(enabled);
+  ui.syncDisable.hidden = !enabled;
+  ui.syncNow.hidden = !enabled;
+  ui.syncPrivacy.hidden = Boolean(enabled);
+
+  if (!enabled) {
+    ui.syncStatus.textContent = "同步关闭中：设置只保存在这台设备上。";
+    return;
+  }
+  if (pendingUpload) {
+    ui.syncStatus.textContent = "设置已改变，正在上传…";
+    return;
+  }
+  ui.syncStatus.textContent = status ?? "同步已开启。";
 }
 
 /* -------------------------------------------------------------------------- */

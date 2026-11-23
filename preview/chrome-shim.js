@@ -125,6 +125,30 @@
         onChange: { addListener: (listener) => proxyChangeListeners.push(listener) }
       }
     },
+    sync: {
+      // Backed by localStorage so two preview tabs on this machine share one sync
+      // area, which is enough to exercise the reconcile path end to end.
+      get: callbackify((keys) => {
+        const all = JSON.parse(localStorage.getItem("preview.sync") ?? "{}");
+        if (keys == null) return all;
+        const list = Array.isArray(keys) ? keys : [keys];
+        const out = {};
+        for (const key of list) if (key in all) out[key] = all[key];
+        return out;
+      }),
+      set: callbackify((items) => {
+        const all = JSON.parse(localStorage.getItem("preview.sync") ?? "{}");
+        Object.assign(all, items);
+        localStorage.setItem("preview.sync", JSON.stringify(all));
+        return undefined;
+      }),
+      remove: callbackify((keys) => {
+        const all = JSON.parse(localStorage.getItem("preview.sync") ?? "{}");
+        for (const key of Array.isArray(keys) ? keys : [keys]) delete all[key];
+        localStorage.setItem("preview.sync", JSON.stringify(all));
+        return undefined;
+      })
+    },
     permissions: {
       contains: callbackify((request) => (request.permissions ?? []).every((p) => p === "tabs") && params.get("tabs") === "1"),
       request: callbackify(() => true),

@@ -32,6 +32,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   // Loopback and local-link addresses always connect directly. See
   // isLocalHost() for why, and for the ranges this deliberately excludes.
   localBypass: true,
+  // Opt-in. Nothing is written to chrome.storage.sync until this is true.
+  syncEnabled: false,
+  // Wall-clock time of the last local write, used to decide whether local or
+  // synced settings are newer when the two disagree.
+  updatedAt: 0,
   whitelist: [],
   blacklist: []
 });
@@ -141,6 +146,8 @@ export function migrateStoredSettings(raw) {
     port: String(input.port ?? "").trim(),
     scheme: VALID_SCHEMES.has(String(input.scheme ?? "")) ? String(input.scheme) : DEFAULT_SETTINGS.scheme,
     localBypass: input.localBypass !== false,
+    syncEnabled: input.syncEnabled === true,
+    updatedAt: Number(input.updatedAt) || 0,
     whitelist: normalizeDomainEntries(input.whitelist),
     blacklist: normalizeDomainEntries(input.blacklist)
   };

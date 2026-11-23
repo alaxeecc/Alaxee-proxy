@@ -212,6 +212,25 @@
         <p class="rules-footnote">黑名单表示强制经代理服务器；白名单表示浏览器直连。两类规则重叠时黑名单优先。本机地址始终直连，不受这里的规则影响。</p>
       </section>
 
+      <section id="syncPanel" class="sync-panel" aria-labelledby="syncTitle">
+        <div class="section-heading compact-heading">
+          <div><div class="eyebrow">SYNC</div><h2 id="syncTitle">跨设备同步</h2></div>
+          <span class="local-tag"><span></span><span id="syncTag">关闭</span></span>
+        </div>
+        <p class="microcopy">开启后，代理设置和域名规则会通过浏览器自带的同步存储，跟同一个账号的其他设备保持一致。不需要注册，也不用任何服务器。</p>
+        <div class="sync-privacy" id="syncPrivacy">
+          <strong>开启前请确认你接受这一点</strong>
+          <p>同步的数据会经过微软的服务器。域名规则会暴露「哪些网站你必须绕过代理」——对使用代理的人来说，这可能正是最敏感的信息。默认关闭，只有你自己打开才会开始上传。</p>
+          <p>不会同步：浏览历史、页面内容、任何网页数据。只同步这个面板里的设置和规则。</p>
+        </div>
+        <div class="sync-actions">
+          <button id="syncEnableButton" class="secondary-button" type="button">我已了解，开启同步</button>
+          <button id="syncDisableButton" class="secondary-button" type="button" hidden>关闭同步</button>
+          <button id="syncNowButton" class="secondary-button" type="button" hidden>立即上传</button>
+        </div>
+        <p id="syncStatus" class="microcopy"></p>
+      </section>
+
       <section class="backup-panel" aria-labelledby="backupTitle">
         <div class="section-heading compact-heading">
           <div><div class="eyebrow">BACKUP</div><h2 id="backupTitle">备份与恢复</h2></div>

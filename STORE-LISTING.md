@@ -17,13 +17,16 @@ Features:
 - Add the current website to a direct-connection bypass list from the toolbar popup.
 - Choose whether a bypass entry applies only to the hostname or also to its subdomains.
 - Keep settings locally in Edge; no account or cloud service is required.
+- Back up and restore the whole configuration as a local JSON file.
+- Optionally sync settings and rules across the user's own devices through the browser's built-in sync storage. Off by default.
+- Local addresses (localhost, 127.0.0.1, ::1, *.local) always connect directly.
 
 The extension does not read or change any proxy application's configuration. Websites not in the direct list continue through the configured listener, where that program's own rules decide how to route them. The extension reports what the browser is configured to do; it does not health-check the listener.
 
 ## Permission justifications
 
 - `proxy`: required to set Edge's browser-level proxy configuration (including the PAC script that implements the domain rules).
-- `storage`: required to save the user's proxy endpoint and domain rules locally.
+- `storage`: required to save the user's proxy endpoint and domain rules locally, and to use the browser's own sync storage when the user turns cross-device sync on.
 - `activeTab`: required to read the hostname of the currently active page after the user invokes the toolbar popup, for the one-click bypass feature.
 - `tabs` (optional): requested only if the user enables per-tab toolbar status. It reads tab URLs locally to select the matching state icon/title; it does not read page contents or transmit browsing data.
 

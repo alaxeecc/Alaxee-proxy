@@ -45,7 +45,14 @@ listener without a host permission, and it must never imply it has.
   contents, browsing history, or transmit browsing data.
 - Do not add `host_permissions`, `webRequest`, content scripts, or page-content
   collection.
-- Keep user settings and whitelist data in `chrome.storage.local`.
+- Keep user settings and domain rules in `chrome.storage.local` by default.
+- `chrome.storage.sync` is permitted **only** behind the explicit `syncEnabled`
+  opt-in, and only for settings and rule lists — never browsing data, tab URLs or
+  page contents. It must stay off until the user turns it on, and the UI must state
+  what leaves the device before offering the switch.
+- Do not add a backend, an account system, or any third-party storage for syncing.
+  The extension ships with no server; a local JSON file and the browser's own sync
+  area are the only persistence mechanisms.
 
 ## Engineering
 

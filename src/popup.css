@@ -442,6 +442,21 @@ html.full-page .view-nav {
 .paste-hint-warn { color: #966b2e; }
 @media (prefers-color-scheme: dark) { .paste-hint-warn { color: #e8c48a; } }
 
+/* --- sync ----------------------------------------------------------------- */
+.sync-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.sync-privacy { margin: 9px 0; padding: 10px 11px; border: 1px solid color-mix(in srgb, #966b2e 30%, var(--line)); border-radius: 9px; background: #f9f2e6; }
+.sync-privacy strong { display: block; margin-bottom: 4px; font-size: 10px; color: #8a5f22; }
+.sync-privacy p { margin: 0 0 5px; font-size: 10px; line-height: 1.5; color: #7a5a2c; }
+.sync-privacy p:last-child { margin-bottom: 0; }
+@media (prefers-color-scheme: dark) {
+  .sync-privacy { background: color-mix(in srgb, #e8c48a 10%, var(--surface-soft)); border-color: color-mix(in srgb, #e8c48a 28%, var(--line)); }
+  .sync-privacy strong { color: #e8c48a; }
+  .sync-privacy p { color: #cbb08a; }
+}
+.sync-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
+.sync-actions button:only-child { grid-column: 1 / -1; }
+.sync-enabled .sync-privacy { display: none; }
+
 /* --- backup --------------------------------------------------------------- */
 .backup-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
 .backup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
