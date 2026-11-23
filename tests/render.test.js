@@ -11,7 +11,10 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { exportSettings, planImport } from "../src/backup.js";
 import {
+  applyPastedAddress,
+  clearRestorePlan,
   describeModeHelp,
   describeRoute,
   describeSiteHint,
@@ -19,6 +22,8 @@ import {
   renderCurrentPage,
   renderEndpointLine,
   renderLocalBypass,
+  renderPortSuggestions,
+  renderRestorePlan,
   renderRuleCounts,
   renderRuleTab,
   renderRules,
@@ -86,6 +91,8 @@ function fakeUi() {
     disabled: false,
     dataset: {},
     attributes: {},
+    value: "",
+    checked: false,
     classList: {
       values: new Set(),
       toggle(name, force) {
@@ -108,6 +115,9 @@ function fakeUi() {
     }
   });
   return {
+    host: element(),
+    port: element(),
+    scheme: element(),
     brandMark: element(),
     routePill: element(),
     currentHost: element(),
@@ -134,7 +144,19 @@ function fakeUi() {
     endpointTag: element(),
     localBypassToggle: element(),
     bypassWarning: element(),
-    bypassTag: element()
+    bypassTag: element(),
+    pasteAddress: element(),
+    pasteAddressButton: element(),
+    pasteAddressHint: element(),
+    portSuggestions: element(),
+    troubleshootList: element(),
+    exportBackup: element(),
+    importBackup: element(),
+    importBackupFile: element(),
+    restorePreview: { ...element(), hidden: true },
+    restoreSummary: element(),
+    confirmRestore: element(),
+    cancelRestore: element()
   };
 }
 
@@ -432,4 +454,68 @@ test("disabling the local bypass shows the consequence before the user hits it",
   assert.equal(ui.localBypassToggle.checked, false);
   renderLocalBypass(ui, true);
   assert.equal(ui.bypassWarning.hidden, true);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Endpoint discovery and backup                                              */
+/* -------------------------------------------------------------------------- */
+
+test("a pasted address fills all three connection fields", () => {
+  const ui = fakeUi();
+  const parsed = applyPastedAddress(ui, "http://192.168.1.5:8080");
+  assert.equal(ui.host.value, "192.168.1.5");
+  assert.equal(ui.port.value, "8080");
+  assert.equal(ui.scheme.value, "http");
+  assert.equal(ui.pasteAddressHint.hidden, false);
+  assert.equal(parsed.scheme, "http");
+});
+
+test("a pasted address with credentials warns instead of pretending it will work", () => {
+  const ui = fakeUi();
+  applyPastedAddress(ui, "socks5://user:pass@127.0.0.1:1080");
+  assert.match(ui.pasteAddressHint.textContent, /不支持用户名密码/);
+  assert.match(ui.pasteAddressHint.className, /warn/);
+});
+
+test("unrecognised text leaves the fields untouched", () => {
+  const ui = fakeUi();
+  ui.host.value = "keep.me";
+  applyPastedAddress(ui, "???");
+  assert.equal(ui.host.value, "keep.me");
+  assert.match(ui.pasteAddressHint.textContent, /没认出地址/);
+});
+
+test("port suggestions are real buttons that call back with their hint", () => {
+  const ui = fakeUi();
+  const picked = [];
+  renderPortSuggestions(ui, (port, hint) => picked.push([port, hint]));
+  assert.ok(ui.portSuggestions.children.length >= 5);
+  ui.portSuggestions.children[0].click();
+  assert.equal(picked.length, 1);
+  assert.equal(picked[0][0], ui.portSuggestions.children[0].textContent);
+  assert.ok(picked[0][1].length > 0);
+});
+
+test("the restore preview states what will be replaced before anything changes", () => {
+  const ui = fakeUi();
+  const { plan } = planImport(JSON.stringify(exportSettings({
+    mode: "proxy", scheme: "socks5", host: "127.0.0.1", port: "7890",
+    whitelist: [{ host: "a.example", includeSubdomains: true }],
+    blacklist: [{ host: "b.example", includeSubdomains: false }]
+  })));
+  renderRestorePlan(ui, plan);
+  assert.equal(ui.restorePreview.hidden, false);
+  assert.match(ui.restoreSummary.children[0].textContent, /替换/);
+  assert.match(ui.restoreSummary.children[0].textContent, /直连白名单 1 条/);
+  // The literal markdown asterisks must not leak into the UI.
+  assert.doesNotMatch(ui.restoreSummary.children[0].textContent, /\*\*/);
+});
+
+test("cancelling a restore hides the preview and clears the file input", () => {
+  const ui = fakeUi();
+  ui.importBackupFile.value = "C:\\fakepath\\backup.json";
+  renderRestorePlan(ui, planImport(JSON.stringify(exportSettings(BASE))).plan);
+  clearRestorePlan(ui);
+  assert.equal(ui.restorePreview.hidden, true);
+  assert.equal(ui.importBackupFile.value, "");
 });

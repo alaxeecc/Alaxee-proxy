@@ -639,3 +639,87 @@ export function resolveGlobalRoute(proxyState, savedSettings) {
   if (level === "not_controllable" || level === "controlled_by_other_extensions") return "unknown";
   return inferActiveMode(proxyState.value ?? {}, savedSettings) ?? "unknown";
 }
+
+/* -------------------------------------------------------------------------- */
+/* Finding the endpoint                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ports that proxy applications commonly listen on by default.
+ *
+ * This exists because "填什么端口" is the single highest-friction moment in the
+ * whole product: the extension deliberately ships with no address, and a user who
+ * does not know their proxy's local port has no way to find it from inside the
+ * browser. A plain port list is *not* a proxy-product dependency - it is the same
+ * kind of hint as remembering that HTTP is port 80 - and every entry is offered
+ * as a starting point to be verified, never applied silently.
+ */
+export const COMMON_PROXY_PORTS = Object.freeze([
+  { port: "7890", hint: "Clash / mihomo Mixed 端口" },
+  { port: "7891", hint: "Clash / mihomo 常见备用 Mixed 端口" },
+  { port: "1080", hint: "通用 SOCKS，如 ssh -D" },
+  { port: "10808", hint: "v2rayN / Xray 常见 SOCKS 端口" },
+  { port: "10809", hint: "v2rayN / Xray 常见 HTTP 端口" },
+  { port: "8080", hint: "通用 HTTP 代理，公司代理常见" },
+  { port: "3128", hint: "Squid 等 HTTP 代理默认端口" },
+  { port: "2080", hint: "部分客户端（如 v2rayA）常用端口" }
+]);
+
+/**
+ * Turns a pasted address into connection fields.
+ *
+ * Users copy proxy addresses in every shape there is - "127.0.0.1:7890",
+ * "socks5://127.0.0.1:7890", "http://user:pass@host:8080" - and retyping them by
+ * hand is where mistakes happen. Returns null when the text carries no usable
+ * address, and reports what could not be represented instead of guessing.
+ *
+ * Credentials are reported, never silently dropped: the PAC format cannot carry a
+ * username and password, and a user whose proxy needs them must be told why the
+ * connection will fail rather than left to debug it.
+ */
+export function parseProxyAddress(text) {
+  const original = String(text ?? "").trim();
+  if (!original) return null;
+  let value = original;
+
+  // A bare "host:port" is ambiguous with a URL scheme ("socks5:7890"), so only
+  // treat it as a scheme when it is followed by "//".
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = `socks5://${value}`;
+
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+
+  const schemeMap = { socks5: "socks5", socks: "socks5", socks5h: "socks5", http: "http", https: "http" };
+  const scheme = schemeMap[url.protocol.replace(":", "")];
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  const port = url.port;
+  if (!scheme || !host || !port) return null;
+
+  // "socks5:7890" (scheme with no "//") reaches here as host "socks5". That is a
+  // mistyped URL rather than a hostname, so report it instead of connecting to a
+  // machine called "socks5".
+  if (!original.includes("://") && schemeMap[host]) return null;
+
+  return {
+    host,
+    port,
+    scheme,
+    credentials: Boolean(url.username || url.password)
+  };
+}
+
+/**
+ * Human explanation for a failed connection, used when the user reports "填写了
+ * 端口但不生效". Each entry names the most likely cause in the order it should be
+ * checked, so the UI can offer something better than a bare error.
+ */
+export const ENDPOINT_TROUBLESHOOTING = Object.freeze([
+  "确认端口填的是代理软件的「本地监听端口 / Mixed 端口」，不是它的控制面板端口（Clash 的控制面板通常是 9090，填这个不会转发流量）。",
+  "确认代理软件正在运行，并且那个端口处于「允许局域网连接」之外的本机可达状态。",
+  "协议选对：Mixed / SOCKS 端口选 SOCKS5，纯 HTTP 端口选 HTTP。选错时浏览器会连上但握手中断。",
+  "确认没有其他代理扩展或组织策略同时控制 Edge 的代理设置（面板顶部会显示「其他代理配置」）。"
+]);

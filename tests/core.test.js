@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  COMMON_PROXY_PORTS,
   DEFAULT_SETTINGS,
+  ENDPOINT_TROUBLESHOOTING,
   MODES,
   createDomainEntry,
   describeProxyEndpoint,
@@ -16,6 +18,7 @@ import {
   normalizeHostname,
   migrateStoredSettings,
   normalizeWhitelist,
+  parseProxyAddress,
   readPacFingerprint,
   requiresProxyEndpoint,
   resolveDomainRoute,
@@ -302,4 +305,57 @@ test("a PAC written by 0.1.x is not claimed as ours after the format change", ()
   // local-address fix silently unapplied on upgrade.
   const v2 = '/* ALAXEE_PROXY_RULES_V2 fp:deadbeef */\nfunction FindProxyForURL(){return "DIRECT"}';
   assert.equal(readPacFingerprint(v2), null);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Finding the endpoint                                                       */
+/* -------------------------------------------------------------------------- */
+
+test("every shape of pasted proxy address is recognised", () => {
+  const cases = [
+    ["127.0.0.1:7890", { host: "127.0.0.1", port: "7890", scheme: "socks5", credentials: false }],
+    ["socks5://127.0.0.1:7890", { host: "127.0.0.1", port: "7890", scheme: "socks5", credentials: false }],
+    ["socks5h://127.0.0.1:7890", { host: "127.0.0.1", port: "7890", scheme: "socks5", credentials: false }],
+    ["http://127.0.0.1:7897/", { host: "127.0.0.1", port: "7897", scheme: "http", credentials: false }],
+    ["https://proxy.example:8443", { host: "proxy.example", port: "8443", scheme: "http", credentials: false }],
+    ["[::1]:7890", { host: "::1", port: "7890", scheme: "socks5", credentials: false }],
+    ["  http://10.0.0.2:3128  ", { host: "10.0.0.2", port: "3128", scheme: "http", credentials: false }]
+  ];
+  for (const [input, expected] of cases) {
+    assert.deepEqual(parseProxyAddress(input), expected, input);
+  }
+});
+
+test("a pasted address with credentials is parsed but flagged, not silently accepted", () => {
+  // A PAC script cannot carry a username and password. Reporting the limitation is
+  // the difference between "connection failed for a reason you can act on" and
+  // "connection failed".
+  const parsed = parseProxyAddress("socks5://user:pass@10.0.0.2:1080");
+  assert.equal(parsed.host, "10.0.0.2");
+  assert.equal(parsed.port, "1080");
+  assert.equal(parsed.credentials, true);
+});
+
+test("text that carries no address is rejected instead of half-parsed", () => {
+  for (const input of ["", "   ", "localhost", "7890", "socks5:7890", "not a url", "http://"]) {
+    assert.equal(parseProxyAddress(input), null, input);
+  }
+});
+
+test("common ports are offered as hints and always validated before use", () => {
+  assert.ok(COMMON_PROXY_PORTS.length >= 5);
+  for (const { port, hint } of COMMON_PROXY_PORTS) {
+    // Every suggestion must itself be a legal endpoint, or the chip would fill in
+    // a value the save button then rejects.
+    assert.doesNotThrow(() => validateProxySettings({ host: "127.0.0.1", port, scheme: "socks5" }), port);
+    assert.ok(hint.length > 0);
+  }
+  // The control panel port must never be suggested: Clash's 9090 is the REST API,
+  // and pointing the browser at it does not forward any traffic.
+  assert.equal(COMMON_PROXY_PORTS.some(({ port }) => port === "9090"), false);
+});
+
+test("troubleshooting text names the control-panel-port mistake, the most common cause", () => {
+  assert.match(ENDPOINT_TROUBLESHOOTING.join(" "), /9090/);
+  assert.ok(ENDPOINT_TROUBLESHOOTING.length >= 3);
 });

@@ -12,12 +12,16 @@
  *
  * State and chrome.* calls live in popup-controller.js.
  */
+import { describeImportPlan } from "./backup.js";
 import {
+  COMMON_PROXY_PORTS,
+  ENDPOINT_TROUBLESHOOTING,
   describeProxyEndpoint,
   isConfigured,
   isHostBlacklisted,
   isHostWhitelisted,
   isLocalHost,
+  parseProxyAddress,
   resolveTabRoute
 } from "./core.js";
 
@@ -78,6 +82,18 @@ export function createUi() {
     clearRules: $("clearRulesButton"),
     ruleSearch: $("ruleSearch"),
     ruleSort: $("ruleSort"),
+    pasteAddress: $("pasteAddressInput"),
+    portSuggestions: $("portSuggestions"),
+    pasteAddressButton: $("pasteAddressButton"),
+    pasteAddressHint: $("pasteAddressHint"),
+    troubleshootList: $("troubleshootList"),
+    exportBackup: $("exportBackupButton"),
+    importBackup: $("importBackupButton"),
+    importBackupFile: $("importBackupFile"),
+    restorePreview: $("restorePreview"),
+    restoreSummary: $("restoreSummary"),
+    confirmRestore: $("confirmRestoreButton"),
+    cancelRestore: $("cancelRestoreButton"),
     localBypassToggle: $("localBypassToggle"),
     bypassWarning: $("bypassWarning"),
     bypassTag: $("bypassTag")
@@ -361,6 +377,86 @@ export function renderLocalBypass(ui, enabled) {
   ui.localBypassToggle.checked = Boolean(enabled);
   ui.bypassWarning.hidden = Boolean(enabled);
   ui.bypassTag.textContent = enabled ? "直接连接" : "已关闭";
+}
+
+/* -------------------------------------------------------------------------- */
+/* Finding the endpoint                                                       */
+/* -------------------------------------------------------------------------- */
+
+/** Fills the troubleshooting list once; it is static reference text. */
+export function renderTroubleshooting(ui, items = ENDPOINT_TROUBLESHOOTING) {
+  ui.troubleshootList.replaceChildren();
+  const fragment = document.createDocumentFragment();
+  for (const item of items) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    fragment.append(li);
+  }
+  ui.troubleshootList.append(fragment);
+}
+
+/**
+ * Fills the connection fields from a pasted address.
+ *
+ * Returns the parsed result so the caller can decide what to save, and writes a
+ * hint explaining anything that could not be carried over - credentials in the
+ * pasted URL cannot be represented in a PAC script, and silently dropping them
+ * would produce a connection that fails with no explanation.
+ */
+export function applyPastedAddress(ui, text) {
+  const parsed = parseProxyAddress(text);
+  if (!parsed) {
+    ui.pasteAddressHint.hidden = false;
+    ui.pasteAddressHint.className = "microcopy paste-hint-warn";
+    ui.pasteAddressHint.textContent = "没认出地址。请粘贴形如 127.0.0.1:7890 或 socks5://127.0.0.1:7890 的内容。";
+    return null;
+  }
+
+  ui.host.value = parsed.host;
+  ui.port.value = parsed.port;
+  ui.scheme.value = parsed.scheme;
+  ui.pasteAddressHint.hidden = false;
+  ui.pasteAddressHint.className = parsed.credentials ? "microcopy paste-hint-warn" : "microcopy";
+  ui.pasteAddressHint.textContent = parsed.credentials
+    ? "已填入地址和端口，但浏览器代理不支持用户名密码：如果这个代理需要认证，连接会失败。"
+    : `已填入 ${parsed.scheme}://${parsed.host}:${parsed.port}，点下方按钮生效。`;
+  return parsed;
+}
+
+/** Suggests the common ports as one-tap fills. */
+export function renderPortSuggestions(ui, onPick, ports = COMMON_PROXY_PORTS) {
+  const container = ui.portSuggestions;
+  if (!container) return;
+  container.replaceChildren();
+  const fragment = document.createDocumentFragment();
+  for (const { port, hint } of ports) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "port-chip";
+    button.textContent = port;
+    button.title = hint;
+    button.addEventListener("click", () => onPick(port, hint));
+    fragment.append(button);
+  }
+  container.append(fragment);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Backup and restore                                                         */
+/* -------------------------------------------------------------------------- */
+
+export function renderRestorePlan(ui, plan) {
+  ui.restorePreview.hidden = false;
+  ui.restoreSummary.replaceChildren();
+  const strong = document.createElement("strong");
+  strong.textContent = describeImportPlan(plan).replace(/\*\*/g, "");
+  ui.restoreSummary.append(strong);
+}
+
+export function clearRestorePlan(ui) {
+  ui.restorePreview.hidden = true;
+  ui.restoreSummary.replaceChildren();
+  ui.importBackupFile.value = "";
 }
 
 /* -------------------------------------------------------------------------- */

@@ -23,6 +23,13 @@ import {
   validateProxySettings
 } from "./core.js";
 import {
+  backupFilename,
+  exportSettings,
+  planImport
+} from "./backup.js";
+import {
+  applyPastedAddress,
+  clearRestorePlan,
   createUi,
   renderConnectionFields,
   renderCurrentPage as renderCurrentPageView,
@@ -36,6 +43,9 @@ import {
   renderRuleTab,
   renderRules as renderRulesView,
   renderStatusPermission as renderStatusPermissionView,
+  renderPortSuggestions,
+  renderRestorePlan,
+  renderTroubleshooting,
   renderViewSwitch,
   showNotice
 } from "./popup-render.js";
@@ -382,6 +392,79 @@ async function connectProxy() {
   }
 }
 
+/**
+ * Exports the current configuration to a downloaded file.
+ *
+ * object URLs rather than chrome.downloads: the extension does not request the
+ * downloads permission, and an anchor click is enough for a user-initiated save.
+ */
+function exportBackup() {
+  try {
+    const blob = new Blob([JSON.stringify(exportSettings(settings), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = backupFilename();
+    document.body.append(link);
+    link.click();
+    link.remove();
+    // Revoking immediately can cancel the download in some Chromium versions.
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    sendNotice(`已导出 ${countRules()} 条规则的备份文件。`, "success");
+  } catch (error) {
+    sendNotice(`导出失败：${error.message}`, "error");
+  }
+}
+
+let pendingRestore = null;
+
+/** Reads the chosen file and previews what importing it would do. Never applies. */
+async function previewRestore(file) {
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const result = planImport(text, { normalize: normalizeDomainEntriesStrict });
+    if (!result.ok) {
+      pendingRestore = null;
+      clearRestorePlan(ui);
+      sendNotice(result.error, "error");
+      return;
+    }
+    pendingRestore = result.plan;
+    renderRestorePlan(ui, result.plan);
+    sendNotice("已读取备份文件，确认下面的内容后才会替换当前设置。", "warning");
+  } catch (error) {
+    pendingRestore = null;
+    clearRestorePlan(ui);
+    sendNotice(`读取文件失败：${error.message}`, "error");
+  }
+}
+
+async function applyRestore() {
+  if (!pendingRestore) return;
+  const plan = pendingRestore;
+  pendingRestore = null;
+  clearRestorePlan(ui);
+  try {
+    // The endpoint may be absent from an older file. Saving it as-is is correct:
+    // the UI already reports "未配置" and refuses to pretend the proxy is applied.
+    if (requiresProxyEndpoint(plan.settings) && !isConfigured(plan.settings)) {
+      await saveSettings(plan.settings);
+      renderConnectionFields(ui, settings);
+      renderModes();
+      renderRules();
+      renderCurrentPage();
+      sendNotice("备份已恢复，但文件里没有代理地址或端口，请自己填一下才会生效。", "warning");
+      return;
+    }
+    await applyMode(plan.settings.mode, plan.settings);
+    renderConnectionFields(ui, settings);
+    sendNotice(`备份已恢复：白名单 ${plan.counts.whitelist} 条、黑名单 ${plan.counts.blacklist} 条。`, "success");
+  } catch (error) {
+    reportRuleError(error);
+  }
+}
+
 async function toggleLocalBypass() {
   const enabled = ui.localBypassToggle.checked;
   renderLocalBypass(ui, enabled);
@@ -478,6 +561,34 @@ async function initialize() {
 
   ui.saveConnect.addEventListener("click", () => {
     void connectProxy();
+  });
+  ui.pasteAddressButton.addEventListener("click", () => {
+    applyPastedAddress(ui, ui.pasteAddress.value);
+  });
+  ui.pasteAddress.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    applyPastedAddress(ui, ui.pasteAddress.value);
+  });
+  renderPortSuggestions(ui, (port, hint) => {
+    ui.port.value = port;
+    if (!ui.host.value.trim()) ui.host.value = "127.0.0.1";
+    ui.pasteAddressHint.hidden = false;
+    ui.pasteAddressHint.className = "microcopy";
+    ui.pasteAddressHint.textContent = `${port}：${hint}。这只是常见默认值，请对照你的代理软件确认后再保存。`;
+  });
+  renderTroubleshooting(ui);
+  ui.exportBackup.addEventListener("click", exportBackup);
+  ui.importBackup.addEventListener("click", () => ui.importBackupFile.click());
+  ui.importBackupFile.addEventListener("change", () => {
+    void previewRestore(ui.importBackupFile.files?.[0]);
+  });
+  ui.confirmRestore.addEventListener("click", () => {
+    void applyRestore();
+  });
+  ui.cancelRestore.addEventListener("click", () => {
+    pendingRestore = null;
+    clearRestorePlan(ui);
   });
   ui.openSettings.addEventListener("click", async () => {
     try {

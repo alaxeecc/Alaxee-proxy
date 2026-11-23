@@ -108,8 +108,22 @@
           <label class="field field-host"><span>地址</span><input id="hostInput" type="text" value="" autocomplete="off" spellcheck="false" placeholder="127.0.0.1"></label>
           <label class="field field-port"><span>端口</span><input id="portInput" type="number" min="1" max="65535" step="1" value="" inputmode="numeric" placeholder="7890"></label>
         </div>
+        <div id="portSuggestions" class="port-chips" aria-label="常见端口，点击填入"></div>
+        <div class="quick-fill">
+          <label class="search-field">
+            <span class="search-icon" aria-hidden="true">⌁</span>
+            <input id="pasteAddressInput" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="粘贴地址，如 127.0.0.1:7890 或 socks5://127.0.0.1:7890" aria-label="粘贴代理地址">
+          </label>
+          <button id="pasteAddressButton" class="secondary-button" type="button">识别</button>
+        </div>
+        <p class="microcopy" id="pasteAddressHint" hidden></p>
         <button id="saveConnectButton" class="primary-button" type="button">保存并启用代理</button>
-        <p class="microcopy" id="connectHint">填你代理软件监听的本机地址和端口。Clash/Mihomo 通常在「Mixed 端口」同时支持 SOCKS5 与 HTTP，v2ray、sing-box、SSH 隧道等也都可以填进来。</p>
+        <p class="microcopy" id="connectHint">填你代理软件监听的本机地址和端口。列出的端口只是常见默认值，请以代理软件界面显示的「本地监听 / Mixed 端口」为准。控制面板端口（如 9090）不转发流量，填它没用。</p>
+        <details class="troubleshoot" id="troubleshoot">
+          <summary>填了端口但不生效？</summary>
+          <ol id="troubleshootList"></ol>
+        </details>
       </section>
 
       <section class="site-panel" aria-labelledby="siteTitle">
@@ -196,6 +210,26 @@
         </div>
         <ul id="rulesList" class="whitelist-list" aria-label="域名规则列表"></ul>
         <p class="rules-footnote">黑名单表示强制经代理服务器；白名单表示浏览器直连。两类规则重叠时黑名单优先。本机地址始终直连，不受这里的规则影响。</p>
+      </section>
+
+      <section class="backup-panel" aria-labelledby="backupTitle">
+        <div class="section-heading compact-heading">
+          <div><div class="eyebrow">BACKUP</div><h2 id="backupTitle">备份与恢复</h2></div>
+          <span class="local-tag"><span></span>仅本地文件</span>
+        </div>
+        <p class="microcopy">设置和规则只存在这台电脑的这个浏览器配置里。导出一个 JSON 文件，可以在重装、换电脑或配置损坏时恢复。</p>
+        <div class="backup-actions">
+          <button id="exportBackupButton" class="secondary-button" type="button">导出 JSON</button>
+          <button id="importBackupButton" class="secondary-button" type="button">从文件恢复</button>
+        </div>
+        <input id="importBackupFile" type="file" accept="application/json,.json" hidden>
+        <div id="restorePreview" class="restore-preview" hidden>
+          <div id="restoreSummary"></div>
+          <div class="restore-actions">
+            <button id="confirmRestoreButton" class="danger-button" type="button">确认替换</button>
+            <button id="cancelRestoreButton" class="secondary-button" type="button">取消</button>
+          </div>
+        </div>
       </section>
     </div>
 

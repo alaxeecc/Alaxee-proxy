@@ -429,6 +429,28 @@ html.full-page .view-nav {
 .local-tag[data-state="unset"] { color: #966b2e; }
 .local-tag[data-state="set"] { color: var(--accent-strong); }
 
+/* --- quick fill + troubleshooting ----------------------------------------- */
+.port-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.port-chip { border: 1px solid var(--line); border-radius: 99px; background: var(--surface-soft); color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; padding: 3px 9px; }
+.port-chip:hover { border-color: var(--accent); color: var(--accent-strong); }
+.quick-fill { display: grid; grid-template-columns: minmax(0, 1fr) 62px; gap: 7px; margin-top: 11px; }
+.quick-fill .secondary-button { min-height: 32px; padding: 0 8px; font-size: 11px; }
+.troubleshoot { margin-top: 9px; }
+.troubleshoot summary { cursor: pointer; color: var(--accent-strong); font-size: 10px; font-weight: 700; }
+.troubleshoot ol { margin: 7px 0 0; padding-left: 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.troubleshoot li { margin-bottom: 5px; }
+.paste-hint-warn { color: #966b2e; }
+@media (prefers-color-scheme: dark) { .paste-hint-warn { color: #e8c48a; } }
+
+/* --- backup --------------------------------------------------------------- */
+.backup-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.backup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
+.backup-actions button { min-height: 34px; }
+.restore-preview { margin: 10px 0 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); font-size: 10px; line-height: 1.5; color: var(--muted); }
+.restore-preview strong { color: var(--ink); }
+.restore-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+.danger-button { min-height: 34px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: 9px; background: transparent; color: var(--danger); font-size: 11px; font-weight: 700; }
+
 /* --- rule search + sort --------------------------------------------------- */
 .rule-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 7px; margin: 0 0 9px; }
 .search-field { position: relative; display: block; min-width: 0; }
