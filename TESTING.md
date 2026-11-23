@@ -64,7 +64,7 @@ Not covered, and therefore still requires manual checks below: the real Chromium
 
 ## Upgrade from 0.1.x
 
-- [ ] Install 0.1.3 (or load it unpacked), set a mode, then upgrade in place.
+- [ ] Install 0.1.3 (or any 0.1.x build), set a mode, then upgrade in place to 0.2.0.
 - [ ] Confirm the stored `mode: "clash"` becomes **走代理服务器** with an upgrade notice, and the rules are unchanged.
 - [ ] Confirm a stored `mode: "system"` becomes **直接连接** with a notice explaining why the mode is gone.
 - [ ] Confirm the toolbar icons switch to the new `proxy` artwork.

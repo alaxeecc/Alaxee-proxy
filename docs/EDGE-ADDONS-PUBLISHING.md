@@ -27,7 +27,11 @@
 1. Update `manifest.json` version and `package.json` version together.
 2. Run `npm test`, `npm run check`, and `python scripts/package-extension.py`.
 3. Commit and push the change to `main`.
-4. Create and push a matching tag, for example `v0.1.3`.
+4. Create and push a matching tag, for example `v0.2.0`.
+   The tag, `manifest.json` and `package.json` must all carry the same number;
+   a test enforces it, because a stale one once produced a zip with the wrong
+   label. Note that the backup file format has its own version number, so
+   bumping the product version does not invalidate exported backups.
 5. GitHub Actions validates the tag/version match, reruns checks, packages only runtime files, uploads the package, and submits it to Microsoft for certification.
 6. Check the workflow result and Partner Center status. A successful API submission is **not** the same as Microsoft certification or store publication.
 

@@ -11,6 +11,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { BACKUP_VERSION } from "../src/backup.js";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -204,4 +205,23 @@ test("no module reads the sync area except through sync.js", async () => {
     }
   }
   assert.deepEqual(offenders, [], "sync reads belong in the controller via sync.js");
+});
+
+test("manifest and package.json versions agree and are valid for the store", async () => {
+  // A mismatch here is not cosmetic: the zip is named from the manifest version while
+  // npm reads package.json, so a stale one produces an artifact labelled with the
+  // wrong number. That happened during a release once and had to be caught by grep.
+  const pkg = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+  assert.equal(typeof pkg.version, "string");
+  assert.equal(manifest.version, pkg.version, "manifest.json and package.json versions must match");
+  // Chrome and Edge require 1-4 dot-separated integers, each 0-65535, no leading zero.
+  assert.match(manifest.version, /^([0-9]|[1-9][0-9]{0,3})(\.([0-9]|[1-9][0-9]{0,3})){0,3}$/);
+});
+
+test("the backup format version is independent of the extension version", () => {
+  // Bumping the product version must not invalidate files users already exported.
+  // The format carries its own integer for exactly that reason.
+  assert.equal(typeof BACKUP_VERSION, "number");
+  assert.ok(BACKUP_VERSION >= 1);
+  assert.ok(!manifest.version.startsWith(`${BACKUP_VERSION}.`), "these are unrelated numbers");
 });

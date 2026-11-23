@@ -6,7 +6,7 @@
 
 ## 当前版本
 
-- 版本：`0.1.3`
+- 版本：`0.2.0`
 - 目标浏览器：Microsoft Edge（Chromium，Manifest V3）
 - 发布方式：Microsoft Edge Add-ons（计划上架）；开发期间也可本地加载解压缩版本
 - 运行依赖：无第三方 JavaScript 运行时依赖
