@@ -32,10 +32,13 @@ import {
   SYNC_PREFIX,
   buildSyncItems,
   describeSyncStatus,
+  mergeSettings,
   readSyncState,
+  removedHosts,
   settingsDiffer,
   staleChunkKeys,
-  syncDirection
+  syncDirection,
+  withTombstones
 } from "./sync.js";
 import {
   applyPastedAddress,
@@ -338,6 +341,25 @@ async function applyMode(mode, overrides = {}) {
   await readProxyState();
 }
 
+/** The shape stored as the next merge base: hosts and their subdomain flag only. */
+function mergeBaseShape(entries) {
+  return entries.map(({ host, includeSubdomains }) => ({ host, includeSubdomains }));
+}
+
+/**
+ * Records hosts that this device removed, so the removal survives a merge.
+ *
+ * A merge cannot tell an absent rule from a deleted one, so deletions have to be
+ * stated explicitly. Tombstones are dropped once the merged record has been
+ * adopted, because after that the peer's base already reflects the removal.
+ */
+function noteRemovals(removed) {
+  if (removed.length === 0) return;
+  const existing = new Set(settings.syncTombstones ?? []);
+  for (const host of removed) existing.add(host);
+  settings = { ...settings, syncTombstones: [...existing] };
+}
+
 /** Everything that is synced and edited, and nothing that is only a preference flag. */
 function contentShape(value) {
   return JSON.stringify({
@@ -347,7 +369,10 @@ function contentShape(value) {
     port: value.port,
     localBypass: value.localBypass !== false,
     whitelist: value.whitelist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains })),
-    blacklist: value.blacklist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains }))
+    blacklist: value.blacklist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains })),
+    // A removal changes only the tombstone list, so it has to be part of the shape
+    // or deleting a rule would never be uploaded.
+    tombstones: [...(value.syncTombstones ?? [])].sort()
   });
 }
 
@@ -373,12 +398,14 @@ async function addDomainRule(type, host, includeSubdomains = true) {
 async function removeDomainRule(host, type) {
   const key = type === "blacklist" ? "blacklist" : "whitelist";
   const nextEntries = settings[key].filter((entry) => entry.host !== host);
+  if (nextEntries.length !== settings[key].length) noteRemovals([host]);
   await commit({ [key]: nextEntries }, `${host} 已从${RULE_LABELS[key]}移除`);
   renderCurrentPage();
 }
 
 async function clearActiveRules() {
   const key = activeRuleType === "blacklist" ? "blacklist" : "whitelist";
+  noteRemovals(settings[key].map((entry) => entry.host));
   await commit({ [key]: [] }, `${RULE_LABELS[key]}已清空`);
   renderCurrentPage();
 }
@@ -531,68 +558,119 @@ function scheduleUpload() {
  * on. Otherwise the synced record is adopted, because that is what "sync" means to
  * the person who just enabled it on a second machine.
  */
+/**
+ * Reconciles local settings with the sync area, then writes whichever side changed.
+ *
+ * There is deliberately **one** path here, not an "upload" path and an "adopt" path.
+ * The previous version branched on a timestamp and, when local looked newer,
+ * uploaded straight over the cloud record. Two devices that edited between uploads
+ * therefore erased each other, last writer winning and the loser never told.
+ *
+ * Merging first makes both edits survive regardless of who wrote last. The decision
+ * about *direction* still matters, but only for the handful of scalar fields, and
+ * mergeSettings already resolves those by timestamp.
+ */
 async function reconcileSync({ silent = true } = {}) {
-  const area = await chromeCall(chrome.storage.sync, "get", null);
-  const result = readSyncState(area);
-
-  if (!result.ok) {
-    syncStatusText = describeSyncStatus(result);
-    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
-    if (result.reason === "empty") await uploadIfEnabled();
-    return;
-  }
-
-  const synced = result.settings;
-  if (!settingsDiffer(synced, settings)) {
-    lastSyncedShape = { ...settings };
-    syncStatusText = `本机设置与同步数据一致（最后更新 ${new Date(result.meta.updatedAt).toLocaleString()}）。`;
-    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
-    return;
-  }
-
-  // Three outcomes, decided before anything is written:
-  //   "local-wins"  - this device was edited after the cloud record
-  //   "cloud-wins"  - adopt the cloud record
-  //   "ambiguous"   - never upload. A device that has never been edited has
-  //                   updatedAt === 0 and no basis to claim its (empty) rule list
-  //                   is newer than anyone else's; guessing here is what let a
-  //                   fresh install erase an existing sync record.
-  const direction = syncDirection({ local: settings, meta: result.meta });
-  if (direction === "ambiguous") {
-    syncStatusText = "本机没有编辑记录，云端有另一份设置。已改为从云端读取。";
-    // Fall through to adoption.
-  } else if (direction === "local-wins") {
-    syncStatusText = "本机设置比同步数据更新，正在上传本机版本。";
-    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: true });
-    await uploadIfEnabled({ force: true });
-    return;
-  }
-
+  let area;
   try {
-    const whitelist = normalizeDomainEntriesStrict(synced.whitelist);
-    const blacklist = normalizeDomainEntriesStrict(synced.blacklist);
-    const adopted = { ...settings, ...synced, whitelist, blacklist };
-    // Apply and persist without re-uploading: this record came from the sync area.
-    if (requiresProxyEndpoint(adopted) && !isConfigured(adopted)) {
-      await saveSettings(adopted);
-    } else if (activeMode) {
-      await applyMode(adopted.mode, adopted);
-    } else {
-      await saveSettings(adopted);
-    }
-    renderConnectionFields(ui, settings);
-    renderModes();
-    renderRules();
-    renderCurrentPage();
-    lastSyncedShape = { ...settings };
-    syncStatusText = `已从其他设备同步：${whitelist.length} 条直连、${blacklist.length} 条代理规则。`;
-    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
-    if (!silent) sendNotice(syncStatusText, "success");
-    else sendNotice(`已应用其他设备同步过来的设置（${whitelist.length + blacklist.length} 条规则）。`, "success");
+    area = await chromeCall(chrome.storage.sync, "get", null);
   } catch (error) {
-    syncStatusText = `同步数据无法应用：${error.message}。本机设置保持不变。`;
+    syncStatusText = `无法读取浏览器同步存储：${error.message}。已改用本机设置。`;
     renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    return;
   }
+
+  const cloud = readSyncState(area);
+
+  // Nothing usable in the cloud: this device becomes the source of truth.
+  if (!cloud.ok) {
+    syncStatusText = describeSyncStatus(cloud);
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    if (cloud.reason === "empty" || cloud.reason === "corrupt") {
+      await uploadIfEnabled({ force: true });
+    }
+    return;
+  }
+
+  if (!settingsDiffer(cloud.settings, settings)) {
+    lastSyncedShape = { ...settings };
+    syncStatusText = `本机与同步数据一致（最后更新 ${new Date(cloud.meta.updatedAt).toLocaleString()}）。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    return;
+  }
+
+  let merged;
+  try {
+    merged = mergeSettings({ base: cloud.base, mine: settings, theirs: cloud.settings });
+  } catch (error) {
+    syncStatusText = `同步数据无法合并：${error.message}。本机设置保持不变。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    return;
+  }
+
+  // Tombstones are a fallback for the case where neither side carried a base: they
+  // state deletions that a set merge cannot infer.
+  merged.whitelist = withTombstones(merged.whitelist, settings.syncTombstones);
+  merged.blacklist = withTombstones(merged.blacklist, settings.syncTombstones);
+
+  const cloudChanged = settingsDiffer(merged, cloud.settings);
+  const localChanged = settingsDiffer(merged, settings);
+
+  if (localChanged) {
+    try {
+      const whitelist = normalizeDomainEntriesStrict(merged.whitelist);
+      const blacklist = normalizeDomainEntriesStrict(merged.blacklist);
+      const adopted = {
+        ...settings,
+        ...merged,
+        whitelist,
+        blacklist,
+        // The merge base is the cloud record this device just built on - NOT the
+        // merged result. Advancing the base to the result would tell every peer
+        // "anything in the result that you lack, you deleted", which is how B's
+        // rules disappeared from A on the next reconcile.
+        syncBase: {
+          whitelist: mergeBaseShape(cloud.settings.whitelist),
+          blacklist: mergeBaseShape(cloud.settings.blacklist)
+        },
+        syncTombstones: [],
+        updatedAt: Date.now()
+      };
+      if (requiresProxyEndpoint(adopted) && !isConfigured(adopted)) {
+        await saveSettings(adopted);
+      } else if (activeMode) {
+        await applyMode(adopted.mode, adopted);
+      } else {
+        await saveSettings(adopted);
+      }
+      renderConnectionFields(ui, settings);
+      renderModes();
+      renderRules();
+      renderCurrentPage();
+    } catch (error) {
+      syncStatusText = `同步数据无法应用：${error.message}。本机设置保持不变。`;
+      renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+      return;
+    }
+  }
+
+  const total = settings.whitelist.length + settings.blacklist.length;
+  if (cloudChanged) {
+    // Upload announces the base it merged against; uploadIfEnabled reads it from
+    // settings.syncBase, which was just set to the pre-merge cloud state above.
+    await uploadIfEnabled({ force: true });
+    syncStatusText = `已合并并上传：本机 ${total} 条规则。`;
+    renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+    if (localChanged) sendNotice(`已合并两边的改动，共 ${total} 条规则。`, "success");
+    return;
+  }
+
+  lastSyncedShape = { ...settings };
+  syncStatusText = localChanged
+    ? `已从其他设备同步：本机现共 ${total} 条规则。`
+    : `本机与同步数据一致（最后更新 ${new Date(cloud.meta.updatedAt).toLocaleString()}）。`;
+  renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: false });
+  if (localChanged && !silent) sendNotice(syncStatusText, "success");
 }
 
 async function setSyncEnabled(enabled) {

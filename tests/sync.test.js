@@ -17,10 +17,14 @@ import {
   checksum,
   chunkKey,
   describeSyncStatus,
+  mergeRuleList,
+  mergeSettings,
   readSyncState,
+  removedHosts,
   settingsDiffer,
   syncDirection,
-  staleChunkKeys
+  staleChunkKeys,
+  withTombstones
 } from "../src/sync.js";
 
 const RULES = (count, prefix = "site") =>
@@ -266,4 +270,114 @@ test("the upload guard refuses when the cloud already matches local", () => {
   // uploadIfEnabled compares against the last-seen record; equal shapes must not
   // produce a write, or two devices ping-pong forever.
   assert.equal(settingsDiffer({ ...SETTINGS, updatedAt: 5 }, { ...SETTINGS, updatedAt: 99 }), false);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Merging                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * These pin the second data-loss bug, found after the first one was fixed:
+ * two devices editing between uploads meant the later upload silently erased the
+ * earlier one. Last-writer-wins was the whole policy; there was no merge.
+ */
+
+const R = (host, includeSubdomains = true) => ({ host, includeSubdomains });
+
+test("concurrent additions on two devices both survive a merge", () => {
+  const merged = mergeRuleList([], [R("from-a.example")], [R("from-b.example")]);
+  assert.deepEqual(merged.map((rule) => rule.host).sort(), ["from-a.example", "from-b.example"]);
+});
+
+test("merging is idempotent: an unchanged side never duplicates or reorders", () => {
+  const base = [R("a.example"), R("b.example")];
+  const merged = mergeRuleList(base, base, base);
+  assert.deepEqual(merged, base.map((rule) => ({ host: rule.host, includeSubdomains: rule.includeSubdomains })));
+  assert.deepEqual(mergeRuleList(base, merged, merged), merged);
+});
+
+test("a deletion on the local side propagates instead of being resurrected", () => {
+  // Local removed "gone.example"; the cloud still has it. Without the base, a set
+  // merge would happily add it back.
+  const base = [R("keep.example"), R("gone.example")];
+  const mine = [R("keep.example")];
+  const theirs = [R("keep.example"), R("gone.example")];
+  assert.deepEqual(mergeRuleList(base, mine, theirs).map((rule) => rule.host), ["keep.example"]);
+});
+
+test("a deletion on the cloud side propagates to the local side", () => {
+  const base = [R("keep.example"), R("gone.example")];
+  const mine = [R("keep.example"), R("gone.example")];
+  const theirs = [R("keep.example")];
+  assert.deepEqual(mergeRuleList(base, mine, theirs).map((rule) => rule.host), ["keep.example"]);
+});
+
+test("a rule the peer never had is not mistaken for a deletion", () => {
+  // This is the regression: a base that claims more than the peer actually saw makes
+  // every unseen rule look deleted. New rules with no base entry must be kept.
+  const merged = mergeRuleList([], [R("only-local.example")], []);
+  assert.deepEqual(merged.map((rule) => rule.host), ["only-local.example"]);
+});
+
+test("the same host with different subdomain flags resolves to the newest stamp", () => {
+  const older = { host: "x.example", includeSubdomains: true, updatedAt: 100 };
+  const newer = { host: "x.example", includeSubdomains: false, updatedAt: 200 };
+  assert.equal(mergeRuleList([], [older], [newer])[0].includeSubdomains, false);
+  assert.equal(mergeRuleList([], [newer], [older])[0].includeSubdomains, false);
+  // A tie keeps the local flag so an unchanged merge stays stable.
+  assert.equal(mergeRuleList([], [{ ...older, updatedAt: 200 }], [older])[0].includeSubdomains, true);
+});
+
+test("a host on both lists collapses to the blacklist, matching how routing decides", () => {
+  // The merge must not leave a direct entry that can never fire.
+  const merged = mergeSettings({
+    base: null,
+    mine: { ...SETTINGS, whitelist: [R("both.example")], blacklist: [], updatedAt: 10 },
+    theirs: { ...SETTINGS, whitelist: [], blacklist: [R("both.example")], updatedAt: 5 }
+  });
+  assert.deepEqual(merged.whitelist, []);
+  assert.deepEqual(merged.blacklist.map((rule) => rule.host), ["both.example"]);
+});
+
+test("scalar fields move as a unit so a mode cannot pair with another device's port", () => {
+  const merged = mergeSettings({
+    base: null,
+    mine: { ...SETTINGS, mode: "direct", port: "1111", updatedAt: 100 },
+    theirs: { ...SETTINGS, mode: "proxy", port: "2222", updatedAt: 200 }
+  });
+  assert.equal(merged.mode, "proxy");
+  assert.equal(merged.port, "2222");
+});
+
+test("tombstones suppress only rules that are absent locally", () => {
+  const merged = [R("keep.example"), R("gone.example")];
+  assert.deepEqual(withTombstones(merged, ["gone.example"]).map((rule) => rule.host), ["keep.example"]);
+  // A tombstone for a host that is still present must not hide it: the user re-added it.
+  assert.equal(withTombstones(merged, []).length, 2);
+  assert.deepEqual(withTombstones(merged, ["KEEP.example"]).map((rule) => rule.host), ["gone.example"]);
+});
+
+test("removedHosts reports what a write actually deleted", () => {
+  assert.deepEqual(removedHosts([R("a.example"), R("b.example")], [R("b.example")]), ["a.example"]);
+  assert.deepEqual(removedHosts([R("a.example")], [R("a.example")]), []);
+});
+
+test("the merge base travels with the payload, so peers can merge without history", () => {
+  const built = buildSyncItems({
+    ...SETTINGS,
+    syncBase: { whitelist: [R("base.example")], blacklist: [] },
+    syncTombstones: ["dead.example"]
+  }, { generation: "g1" });
+  const read = readSyncState(built.items);
+  assert.deepEqual(read.base, { whitelist: [R("base.example")], blacklist: [] });
+  assert.deepEqual(read.tombstones, ["dead.example"]);
+});
+
+test("an old payload with no base still reads, and merges as a first sync", () => {
+  const built = buildSyncItems(SETTINGS, { generation: "g1" });
+  const read = readSyncState(built.items);
+  assert.equal(read.base, null);
+  assert.deepEqual(read.tombstones, []);
+  const merged = mergeSettings({ base: read.base, mine: { ...SETTINGS, whitelist: [R("mine.example")] }, theirs: read.settings });
+  assert.ok(merged.whitelist.some((rule) => rule.host === "mine.example"));
 });

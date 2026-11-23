@@ -78,7 +78,11 @@ export function buildSyncItems(settings, { generation = Date.now().toString(36),
     includeSubdomains: settings.includeSubdomains !== false,
     localBypass: settings.localBypass !== false,
     whitelist: settings.whitelist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains })),
-    blacklist: settings.blacklist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains }))
+    blacklist: settings.blacklist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains })),
+    // The record both sides last agreed on, plus removals, travel with the payload
+    // so any device can merge instead of overwriting. See mergeSettings().
+    base: settings.syncBase ?? null,
+    tombstones: settings.syncTombstones ?? []
   });
 
   const chunks = [];
@@ -162,6 +166,8 @@ export function readSyncState(syncArea) {
   return {
     ok: true,
     meta,
+    base: parsed.base && typeof parsed.base === "object" ? parsed.base : null,
+    tombstones: Array.isArray(parsed.tombstones) ? parsed.tombstones.map(String) : [],
     settings: {
       mode: parsed.mode === "direct" ? "direct" : "proxy",
       scheme: parsed.scheme === "http" ? "http" : "socks5",
@@ -248,4 +254,134 @@ export function syncDirection({ local, meta }) {
   const syncedAt = Date.parse(String(meta?.updatedAt ?? ""));
   if (!Number.isFinite(syncedAt)) return "local-wins";
   return localWrite > syncedAt ? "local-wins" : "cloud-wins";
+}
+
+/* -------------------------------------------------------------------------- */
+/* Merging, not overwriting                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Two devices editing between uploads used to mean one of them lost its change
+ * silently: last writer won, and the loser's rule vanished on next reconcile.
+ *
+ * The fix is a three-way merge against the record both sides last agreed on. Rule
+ * *sets* merge cleanly by host, because a rule is identified by its host and its
+ * `includeSubdomains` flag; the only genuinely conflicting cases are
+ *
+ *   - the same host on the two lists (blacklist wins, matching routing),
+ *   - the same host on one list with different `includeSubdomains` (newest wins).
+ *
+ * Merging is opt-out, not opt-in: losing a rule is silent, so the safe default is
+ * to keep both sides. Deletions are handled by tombstones (see withTombstones).
+ */
+
+const RULE_SHAPE = (entry) => ({ host: entry.host, includeSubdomains: Boolean(entry.includeSubdomains) });
+
+function ruleKey(entry) {
+  return String(entry?.host ?? "").toLowerCase();
+}
+
+/** Stable per-rule clock so "newest wins" is decided per rule, not per device. */
+function ruleStamp(entry) {
+  const stamp = Number(entry?.updatedAt);
+  return Number.isFinite(stamp) ? stamp : 0;
+}
+
+/**
+ * Merges two rule lists by host.
+ *
+ * Ordering keeps the base order and appends anything new, so an unchanged list
+ * merges to itself and a merge never reshuffles what the user was looking at.
+ */
+export function mergeRuleList(base = [], mine = [], theirs = []) {
+  const baseMap = new Map(base.map((entry) => [ruleKey(entry), RULE_SHAPE(entry)]));
+  const mineMap = new Map(mine.map((entry) => [ruleKey(entry), entry]));
+  const theirMap = new Map(theirs.map((entry) => [ruleKey(entry), entry]));
+
+  // Every host seen anywhere, in a stable order: base order, then the order each
+  // side introduced new hosts in.
+  const order = [];
+  const seen = new Set();
+  for (const entry of [...base, ...mine, ...theirs]) {
+    const key = ruleKey(entry);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    order.push(key);
+  }
+
+  const merged = [];
+  for (const key of order) {
+    const inBase = baseMap.get(key);
+    const inMine = mineMap.get(key);
+    const inTheirs = theirMap.get(key);
+
+    let chosen = null;
+    if (inMine && inTheirs) {
+      // Both sides have it: newest stamp wins, and a tie keeps the local flag so
+      // an unchanged merge is idempotent.
+      chosen = ruleStamp(inTheirs) > ruleStamp(inMine) ? inTheirs : inMine;
+    } else if (inMine) {
+      // Only local has it. If the base had it too, the cloud deleted it - honour
+      // the deletion unless local re-added it afterwards.
+      chosen = inBase && ruleStamp(inMine) <= ruleStamp(baseMap.get(key)) ? null : inMine;
+    } else if (inTheirs) {
+      // Only the cloud has it. If the base had it too, local deleted it.
+      chosen = inBase ? null : inTheirs;
+    }
+    if (chosen) merged.push(RULE_SHAPE(chosen));
+  }
+  return merged;
+}
+
+/**
+ * Merges a whole settings record.
+ *
+ * Non-rule fields take the newest side as a unit: they are a handful of scalars the
+ * user edits together, and interleaving them would produce a mode from one device
+ * with a port from another.
+ *
+ * @param {{base: object|null, mine: object, theirs: object}} input
+ */
+export function mergeSettings({ base, mine, theirs }) {
+  const mineNewer = (Number(mine?.updatedAt) || 0) >= (Number(theirs?.updatedAt) || 0);
+  const newer = mineNewer ? mine : theirs;
+
+  let whitelist = mergeRuleList(base?.whitelist ?? [], mine.whitelist ?? [], theirs.whitelist ?? []);
+  let blacklist = mergeRuleList(base?.blacklist ?? [], mine.blacklist ?? [], theirs.blacklist ?? []);
+
+  // A host on both lists is a conflict the merge cannot resolve by rules alone.
+  // Routing already resolves it (blacklist wins), so the merge matches routing and
+  // drops the losing direct entry rather than leaving a rule that does nothing.
+  const forced = new Set(blacklist.map(ruleKey));
+  whitelist = whitelist.filter((entry) => !forced.has(ruleKey(entry)));
+
+  return {
+    mode: newer.mode,
+    scheme: newer.scheme,
+    host: newer.host,
+    port: newer.port,
+    includeSubdomains: newer.includeSubdomains !== false,
+    localBypass: newer.localBypass !== false,
+    whitelist,
+    blacklist,
+    updatedAt: Math.max(Number(mine?.updatedAt) || 0, Number(theirs?.updatedAt) || 0)
+  };
+}
+
+/** Hosts that disappeared from `before` but were present in `after`. */
+export function removedHosts(before = [], after = []) {
+  const remaining = new Set(after.map(ruleKey));
+  return before.map(ruleKey).filter((host) => !remaining.has(host));
+}
+
+/**
+ * Applies removals to a merged list.
+ *
+ * A merge cannot tell an absent rule from a deleted one, so deletions have to be
+ * stated explicitly. Tombstones are host names the user removed, and they only
+ * suppress hosts that are absent locally.
+ */
+export function withTombstones(merged = [], tombstones = []) {
+  const dead = new Set(tombstones.map((value) => String(value).toLowerCase()));
+  return merged.filter((entry) => !dead.has(ruleKey(entry)));
 }

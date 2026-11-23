@@ -37,6 +37,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   // Wall-clock time of the last local write, used to decide whether local or
   // synced settings are newer when the two disagree.
   updatedAt: 0,
+  // The record this device last agreed with the sync area on, and the hosts it has
+  // removed since. Both travel with the payload so peers can merge rather than
+  // overwrite; neither affects routing.
+  syncBase: null,
+  syncTombstones: [],
   whitelist: [],
   blacklist: []
 });
@@ -148,6 +153,8 @@ export function migrateStoredSettings(raw) {
     localBypass: input.localBypass !== false,
     syncEnabled: input.syncEnabled === true,
     updatedAt: Number(input.updatedAt) || 0,
+    syncBase: input.syncBase && typeof input.syncBase === "object" ? input.syncBase : null,
+    syncTombstones: Array.isArray(input.syncTombstones) ? input.syncTombstones.map(String) : [],
     whitelist: normalizeDomainEntries(input.whitelist),
     blacklist: normalizeDomainEntries(input.blacklist)
   };
