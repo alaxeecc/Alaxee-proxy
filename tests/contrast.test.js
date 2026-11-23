@@ -103,3 +103,34 @@ test("the type scale is defined and used rather than duplicated", () => {
   const uses = [...css.matchAll(/font-size:\s*var\(--text-[a-z0-9]+\)/g)].length;
   assert.ok(uses > 20, `the scale should be the normal way to set text size, saw ${uses}`);
 });
+
+test("every colour outside the brand mark comes from a variable", () => {
+  // This is what makes a re-theme possible. Before it, changing the accent colour
+  // meant finding 53 hardcoded hex values across the stylesheet, and the amber
+  // warning family existed in seven separate places. Colours belonging to the logo
+  // SVG are exempt on purpose: they follow the logo, not the theme.
+  const start = css.indexOf("}", css.indexOf(":root {"));
+  const body = css.slice(start);
+  const offenders = [];
+  for (const match of body.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = match[1].trim().split("\n").pop().trim();
+    if (/brand-mark|:root|xee|route-(proxy|direct|unknown)/.test(selector)) continue;
+    for (const colour of match[2].match(/#[0-9a-fA-F]{6}\b/g) ?? []) {
+      offenders.push(`${selector} -> ${colour}`);
+    }
+  }
+  assert.deepEqual(offenders, [], `hardcoded colours outside variables:\n  ${offenders.join("\n  ")}`);
+});
+
+test("both themes define the same colour variables", () => {
+  // A variable added to one theme and not the other falls back to the light value,
+  // which is how a dark theme ends up with a bright amber block in the middle.
+  const blocks = css.match(/:root \{([\s\S]*?)\}/g) ?? [];
+  assert.ok(blocks.length >= 2, "expected a light and a dark :root block");
+  const names = (block) => new Set([...block.matchAll(/--([a-z-]+):/g)].map((m) => m[1]).filter((n) => !n.startsWith("text-")));
+  const [light, dark] = blocks.map(names);
+  const missingInDark = [...light].filter((name) => !dark.has(name));
+  const missingInLight = [...dark].filter((name) => !light.has(name));
+  assert.deepEqual(missingInDark, [], `dark theme is missing: ${missingInDark.join(", ")}`);
+  assert.deepEqual(missingInLight, [], `light theme is missing: ${missingInLight.join(", ")}`);
+});

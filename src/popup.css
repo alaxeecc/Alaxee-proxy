@@ -12,7 +12,17 @@
   --accent: #0a7568;
   --accent-strong: #066d63;
   --accent-soft: #e8f5f2;
+  /* The gradient is the primary action's identity; it moves with --accent. */
+  --accent-grad-start: #087f73;
+  --accent-grad-end: #249a87;
   --danger: #b64d4d;
+  /* "Needs attention, not an error": the amber family used by unset endpoints, the
+     sync privacy block and warnings. Named so a re-theme is one edit, not seven. */
+  --warn-ink: #966b2e;
+  --warn-ink-soft: #a16e2b;
+  --warn-surface: #f6eddd;
+  --warn-surface-soft: #f5eddc;
+  --warn-line: #c38a3e;
   --shadow: 0 12px 32px rgba(25, 48, 51, .08);
   /* Type scale. 9-10px body text was the single biggest readability problem: on a
      380px panel at 100% Windows scaling that renders around 7pt. Everything here is
@@ -39,7 +49,14 @@
     --accent: #66c7b6;
     --accent-strong: #83d8c9;
     --accent-soft: #1d3936;
+    --accent-grad-start: #0a7568;
+    --accent-grad-end: #1f8a79;
     --danger: #e28a8a;
+    --warn-ink: #e8c48a;
+    --warn-ink-soft: #e8c48a;
+    --warn-surface: color-mix(in srgb, #e8c48a 10%, var(--surface-soft));
+    --warn-surface-soft: color-mix(in srgb, #e8c48a 14%, var(--surface-soft));
+    --warn-line: rgba(204, 157, 89, .32);
     --shadow: 0 12px 32px rgba(0, 0, 0, .24);
   }
 }
@@ -133,7 +150,7 @@ input, select { transition: border-color .16s, box-shadow .16s, background .16s;
 .state-pill, .route-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 6px 9px; font-size: var(--text-xs); font-weight: 650; white-space: nowrap; }
 .state-neutral { color: var(--muted); background: var(--surface-soft); }
 .state-good { color: var(--accent-strong); background: var(--accent-soft); }
-.state-warn { color: #966b2e; background: #f6eddd; }
+.state-warn { color: var(--warn-ink); background: var(--warn-surface); }
 .state-bad { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
 /* Only the leading dot is a dot. ".local-tag span" also matched the label span and
    forced it to 6px wide, which is why "直接连接" rendered one character per line. */
@@ -210,7 +227,7 @@ h1, h2 { margin: 0; font-size: var(--text-lg); font-weight: 740; letter-spacing:
 .field-scheme { grid-column: span 2; }
 .field input, .field select { width: 100%; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--ink); padding: 0 9px; font-size: var(--text-xs); }
 .field input:focus, .field select:focus { border-color: var(--accent); outline: none; }
-.primary-button { margin-top: 11px; width: 100%; min-height: 36px; border: 0; border-radius: 9px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; color: #fff; background: linear-gradient(110deg, #087f73, #249a87); font-size: var(--text-xs); font-weight: 740; box-shadow: 0 5px 13px rgba(8, 127, 115, .2); }
+.primary-button { margin-top: 11px; width: 100%; min-height: 36px; border: 0; border-radius: 9px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; color: #fff; background: linear-gradient(110deg, var(--accent-grad-start), var(--accent-grad-end)); font-size: var(--text-xs); font-weight: 740; box-shadow: 0 5px 13px rgba(8, 127, 115, .2); }
 .primary-button:hover { filter: brightness(1.06); }
 .primary-button:active { transform: translateY(1px); filter: brightness(.97); box-shadow: 0 2px 6px rgba(8, 127, 115, .22); }
 .primary-button:disabled, button:disabled { cursor: not-allowed; opacity: .48; }
@@ -455,13 +472,13 @@ h1, h2 { margin: 0; font-size: var(--text-lg); font-weight: 740; letter-spacing:
   font-weight: 760;
 }
 .rule-type-direct { color: var(--accent-strong); background: var(--accent-soft); }
-.rule-type-proxy { color: #a16e2b; background: #f5eddc; }
+.rule-type-proxy { color: var(--warn-ink-soft); background: var(--warn-surface-soft); }
 .force-proxy-button {
-  color: #a16e2b;
-  background: #f5eddc;
-  border-color: color-mix(in srgb, #c38a3e 36%, var(--line));
+  color: var(--warn-ink-soft);
+  background: var(--warn-surface-soft);
+  border-color: color-mix(in srgb, var(--warn-line) 36%, var(--line));
 }
-.force-proxy-button:hover { border-color: #c38a3e; }
+.force-proxy-button:hover { border-color: var(--warn-line); }
 .rules-footnote {
   margin: 12px 1px 0;
   color: var(--muted);
@@ -469,16 +486,15 @@ h1, h2 { margin: 0; font-size: var(--text-lg); font-weight: 740; letter-spacing:
   line-height: 1.5;
 }
 .notice.notice-warning {
-  border-color: color-mix(in srgb, #c38a3e 40%, var(--line));
-  color: #a16e2b;
+  border-color: color-mix(in srgb, var(--warn-line) 40%, var(--line));
+  color: var(--warn-ink-soft);
 }
 @media (prefers-color-scheme: dark) {
   .rule-type-proxy, .force-proxy-button {
-    color: #efc27f;
+    color: var(--warn-ink);
     background: rgba(166, 117, 48, .18);
     border-color: rgba(204, 157, 89, .32);
   }
-  .notice.notice-warning { color: #efc27f; }
 }
 
 
@@ -543,14 +559,12 @@ html.full-page .view-nav {
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.endpoint-line.is-unset { border-style: dashed; color: #966b2e; background: #f6eddd; }
+.endpoint-line.is-unset { border-style: dashed; color: var(--warn-ink); background: var(--warn-surface); }
 @media (prefers-color-scheme: dark) {
-  .endpoint-line.is-unset { color: #e8c48a; background: color-mix(in srgb, #e8c48a 14%, var(--surface-soft)); }
 }
 .bypass-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
-.warning-text { color: #966b2e; }
-@media (prefers-color-scheme: dark) { .warning-text { color: #e8c48a; } }
-.local-tag[data-state="unset"] { color: #966b2e; }
+.warning-text { color: var(--warn-ink); }
+.local-tag[data-state="unset"] { color: var(--warn-ink); }
 .local-tag[data-state="set"] { color: var(--accent-strong); }
 
 /* --- quick fill + troubleshooting ----------------------------------------- */
@@ -563,19 +577,17 @@ html.full-page .view-nav {
 .troubleshoot summary { cursor: pointer; color: var(--accent-strong); font-size: var(--text-xs); font-weight: 700; }
 .troubleshoot ol { margin: 7px 0 0; padding-left: 17px; color: var(--muted); font-size: var(--text-xs); line-height: 1.55; }
 .troubleshoot li { margin-bottom: 5px; }
-.paste-hint-warn { color: #966b2e; }
-@media (prefers-color-scheme: dark) { .paste-hint-warn { color: #e8c48a; } }
+.paste-hint-warn { color: var(--warn-ink); }
 
 /* --- sync ----------------------------------------------------------------- */
 .sync-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
-.sync-privacy { margin: 9px 0; padding: 10px 11px; border: 1px solid color-mix(in srgb, #966b2e 30%, var(--line)); border-radius: 9px; background: #f9f2e6; }
-.sync-privacy strong { display: block; margin-bottom: 4px; font-size: var(--text-xs); color: #8a5f22; }
-.sync-privacy p { margin: 0 0 5px; font-size: var(--text-xs); line-height: 1.5; color: #7a5a2c; }
+.sync-privacy { margin: 9px 0; padding: 10px 11px; border: 1px solid color-mix(in srgb, var(--warn-ink) 30%, var(--line)); border-radius: 9px; background: var(--warn-surface); }
+.sync-privacy strong { display: block; margin-bottom: 4px; font-size: var(--text-xs); color: var(--warn-ink); }
+.sync-privacy p { margin: 0 0 5px; font-size: var(--text-xs); line-height: 1.5; color: color-mix(in srgb, var(--warn-ink) 82%, var(--ink)); }
 .sync-privacy p:last-child { margin-bottom: 0; }
 @media (prefers-color-scheme: dark) {
-  .sync-privacy { background: color-mix(in srgb, #e8c48a 10%, var(--surface-soft)); border-color: color-mix(in srgb, #e8c48a 28%, var(--line)); }
-  .sync-privacy strong { color: #e8c48a; }
-  .sync-privacy p { color: #cbb08a; }
+  .sync-privacy { border-color: color-mix(in srgb, var(--warn-line) 28%, var(--line)); }
+  .sync-privacy p { color: color-mix(in srgb, var(--warn-ink) 78%, var(--muted)); }
 }
 .sync-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
 .sync-actions button:only-child { grid-column: 1 / -1; }
