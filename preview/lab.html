@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Alaxee Proxy · 开发工作台</title>
+<style>
+  :root { color-scheme: light dark; --bg:#eef2f3; --surface:#fff; --ink:#172327; --muted:#6c7a7d; --line:#dbe4e4; --accent:#087f73; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1416; --surface:#151e20; --ink:#eaf1ef; --muted:#9aabaa; --line:#263436; --accent:#66c7b6; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+         font:13px/1.5 Inter,"Segoe UI","Microsoft YaHei",sans-serif; }
+  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+           padding:14px 24px; background:var(--surface); border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:15px; letter-spacing:.2px; }
+  .tag { padding:2px 8px; border-radius:99px; background:color-mix(in srgb, var(--accent) 14%, transparent);
+         color:var(--accent); font-size:11px; font-weight:700; }
+  .controls { display:flex; gap:14px; align-items:center; margin-left:auto; flex-wrap:wrap; }
+  label { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; }
+  button { min-height:30px; padding:0 12px; border:1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+           border-radius:8px; background:color-mix(in srgb, var(--accent) 10%, transparent); color:var(--accent);
+           font:inherit; font-weight:700; cursor:pointer; }
+  button:active { transform:translateY(1px); }
+  main { padding:20px 24px 40px; display:grid; gap:24px;
+         grid-template-columns:repeat(auto-fit, minmax(400px, 1fr)); }
+  .pane { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+          display:flex; flex-direction:column; min-height:0; }
+  .pane > .pane-head { display:flex; align-items:center; gap:8px; padding:9px 13px; border-bottom:1px solid var(--line);
+                       font-size:12px; font-weight:700; color:var(--muted); }
+  .pane-head .url { margin-left:auto; font-weight:500; font-size:11px; opacity:.75;
+                    font-family:ui-monospace,Consolas,monospace; }
+  .pane iframe { border:0; width:100%; background:#fff; display:block; }
+  .pane.popup iframe { height:600px; }
+  .pane.full iframe { height:760px; }
+  .warm { background:color-mix(in srgb, #f0b95a 26%, transparent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Alaxee Proxy</h1>
+  <span class="tag">开发工作台</span>
+  <div class="controls">
+    <label>主题
+      <select id="theme">
+        <option value="">跟随系统</option>
+        <option value="light">浅色</option>
+        <option value="dark">深色</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="auto" checked> 文件改动后自动刷新</label>
+    <button id="refresh" type="button">立即刷新</button>
+  </div>
+</header>
+
+<main id="panes"></main>
+
+<script>
+  // Every pane is the REAL popup, served by scripts/preview-server.mjs, with the
+  // chrome.* shim standing in. The point is that one page shows the states that are
+  // otherwise awkward to reach by hand (empty list, 40 rules, sync on, permission
+  // granted), and that editing a stylesheet and reloading this page updates all of
+  // them at once. Nothing here is packaged.
+  const SCENES = [
+    { label: "快捷面板 · 概览", cls: "popup", query: { tab: "https://github.com/alaxeecc/Alaxee-proxy" } },
+    { label: "快捷面板 · 空规则", cls: "popup", query: { rules: "0" } },
+    { label: "快捷面板 · 40 条规则", cls: "popup", query: { rules: "40" } },
+    { label: "完整设置", cls: "full", query: { full: "1", rules: "12" } },
+  ];
+
+  const params = new URLSearchParams(location.search);
+  const dark = params.get("theme") === "dark";
+  const themeSelect = document.getElementById("theme");
+  themeSelect.value = params.get("theme") ?? "";
+  themeSelect.addEventListener("change", () => {
+    const next = new URLSearchParams(location.search);
+    if (themeSelect.value) next.set("theme", themeSelect.value);
+    else next.delete("theme");
+    location.search = next.toString();
+  });
+
+  function buildPane(scene) {
+    const query = new URLSearchParams(scene.query);
+    // The popup stylesheet honours prefers-color-scheme, which an iframe cannot be
+    // forced into, so the dark preview injects a filter instead of lying about it.
+    const pane = document.createElement("section");
+    pane.className = `pane ${scene.cls}`;
+    pane.innerHTML =
+      '<div class="pane-head"><span class="title"></span><span class="url"></span></div>' +
+      '<iframe loading="eager" title=""></iframe>';
+    pane.querySelector(".title").textContent = scene.label;
+    pane.querySelector(".url").textContent = "?" + query.toString();
+    const frame = pane.querySelector("iframe");
+    frame.title = scene.label;
+    frame.src = `/src/popup.html?${query.toString()}`;
+    if (dark) frame.style.filter = "invert(1) hue-rotate(180deg)";
+    return pane;
+  }
+
+  const panes = document.getElementById("panes");
+  SCENES.forEach((scene) => panes.append(buildPane(scene)));
+
+  document.getElementById("refresh").addEventListener("click", () => location.reload());
+
+  // Live reload. The server exposes /__events as a server-sent stream that fires
+  // whenever a watched file changes, so no polling and no dependency.
+  const auto = document.getElementById("auto");
+  auto.checked = params.get("auto") !== "0";
+  auto.addEventListener("change", () => {
+    const next = new URLSearchParams(location.search);
+    if (auto.checked) next.delete("auto");
+    else next.set("auto", "0");
+    history.replaceState(null, "", `?${next.toString()}`);
+  });
+
+  const events = new EventSource("/__events");
+  events.addEventListener("change", (event) => {
+    if (!auto.checked) return;
+    location.reload();
+  });
+  events.addEventListener("open", () => {});
+</script>
+</body>
+</html>

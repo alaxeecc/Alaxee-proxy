@@ -17,9 +17,20 @@
  *   ?tabs=1           simulate the optional tabs permission being granted
  *   ?settings=<json>  override the seeded settings record (URL-encoded)
  *   ?full=1           render the full settings page layout
+ *   ?sync=1           seed an enabled sync record
+ *   ?rules=N          seed N rules so long-list behaviour can be seen
+ *
+ * Two entry points:
+ *   /            the popup on its own
+ *   /lab         several popup states side by side, live-reloading on file change
+ *
+ * The lab exists because reviewing a change meant packaging the extension and
+ * reinstalling it into Edge every time. Editing a stylesheet should not require a
+ * browser restart.
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { watch } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -47,11 +58,63 @@ function injectShim(html) {
   );
 }
 
+/* ---------------------------------------------------------------- live reload */
+
+/**
+ * Server-sent events.
+ *
+ * Deliberately not polling and not a websocket: SSE is one HTTP response that stays
+ * open, needs no dependency, and reconnects on its own if the tab is backgrounded.
+ */
+const clients = new Set();
+
+function broadcastChange(changedPath) {
+  const payload = `event: change\ndata: ${JSON.stringify({ path: changedPath })}\n\n`;
+  for (const client of clients) {
+    try {
+      client.write(payload);
+    } catch {
+      clients.delete(client);
+    }
+  }
+}
+
+// Watch the directories that can change what the preview renders. Debounced because
+// an editor writing a file can produce several events in a row.
+let debounce = null;
+const watchedPaths = ["src", "preview", "icons"].map((dir) => path.join(root, dir));
+for (const target of watchedPaths) {
+  try {
+    watch(target, { recursive: true }, (_event, filename) => {
+      if (!filename || filename.includes(".swp") || filename.endsWith("~")) return;
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => broadcastChange(String(filename)), 80);
+    });
+  } catch {
+    // A missing directory must not stop the server; the preview still works, it just
+    // will not reload on its own.
+  }
+}
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://localhost:${port}`);
   let pathname = decodeURIComponent(url.pathname);
 
+  if (pathname === "/__events") {
+    response.writeHead(200, {
+      "content-type": "text/event-stream",
+      "cache-control": "no-store",
+      connection: "keep-alive"
+    });
+    // An initial comment flushes headers so the client's open event fires promptly.
+    response.write(": connected\n\n");
+    clients.add(response);
+    request.on("close", () => clients.delete(response));
+    return;
+  }
+
   if (pathname === "/") pathname = "/src/popup.html";
+  if (pathname === "/lab") pathname = "/preview/lab.html";
   if (pathname === "/favicon.ico") {
     response.writeHead(204).end();
     return;

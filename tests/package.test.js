@@ -225,3 +225,17 @@ test("the backup format version is independent of the extension version", () => 
   assert.ok(BACKUP_VERSION >= 1);
   assert.ok(!manifest.version.startsWith(`${BACKUP_VERSION}.`), "these are unrelated numbers");
 });
+
+test("the development workbench stays out of the package", async () => {
+  // The lab and the shim are how changes get reviewed without reinstalling the
+  // extension. They must never ship: the shim stubs chrome.storage with localStorage
+  // and would silently fake every setting if it ever reached a user.
+  const { files: names } = await resolveRuntimeFiles(root);
+  for (const forbidden of ["preview/", "preview"]) {
+    assert.ok(
+      !names.some((name) => name.startsWith(forbidden)),
+      `the packaged artifact must not contain ${forbidden}`
+    );
+  }
+  assert.ok(names.includes("src/popup.html"));
+});

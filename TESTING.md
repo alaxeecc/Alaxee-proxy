@@ -2,6 +2,22 @@
 
 The automated Node tests cover pure validation, proxy-rule generation, and the actual behaviour of the generated PAC script. They do not emulate the Edge extension runtime and cannot prove that a proxy process is listening on the configured port. Complete this checklist on the target Windows + Edge setup before relying on the extension daily.
 
+## Fast loop while changing UI
+
+Two layers, in order of how often they should be used:
+
+1. **`npm run preview`, then open `/lab`** - several popup states side by side,
+   live-reloading whenever `src/`, `preview/` or `icons/` changes. This is the real
+   `popup.html`, real stylesheet and real controller with `chrome.*` stubbed. Use it
+   for anything visual.
+2. **Reload the unpacked extension** - only needed when the change touches
+   `background.js`, or when what you are verifying is actual browser proxy behaviour
+   (`chrome.proxy`, PAC taking effect, toolbar icons per tab). In `edge://extensions`,
+   press Reload on the Alaxee Proxy card. Do not remove and re-add the extension.
+
+`scripts/update-unpacked.sh` pulls the branch and prints what changed; it refuses to
+run with a dirty working tree rather than stashing silently.
+
 ## What the automated tests do and do not prove
 
 Automated coverage:
