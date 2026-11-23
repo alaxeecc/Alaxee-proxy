@@ -29,8 +29,10 @@ import {
   renderRuleCounts,
   renderRuleTab,
   renderRules,
+  renderStatusPermission,
   ROUTE_LABELS,
   ruleEntries,
+  showNotice,
   totalRuleCount
 } from "../src/popup-render.js";
 
@@ -158,7 +160,9 @@ function fakeUi() {
     restorePreview: { ...element(), hidden: true },
     restoreSummary: element(),
     confirmRestore: element(),
-    cancelRestore: element()
+    cancelRestore: element(),
+    statusPermissionButton: element(),
+    statusPermissionHint: element()
   };
 }
 
@@ -611,4 +615,71 @@ test("grouping composes with search and sort instead of replacing them", () => {
   assert.equal(rows.length, 2, "search still filters");
   assert.equal(rows[0].children[0].children[0].textContent, "a.example.com", "sort still applies");
   assert.equal(ui.ruleList.children.filter((row) => row.className === "rule-group-heading").length, 1);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Affordances that read as actions                                           */
+/* -------------------------------------------------------------------------- */
+
+test("a granted per-tab permission presents the control as an action, not a status", () => {
+  // "已启用 · 刷新" told the user the permission was on and then appended a verb.
+  // Nobody could tell the button was what to press, so the icons stayed stale until
+  // the popup was reopened.
+  const ui = fakeUi();
+  renderStatusPermission(ui, true);
+  assert.equal(ui.statusPermissionButton.textContent, "刷新图标");
+  assert.match(ui.statusPermissionButton.title, /重新计算/);
+  assert.equal(ui.statusPermissionButton.classList.contains("is-granted"), true);
+});
+
+test("the un-granted state stays a call to action", () => {
+  const ui = fakeUi();
+  renderStatusPermission(ui, false);
+  assert.equal(ui.statusPermissionButton.textContent, "启用逐网页显示");
+  assert.match(ui.statusPermissionButton.title, /允许/);
+  assert.equal(ui.statusPermissionButton.classList.contains("is-granted"), false);
+  // The promise about what is and is not read has to survive; it is the whole reason
+  // this is a prompt instead of a silent permission.
+  assert.match(ui.statusPermissionHint.textContent, /不读取网页内容|不会读取网页内容/);
+  assert.match(ui.statusPermissionHint.textContent, /仍然可用/);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Undo                                                                       */
+/* -------------------------------------------------------------------------- */
+
+test("a notice with an action offers a button and stays longer", () => {
+  // Removing one rule is a single click on a small x; clearing a list is one click
+  // that destroys everything in it. Neither had a way back. A confirmation modal for
+  // every delete becomes a rubber stamp, so the remedy is an undo that appears where
+  // the confirmation already appears.
+  const notice = { textContent: "", className: "", hidden: true, kids: [], append(el) { this.kids.push(el); } };
+  const timers = [];
+  let fired = false;
+  const cancel = showNotice({ notice }, "已移除", "success", {
+    setTimeout: (fn, ms) => { timers.push(ms); return 1; },
+    clearTimeout: () => { timers.push("cleared"); }
+  }, { label: "撤销", run: () => { fired = true; } });
+
+  assert.equal(timers[0], 9000, "an actionable notice must outlive a passive one");
+  assert.equal(notice.hidden, false);
+  assert.equal(notice.kids.length, 1);
+  assert.equal(notice.kids[0].textContent, "撤销");
+  assert.equal(notice.kids[0].className, "notice-action");
+
+  notice.kids[0].click();
+  assert.equal(fired, true, "pressing undo must run the restore");
+  assert.equal(notice.hidden, true);
+  assert.equal(typeof cancel, "function");
+});
+
+test("a notice without an action does not grow a button", () => {
+  const notice = { textContent: "", className: "", hidden: true, kids: [], append(el) { this.kids.push(el); } };
+  const timers = [];
+  showNotice({ notice }, "已保存", "success", {
+    setTimeout: (fn, ms) => { timers.push(ms); return 1; },
+    clearTimeout: () => {}
+  });
+  assert.equal(timers[0], 4600, "plain confirmations keep the short lifetime");
+  assert.equal(notice.kids.length, 0);
 });

@@ -150,9 +150,9 @@ function syncRuleCounts() {
   renderRuleCounts(ui, settings, activeRuleType);
 }
 
-function sendNotice(message, kind = "success") {
+function sendNotice(message, kind = "success", action = null) {
   noticeTimer?.();
-  noticeTimer = showNotice(ui, message, kind);
+  noticeTimer = showNotice(ui, message, kind, globalThis, action);
 }
 
 function chromeCall(target, method, ...args) {
@@ -403,17 +403,56 @@ async function addDomainRule(type, host, includeSubdomains = true) {
 
 async function removeDomainRule(host, type) {
   const key = type === "blacklist" ? "blacklist" : "whitelist";
+  const removed = settings[key].find((entry) => entry.host === host) ?? null;
   const nextEntries = settings[key].filter((entry) => entry.host !== host);
   if (nextEntries.length !== settings[key].length) noteRemovals([host]);
   await commit({ [key]: nextEntries }, `${host} 已从${RULE_LABELS[key]}移除`);
   renderCurrentPage();
+
+  // Removing one rule is a single click on a small × and is easy to misfire. Offer the
+  // way back instead of relying on the user remembering the exact host to retype.
+  if (removed) {
+    const restore = async () => {
+      const current = settings[key].filter((entry) => entry.host !== removed.host);
+      // Re-adding clears the tombstone implicitly: a rule present locally is not
+      // something a peer's tombstone may suppress.
+      settings.syncTombstones = (settings.syncTombstones ?? []).filter((name) => name !== removed.host);
+      await commit({ [key]: [...current, removed] }, `${removed.host} 已恢复`);
+      renderRules();
+      renderCurrentPage();
+    };
+    sendNotice(`${host} 已从${RULE_LABELS[key]}移除`, "success", {
+      label: "撤销",
+      run: () => void restore()
+    });
+  }
 }
 
 async function clearActiveRules() {
   const key = activeRuleType === "blacklist" ? "blacklist" : "whitelist";
-  noteRemovals(settings[key].map((entry) => entry.host));
+  const removed = [...settings[key]];
+  if (removed.length === 0) return;
+
+  // Clearing is a single click that destroys a whole list. Undo is offered afterwards
+  // rather than a modal beforehand: a modal on every clear becomes a rubber stamp,
+  // while undo catches the mistake when it actually happens.
+  noteRemovals(removed.map((entry) => entry.host));
   await commit({ [key]: [] }, `${RULE_LABELS[key]}已清空`);
+  renderRules();
   renderCurrentPage();
+
+  const restore = async () => {
+    const names = new Set(removed.map((entry) => entry.host));
+    settings.syncTombstones = (settings.syncTombstones ?? []).filter((name) => !names.has(name));
+    const current = settings[key].filter((entry) => !names.has(entry.host));
+    await commit({ [key]: [...current, ...removed] }, `${RULE_LABELS[key]}已恢复 ${removed.length} 条`);
+    renderRules();
+    renderCurrentPage();
+  };
+  sendNotice(`已清空${RULE_LABELS[key]}（${removed.length} 条）`, "success", {
+    label: "撤销",
+    run: () => void restore()
+  });
 }
 
 async function addCurrentRule(type) {

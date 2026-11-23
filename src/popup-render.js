@@ -113,14 +113,30 @@ export function createUi() {
 /* -------------------------------------------------------------------------- */
 
 /** Returns a cancel function so a newer notice can replace the pending timer. */
-export function showNotice(ui, message, kind, timers = globalThis) {
+export function showNotice(ui, message, kind, timers = globalThis, action = null) {
   ui.notice.textContent = message;
   ui.notice.className = `notice notice-${kind}`;
   ui.notice.hidden = false;
+  // A message the user can act on needs time to read and decide. 4.6s is enough to
+  // notice a confirmation, not enough to notice a mistake and reach for undo.
+  const lifetime = action ? 9000 : 4600;
+  if (action) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "notice-action";
+    button.textContent = action.label;
+    button.addEventListener("click", () => {
+      ui.notice.hidden = true;
+      cancel();
+      action.run();
+    });
+    ui.notice.append(button);
+  }
   const handle = timers.setTimeout(() => {
     ui.notice.hidden = true;
-  }, 4600);
-  return () => timers.clearTimeout(handle);
+  }, lifetime);
+  const cancel = () => timers.clearTimeout(handle);
+  return cancel;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -599,11 +615,20 @@ export function renderProxyStateError(ui) {
 }
 
 export function renderStatusPermission(ui, granted) {
-  ui.statusPermissionButton.textContent = granted ? "已启用 · 刷新" : "启用逐网页显示";
+  // The old granted-state label read "已启用 · 刷新" (enabled / refresh), which states
+  // a status and then appends a verb. Users could not tell that the button was the
+  // thing to press, so nothing got refreshed and the toolbar icons stayed stale
+  // until the popup was reopened. A granted permission is now presented as an action.
+  ui.statusPermissionButton.textContent = granted ? "刷新图标" : "启用逐网页显示";
   ui.statusPermissionButton.setAttribute("aria-pressed", String(granted));
+  ui.statusPermissionButton.title = granted
+    ? "重新计算所有标签页的图标状态"
+    : "允许扩展读取标签页网址，以便按网页显示路由";
   ui.statusPermissionHint.textContent = granted
-    ? "逐网页状态已启用：根据白名单、黑名单和全局模式分别显示。仅本地读取标签页网址。"
-    : "逐网页图标需要读取标签页网址；不会读取网页内容或上传浏览数据。添加规则仍然可用。";
+    ? "逐网页状态已启用。图标会按白名单、黑名单和全局模式分别显示；只在本机读取标签页网址。"
+    : "逐网页图标需要读取标签页网址；不会读取网页内容，也不上传浏览数据。未启用时添加规则仍然可用。";
+  // A granted permission deserves a quieter treatment than a call to action.
+  ui.statusPermissionButton.classList.toggle("is-granted", Boolean(granted));
 }
 
 /** Fills the connection fields from saved settings. */

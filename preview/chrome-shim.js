@@ -18,6 +18,11 @@
 
   // Simulation knobs, overridable from the preview page's query string.
   const params = new URLSearchParams(location.search);
+  // ?sync=1 seeds an enabled sync record so the sync panel can be reviewed without
+  // clicking through the privacy block every time; ?rules=N fills the rule list so
+  // long-list behaviour (scrolling, grouping, search) can be seen.
+  const seedSync = params.get("sync") === "1";
+  const seedRules = Number(params.get("rules") ?? 0);
   const initialSettings = params.get("settings")
     ? JSON.parse(decodeURIComponent(params.get("settings")))
     : {
@@ -30,6 +35,24 @@
         whitelist: [{ host: "github.com", includeSubdomains: true }],
         blacklist: [{ host: "ads.example.com", includeSubdomains: false }]
       };
+  if (seedSync) initialSettings.syncEnabled = true;
+  if (seedRules > 0) {
+    const hosts = [
+      "github.com", "gitlab.com", "stackoverflow.com", "npmjs.com", "developer.mozilla.org",
+      "docs.python.org", "news.ycombinator.com", "arxiv.org", "wikipedia.org", "youtube.com",
+      "figma.com", "notion.so", "slack.com", "linear.app", "vercel.com",
+      "cloudflare.com", "aws.amazon.com", "azure.microsoft.com", "react.dev", "vitejs.dev"
+    ];
+    initialSettings.whitelist = Array.from({ length: Math.min(seedRules, 60) }, (_, i) => {
+      const base = hosts[i % hosts.length];
+      const label = i < hosts.length ? base : `${base.split(".")[0]}${Math.floor(i / hosts.length)}.${base.split(".").slice(1).join(".")}`;
+      return { host: label, includeSubdomains: i % 3 !== 0, updatedAt: Date.now() - i * 60000 };
+    });
+    initialSettings.blacklist = [
+      { host: "ads.example.com", includeSubdomains: false, updatedAt: Date.now() },
+      { host: "tracker.example.net", includeSubdomains: true, updatedAt: Date.now() }
+    ];
+  }
   store[SETTINGS_KEY] = initialSettings;
 
   // Built from the real generator below, so the previewed state is one the

@@ -84,4 +84,5 @@ const server = createServer(async (request, response) => {
 server.listen(port, "0.0.0.0", () => {
   console.log(`Alaxee Proxy preview: http://0.0.0.0:${port}/`);
   console.log("  ?full=1  full settings layout   ?tab=<url>  simulated tab");
+  console.log("  ?sync=1  sync enabled           ?rules=N    fill the rule list");
 });
