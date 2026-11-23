@@ -144,9 +144,16 @@ input, select { transition: border-color .16s, box-shadow .16s, background .16s;
    switch - sitting at full size forever, pushing the things used daily off screen.
    Collapsing them by usage frequency cuts the page roughly in half without hiding
    anything: the summary line always shows the current value. */
-.panel-collapsible { padding: 0; }
+/* Specificity, not order: .bypass-panel and .mode-panel both declare padding: 14px,
+   and one of them is later in this file. A collapsible panel owns no padding - the
+   summary and the body each bring theirs - so this has to win outright, otherwise
+   the heading sits 14px right of the panels above and below it. */
+.mode-panel.panel-collapsible, .config-panel.panel-collapsible,
+.site-panel.panel-collapsible, .bypass-panel.panel-collapsible { padding: 0; }
 .panel-collapsible > .panel-summary {
-  margin: 0; padding: 12px 14px; cursor: pointer; list-style: none;
+  /* 14px vertical padding matches the plain panels exactly; 12px made the folded
+     cards 4px shorter than their neighbours, which reads as a dent in the stack. */
+  margin: 0; padding: 14px; cursor: pointer; list-style: none;
   border-radius: 15px; transition: background .16s;
 }
 .panel-collapsible > .panel-summary::-webkit-details-marker { display: none; }
@@ -158,7 +165,10 @@ input, select { transition: border-color .16s, box-shadow .16s, background .16s;
   transform: rotate(45deg) translate(-2px, -2px); transition: transform .18s ease; flex: 0 0 auto;
 }
 .panel-collapsible[open] .chevron { transform: rotate(225deg) translate(-2px, -2px); }
-.panel-collapsible > .panel-body { padding: 0 14px 14px; }
+/* The summary carries no bottom margin, so the body supplies the same 11px gap a
+   plain panel gets from .compact-heading. Without it the folded panel's content sits
+   tight against the divider while every other panel breathes. */
+.panel-collapsible > .panel-body { padding: 11px 14px 14px; }
 
 /* A closed panel that needs attention has to say so, because the reason to open it
    is not visible while it is collapsed. */
@@ -611,8 +621,12 @@ html.full-page #overviewView {
   gap: 16px;
 }
 html.full-page #overviewView .mode-panel { grid-column: 1 / -1; margin-bottom: 0; }
+/* All four overview panels are grid cells now; the bypass panel is collapsible and
+   was missed when this list was written, so it kept a 10px bottom margin that the
+   other three had zeroed - visible as one card sitting lower than its row. */
 html.full-page #overviewView .config-panel,
-html.full-page #overviewView .site-panel { min-width: 0; margin-bottom: 0; }
+html.full-page #overviewView .site-panel,
+html.full-page #overviewView .bypass-panel { min-width: 0; margin-bottom: 0; }
 html.full-page .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 html.full-page .mode-button { min-height: 74px; padding: 13px; }
 html.full-page .mode-title { font-size: var(--text-md); }

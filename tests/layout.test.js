@@ -87,3 +87,23 @@ test("hidden elements are actually hidden", () => {
   // display would override it and the folded content would show through anyway.
   assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important/);
 });
+
+test("every overview panel is handled by the full-page grid", () => {
+  // The bypass panel became a <details> and was missed by the rule that zeroes the
+  // grid cells' bottom margin, so it sat 10px lower than its row. Any panel added to
+  // the overview has to be listed here too, or it will be the next one misaligned.
+  const block = css.slice(css.indexOf("html.full-page #overviewView {"));
+  const gridSection = block.slice(0, block.indexOf("html.full-page .mode-grid"));
+  for (const panel of ["mode-panel", "config-panel", "site-panel", "bypass-panel"]) {
+    assert.ok(gridSection.includes(panel), `#overviewView grid rules must cover ${panel}`);
+  }
+});
+
+test("a collapsible panel does not add padding on top of its summary", () => {
+  // .bypass-panel declares padding: 14px and comes after the collapsible rule, so a
+  // plain .panel-collapsible selector loses and the heading shifts right by 14px.
+  const rule = css.match(/\.mode-panel\.panel-collapsible[^{]*\{([^}]*)\}/);
+  assert.ok(rule, "the padding reset must outrank the panel's own padding");
+  assert.match(rule[1], /padding:\s*0/);
+  assert.match(rule[0], /\.bypass-panel\.panel-collapsible/);
+});
