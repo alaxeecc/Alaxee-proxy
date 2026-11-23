@@ -137,6 +137,34 @@ input, select { transition: border-color .16s, box-shadow .16s, background .16s;
 .state-bad { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .state-dot, .local-tag span { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .mode-panel, .config-panel, .site-panel, .list-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+
+/* Collapsible panels.
+   The overview was 1454px of content in a 600px viewport. Most of that height was
+   two panels used once during setup - the proxy endpoint and the local-address
+   switch - sitting at full size forever, pushing the things used daily off screen.
+   Collapsing them by usage frequency cuts the page roughly in half without hiding
+   anything: the summary line always shows the current value. */
+.panel-collapsible { padding: 0; }
+.panel-collapsible > .panel-summary {
+  margin: 0; padding: 12px 14px; cursor: pointer; list-style: none;
+  border-radius: 15px; transition: background .16s;
+}
+.panel-collapsible > .panel-summary::-webkit-details-marker { display: none; }
+.panel-collapsible > .panel-summary:hover { background: var(--surface-soft); }
+.panel-collapsible[open] > .panel-summary { border-radius: 15px 15px 0 0; border-bottom: 1px solid var(--line); }
+.panel-summary .summary-meta { display: flex; align-items: center; gap: 8px; }
+.chevron {
+  width: 8px; height: 8px; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted);
+  transform: rotate(45deg) translate(-2px, -2px); transition: transform .18s ease; flex: 0 0 auto;
+}
+.panel-collapsible[open] .chevron { transform: rotate(225deg) translate(-2px, -2px); }
+.panel-collapsible > .panel-body { padding: 0 14px 14px; }
+
+/* A closed panel that needs attention has to say so, because the reason to open it
+   is not visible while it is collapsed. */
+.panel-collapsible.needs-attention > .panel-summary { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.panel-collapsible.needs-attention .local-tag,
+.panel-collapsible.needs-attention .endpoint-warning { color: var(--danger); }
 .section-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
 .compact-heading { margin-bottom: 11px; }
 .eyebrow { color: var(--accent); font-size: var(--text-2xs); font-weight: 800; letter-spacing: 1.15px; margin-bottom: 4px; }
@@ -357,6 +385,24 @@ h1, h2 { margin: 0; font-size: var(--text-lg); font-weight: 740; letter-spacing:
   white-space: nowrap;
 }
 .rule-subdomain-row { margin: 10px 0 13px; }
+/* Rule view layout.
+   Measured: 386px of a 600px panel was fixed chrome - tabs, add form, subdomain
+   checkbox, toolbar, footnote - leaving four visible rows of a list that can hold
+   five hundred. The add form is used occasionally and the list is read constantly,
+   so the form folds away behind a button and the list gets the space. */
+.rule-add-area { display: grid; gap: 8px; margin: 2px 0 10px; padding: 10px 11px;
+  border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+.rule-add-area .inline-help { margin: 0; }
+.rule-add-area .rule-subdomain-row { margin-top: 0; }
+.rule-heading-actions { display: flex; align-items: center; gap: 4px; }
+.rules-footnote-details, .mode-help-details { margin-top: 8px; }
+.mode-help-details .inline-help { margin: 6px 0 0; }
+.rules-footnote-summary { color: var(--muted); font-size: var(--text-xs); cursor: pointer;
+  padding: 2px 0; list-style: none; }
+.rules-footnote-summary::-webkit-details-marker { display: none; }
+.rules-footnote-summary::before { content: "▸ "; }
+.rules-footnote-details[open] .rules-footnote-summary::before { content: "▾ "; }
+.rules-footnote-summary:hover { color: var(--accent); }
 .rule-list-heading {
   display: flex;
   align-items: center;

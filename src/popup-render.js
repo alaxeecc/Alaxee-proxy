@@ -60,6 +60,10 @@ export function createUi() {
     siteHint: $("siteHint"),
     notice: $("notice"),
     openSettings: $("openSettingsButton"),
+    configPanel: $("configPanel"),
+    ruleAddArea: $("ruleAddArea"),
+    toggleAddRule: $("toggleAddRuleButton"),
+    bypassPanel: $("bypassPanel"),
     statusPermissionButton: $("statusPermissionButton"),
     statusPermissionHint: $("statusPermissionHint"),
     brandMark: $("brandMark"),
@@ -265,8 +269,37 @@ export function renderEndpointLine(ui, settings) {
 /** The small "未配置 / 已配置" tag in the server card heading. */
 export function renderEndpointTag(ui, settings) {
   const configured = isConfigured(settings);
-  ui.endpointTag.textContent = configured ? "已配置" : "未配置";
+  // The panel collapses, so this tag is the only thing visible when it is shut. It
+  // shows the current endpoint rather than just "configured", otherwise the user has
+  // to open the panel to read a value that never changes.
+  ui.endpointTag.textContent = configured
+    ? `${settings.scheme}://${settings.host}:${settings.port}`
+    : "未配置";
   ui.endpointTag.parentElement.dataset.state = configured ? "set" : "unset";
+}
+
+/**
+ * Keeps a collapsed panel honest.
+ *
+ * Collapsing is only safe if the reason to open the panel is visible from the
+ * summary. A panel that needs attention therefore gets a marker, and - when the
+ * extension ships with no endpoint at all - the setup panel opens itself.
+ */
+export function renderCollapsedPanels(ui, settings) {
+  const configPanel = ui.configPanel;
+  if (configPanel) {
+    const needsSetup = !isConfigured(settings);
+    configPanel.classList.toggle("needs-attention", needsSetup);
+    // Opening on a first run is not a nudge, it is the only actionable thing on the
+    // screen. Once a value is stored it stays closed unless the user opens it.
+    if (needsSetup) configPanel.open = true;
+  }
+  const bypassPanel = ui.bypassPanel;
+  if (bypassPanel) {
+    // The bypass switch is on by default and turning it off is the risky direction,
+    // so that is what the collapsed summary has to flag.
+    bypassPanel.classList.toggle("needs-attention", settings.localBypass === false);
+  }
 }
 
 export function renderModes(ui, activeMode, settings) {

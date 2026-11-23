@@ -47,6 +47,7 @@ import {
   createUi,
   renderConnectionFields,
   renderCurrentPage as renderCurrentPageView,
+  renderCollapsedPanels as renderCollapsedPanelsView,
   renderEndpointLine,
   renderEndpointTag,
   renderLocalBypass,
@@ -117,7 +118,14 @@ function renderModes() {
   renderEndpointTag(ui, settings);
 }
 
+function renderCollapsedPanels() {
+  renderCollapsedPanelsView(ui, settings);
+}
+
 function renderRules() {
+  // Cheap and idempotent: keeps collapsed panels' attention state in step with the
+  // settings on every render path instead of at each call site.
+  renderCollapsedPanels();
   renderRulesView(ui, {
     settings,
     activeRuleType,
@@ -874,6 +882,16 @@ async function initialize() {
   });
   ui.localBypassToggle.addEventListener("change", () => {
     void toggleLocalBypass();
+  });
+
+  // The add form is folded away on this view; keeping focus in the host field when it
+  // opens is what makes the extra click worth it.
+  ui.toggleAddRule.addEventListener("click", () => {
+    const open = ui.ruleAddArea.hidden;
+    ui.ruleAddArea.hidden = !open;
+    ui.toggleAddRule.setAttribute("aria-expanded", String(open));
+    ui.toggleAddRule.textContent = open ? "收起" : "＋ 添加";
+    if (open) ui.ruleHostInput.focus();
   });
 
   ui.statusPermissionButton.addEventListener("click", () => {

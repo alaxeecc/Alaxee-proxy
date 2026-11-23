@@ -81,41 +81,49 @@
           </button>
         </div>
         <p class="endpoint-line" id="endpointLine">尚未填写代理服务器地址</p>
-        <p id="modeHelp" class="inline-help">普通网站交给代理服务器，域名规则可以为指定网站设置直连或强制走代理。</p>
-      </section>
-
-      <section class="config-panel" aria-labelledby="configTitle">
-        <div class="section-heading compact-heading">
-          <div><div class="eyebrow">PROXY SERVER</div><h2 id="configTitle">代理服务器</h2></div>
-          <span class="local-tag"><span></span><span id="endpointTag">未配置</span></span>
-        </div>
-        <div class="field-grid">
-          <label class="field field-scheme"><span>协议</span>
-            <select id="schemeInput">
-              <option value="socks5">SOCKS5</option>
-              <option value="http">HTTP</option>
-            </select>
-          </label>
-          <label class="field field-host"><span>地址</span><input id="hostInput" type="text" value="" autocomplete="off" spellcheck="false" placeholder="127.0.0.1"></label>
-          <label class="field field-port"><span>端口</span><input id="portInput" type="number" min="1" max="65535" step="1" value="" inputmode="numeric" placeholder="7890"></label>
-        </div>
-        <div id="portSuggestions" class="port-chips" aria-label="常见端口，点击填入"></div>
-        <div class="quick-fill">
-          <label class="search-field">
-            <span class="search-icon" aria-hidden="true">⌁</span>
-            <input id="pasteAddressInput" type="text" autocomplete="off" spellcheck="false"
-                   placeholder="粘贴地址，如 127.0.0.1:7890 或 socks5://127.0.0.1:7890" aria-label="粘贴代理地址">
-          </label>
-          <button id="pasteAddressButton" class="secondary-button" type="button">识别</button>
-        </div>
-        <p class="microcopy" id="pasteAddressHint" hidden></p>
-        <button id="saveConnectButton" class="primary-button" type="button">保存并启用代理</button>
-        <p class="microcopy" id="connectHint">填你代理软件监听的本机地址和端口。列出的端口只是常见默认值，请以代理软件界面显示的「本地监听 / Mixed 端口」为准。控制面板端口（如 9090）不转发流量，填它没用。</p>
-        <details class="troubleshoot" id="troubleshoot">
-          <summary>填了端口但不生效？</summary>
-          <ol id="troubleshootList"></ol>
+        <details class="mode-help-details">
+          <summary class="rules-footnote-summary">这两种模式有什么区别</summary>
+          <p id="modeHelp" class="inline-help">普通网站交给代理服务器，域名规则可以为指定网站设置直连或强制走代理。</p>
         </details>
       </section>
+
+      <details class="config-panel panel-collapsible" id="configPanel">
+        <summary class="section-heading compact-heading panel-summary">
+          <div><div class="eyebrow">PROXY SERVER</div><h2 id="configTitle">代理服务器</h2></div>
+          <span class="summary-meta">
+            <span class="local-tag"><span></span><span id="endpointTag">未配置</span></span>
+            <span class="chevron" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div class="panel-body">
+          <div class="field-grid">
+            <label class="field field-scheme"><span>协议</span>
+              <select id="schemeInput">
+                <option value="socks5">SOCKS5</option>
+                <option value="http">HTTP</option>
+              </select>
+            </label>
+            <label class="field field-host"><span>地址</span><input id="hostInput" type="text" value="" autocomplete="off" spellcheck="false" placeholder="127.0.0.1"></label>
+            <label class="field field-port"><span>端口</span><input id="portInput" type="number" min="1" max="65535" step="1" value="" inputmode="numeric" placeholder="7890"></label>
+          </div>
+          <div id="portSuggestions" class="port-chips" aria-label="常见端口，点击填入"></div>
+          <div class="quick-fill">
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true">⌁</span>
+              <input id="pasteAddressInput" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="粘贴地址，如 127.0.0.1:7890 或 socks5://127.0.0.1:7890" aria-label="粘贴代理地址">
+            </label>
+            <button id="pasteAddressButton" class="secondary-button" type="button">识别</button>
+          </div>
+          <p class="microcopy" id="pasteAddressHint" hidden></p>
+          <button id="saveConnectButton" class="primary-button" type="button">保存并启用代理</button>
+          <p class="microcopy" id="connectHint">填你代理软件监听的本机地址和端口。列出的端口只是常见默认值，请以代理软件界面显示的「本地监听 / Mixed 端口」为准。控制面板端口（如 9090）不转发流量，填它没用。</p>
+          <details class="troubleshoot" id="troubleshoot">
+            <summary>填了端口但不生效？</summary>
+            <ol id="troubleshootList"></ol>
+          </details>
+        </div>
+      </details>
 
       <section class="site-panel" aria-labelledby="siteTitle">
         <div class="section-heading compact-heading">
@@ -141,18 +149,23 @@
         <p id="siteHint" class="microcopy">黑名单强制走代理，优先级高于直连白名单。</p>
       </section>
 
-      <section class="bypass-panel" aria-labelledby="bypassTitle">
-        <div class="section-heading compact-heading">
+      <details class="bypass-panel panel-collapsible" id="bypassPanel">
+        <summary class="section-heading compact-heading panel-summary">
           <div><div class="eyebrow">LOCAL ADDRESSES</div><h2 id="bypassTitle">本机地址</h2></div>
-          <span class="local-tag"><span></span><span id="bypassTag">直接连接</span></span>
+          <span class="summary-meta">
+            <span class="local-tag"><span></span><span id="bypassTag">直接连接</span></span>
+            <span class="chevron" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div class="panel-body">
+          <label class="check-row">
+            <input id="localBypassToggle" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
+            <span>本机地址始终直连，不经过代理服务器</span>
+          </label>
+          <p class="microcopy">包括 localhost、127.0.0.1、::1、*.local 和没带点的主机名。内网 IP（如 192.168.x.x）不受影响，因为公司代理通常正是访问内网的唯一通道。</p>
+          <p class="microcopy warning-text" id="bypassWarning" hidden>关闭后，本机网页会先交给代理服务器。如果代理软件没有放行这些地址，你会打不开本地开发服务器或路由器管理页。</p>
         </div>
-        <label class="check-row">
-          <input id="localBypassToggle" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
-          <span>本机地址始终直连，不经过代理服务器</span>
-        </label>
-        <p class="microcopy">包括 localhost、127.0.0.1、::1、*.local 和没带点的主机名。内网 IP（如 192.168.x.x）不受影响，因为公司代理通常正是访问内网的唯一通道。</p>
-        <p class="microcopy warning-text" id="bypassWarning" hidden>关闭后，本机网页会先交给代理服务器。如果代理软件没有放行这些地址，你会打不开本地开发服务器或路由器管理页。</p>
-      </section>
+      </details>
     </div>
 
     <div id="rulesView" class="popup-view" hidden>
@@ -165,18 +178,23 @@
           <button id="whitelistTab" class="rule-tab" type="button" aria-pressed="true">直连白名单</button>
           <button id="blacklistTab" class="rule-tab" type="button" aria-pressed="false">代理黑名单</button>
         </div>
-        <p id="ruleDescription" class="inline-help">命中白名单的网站会绕过浏览器代理，直接连接。</p>
-        <form id="ruleForm" class="rule-form">
-          <label class="field"><span>添加域名</span><input id="ruleHostInput" type="text" autocomplete="off" spellcheck="false" placeholder="example.com"></label>
-          <button id="addRuleButton" class="secondary-button" type="submit">添加规则</button>
-        </form>
-        <label class="check-row rule-subdomain-row">
-          <input id="ruleIncludeSubdomainsInput" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
-          <span>同时应用到它的子域名</span>
-        </label>
         <div class="rule-list-heading">
           <span id="activeRuleTitle">直连白名单</span>
-          <button id="clearRulesButton" class="text-button danger-text" type="button" hidden>清空</button>
+          <span class="rule-heading-actions">
+            <button id="toggleAddRuleButton" class="text-button" type="button" aria-expanded="false" aria-controls="ruleAddArea">＋ 添加</button>
+            <button id="clearRulesButton" class="text-button danger-text" type="button" hidden>清空</button>
+          </span>
+        </div>
+        <div id="ruleAddArea" class="rule-add-area" hidden>
+          <p id="ruleDescription" class="inline-help">命中白名单的网站会绕过浏览器代理，直接连接。</p>
+          <form id="ruleForm" class="rule-form">
+            <label class="field"><span>添加域名</span><input id="ruleHostInput" type="text" autocomplete="off" spellcheck="false" placeholder="example.com"></label>
+            <button id="addRuleButton" class="secondary-button" type="submit">添加规则</button>
+          </form>
+          <label class="check-row rule-subdomain-row">
+            <input id="ruleIncludeSubdomainsInput" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
+            <span>同时应用到它的子域名</span>
+          </label>
         </div>
         <div class="rule-toolbar">
           <label class="search-field">
@@ -204,7 +222,10 @@
           <span class="empty-subtitle">换个关键词，或清空搜索框</span>
         </div>
         <ul id="rulesList" class="whitelist-list" aria-label="域名规则列表"></ul>
-        <p class="rules-footnote">黑名单表示强制经代理服务器；白名单表示浏览器直连。两类规则重叠时黑名单优先。本机地址始终直连，不受这里的规则影响。</p>
+        <details class="rules-footnote-details">
+          <summary class="rules-footnote-summary">规则如何生效</summary>
+          <p class="rules-footnote">黑名单表示强制经代理服务器；白名单表示浏览器直连。两类规则重叠时黑名单优先。本机地址始终直连，不受这里的规则影响。</p>
+        </details>
       </section>
 
       <section id="syncPanel" class="sync-panel" aria-labelledby="syncTitle">

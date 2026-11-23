@@ -28,6 +28,8 @@ import {
   renderRestorePlan,
   renderRuleCounts,
   renderRuleTab,
+  renderCollapsedPanels,
+  renderEndpointTag,
   renderRules,
   renderStatusPermission,
   ROUTE_LABELS,
@@ -85,6 +87,23 @@ const BASE = {
   whitelist: [],
   blacklist: []
 };
+
+const element = () => ({
+  textContent: "", className: "", hidden: false, open: false, disabled: false,
+  dataset: {}, attributes: {},
+  classList: {
+    values: new Set(),
+    toggle(name, force) {
+      const on = force === undefined ? !this.values.has(name) : Boolean(force);
+      if (on) this.values.add(name); else this.values.delete(name);
+      return on;
+    },
+    contains(name) { return this.values.has(name); }
+  },
+  setAttribute(name, value) { this.attributes[name] = value; },
+  append() {}, replaceChildren() {}
+});
+const panel = () => ({ ...element(), open: false, classList: element().classList });
 
 /** Minimal stand-in for the elements renderCurrentPage writes to. */
 function fakeUi() {
@@ -682,4 +701,46 @@ test("a notice without an action does not grow a button", () => {
   });
   assert.equal(timers[0], 4600, "plain confirmations keep the short lifetime");
   assert.equal(notice.kids.length, 0);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Collapsed panels                                                           */
+/* -------------------------------------------------------------------------- */
+
+test("a panel that needs setup opens itself and is flagged", () => {
+  // Collapsing a panel is only safe if the reason to open it stays visible. With no
+  // endpoint configured, the setup panel is the only actionable thing on screen.
+  const ui = { configPanel: panel(), bypassPanel: panel() };
+  renderCollapsedPanels(ui, { ...BASE, host: "", port: "" });
+  assert.equal(ui.configPanel.open, true, "setup panel must open on a first run");
+  assert.equal(ui.configPanel.classList.contains("needs-attention"), true);
+});
+
+test("a configured panel stays closed and quiet", () => {
+  const ui = { configPanel: panel(), bypassPanel: panel() };
+  renderCollapsedPanels(ui, BASE);
+  assert.notEqual(ui.configPanel.open, true);
+  assert.equal(ui.configPanel.classList.contains("needs-attention"), false);
+});
+
+test("disabling the local bypass flags the collapsed panel", () => {
+  // Turning it off is the risky direction and the switch lives inside the fold, so
+  // the summary has to say something is different.
+  const ui = { configPanel: panel(), bypassPanel: panel() };
+  renderCollapsedPanels(ui, { ...BASE, localBypass: false });
+  assert.equal(ui.bypassPanel.classList.contains("needs-attention"), true);
+  const second = { configPanel: panel(), bypassPanel: panel() };
+  renderCollapsedPanels(second, { ...BASE, localBypass: true });
+  assert.equal(second.bypassPanel.classList.contains("needs-attention"), false);
+});
+
+test("the collapsed endpoint tag shows the endpoint, not just 'configured'", () => {
+  // The tag is the only thing readable while the panel is shut; 'configured' would
+  // force opening it to see a value that never changes.
+  const ui = { endpointTag: { ...element(), parentElement: element() } };
+  renderEndpointTag(ui, BASE);
+  assert.match(ui.endpointTag.textContent, /127\.0\.0\.1:7890/);
+  const unset = { endpointTag: { ...element(), parentElement: element() } };
+  renderEndpointTag(unset, { ...BASE, host: "", port: "" });
+  assert.equal(unset.endpointTag.textContent, "未配置");
 });
