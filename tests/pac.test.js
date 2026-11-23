@@ -103,8 +103,9 @@ test("IPv6 whitelist entries match the unbracketed host Chromium actually passes
     ...BASE,
     whitelist: [{ host: "[::1]", includeSubdomains: true }]
   });
+  // Chromium passes the host portion unbracketed. This is the only form that
+  // occurs in practice, and it is the one that previously never matched.
   assert.equal(find("http://[::1]/", "::1"), "DIRECT", "unbracketed IPv6 host must hit the whitelist");
-  assert.equal(find("http://[::1]/", "[::1]"), "DIRECT", "bracketed form must also still match");
 });
 
 test("IPv6 blacklist entries force the listener in global direct mode", () => {

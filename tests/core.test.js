@@ -109,9 +109,12 @@ test("Clash mode creates mandatory PAC rules with direct whitelist and force-pro
   const config = buildChromeProxyConfig(settings);
   assert.equal(config.mode, "pac_script");
   assert.equal(config.pacScript.mandatory, true);
-  assert.match(config.pacScript.data, /if \(matches\(host, forceProxyRules\)\) return "PROXY 127\.0\.0\.1:7890"/);
-  assert.match(config.pacScript.data, /if \(matches\(host, allowRules\)\) return "DIRECT"/);
-  assert.match(config.pacScript.data, /return "PROXY 127\.0\.0\.1:7890"/);
+  // Behaviour is asserted by executing the PAC in tests/pac.test.js; here we only
+  // check that the generated script carries both rule sets and the endpoint.
+  const find = new Function(`${config.pacScript.data}\nreturn FindProxyForURL;`)();
+  assert.equal(find("https://direct.example/", "direct.example"), "DIRECT");
+  assert.equal(find("https://force.example/", "force.example"), "PROXY 127.0.0.1:7890");
+  assert.equal(find("https://other.example/", "other.example"), "PROXY 127.0.0.1:7890");
 });
 
 test("global direct mode uses PAC only when blacklist exceptions exist", () => {
@@ -124,8 +127,9 @@ test("global direct mode uses PAC only when blacklist exceptions exist", () => {
     blacklist: [{ host: "force.example", includeSubdomains: true }]
   });
   assert.equal(withBlacklist.mode, "pac_script");
-  assert.match(withBlacklist.pacScript.data, /if \(matches\(host, forceProxyRules\)\) return "PROXY 127\.0\.0\.1:7890"/);
-  assert.match(withBlacklist.pacScript.data, /return "DIRECT"/);
+  const find = new Function(`${withBlacklist.pacScript.data}\nreturn FindProxyForURL;`)();
+  assert.equal(find("https://force.example/", "force.example"), "PROXY 127.0.0.1:7890");
+  assert.equal(find("https://normal.example/", "normal.example"), "DIRECT");
 });
 
 test("blacklist has priority over a broader whitelist when rules overlap", () => {

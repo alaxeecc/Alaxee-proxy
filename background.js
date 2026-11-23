@@ -319,24 +319,65 @@ function refreshAllSafely() {
   });
 }
 
+// A single user action fans out into several events: proxy.settings.onChange,
+// plus two storage writes because the popup persists and then applies. Refreshing
+// on each one multiplied the work - each refresh reads state and re-derives the
+// route for every open tab. Coalesce them into one refresh per burst.
+let pendingRefresh = null;
+
+function scheduleRefresh(delayMs = 0) {
+  if (pendingRefresh !== null) return;
+  pendingRefresh = setTimeout(() => {
+    pendingRefresh = null;
+    refreshAllSafely();
+  }, delayMs);
+}
+
+// Cancel a queued refresh and run it now, so a burst never leaves the icons stale.
+function refreshNow() {
+  if (pendingRefresh !== null) {
+    clearTimeout(pendingRefresh);
+    pendingRefresh = null;
+  }
+  refreshAllSafely();
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id || message?.type !== "SYNC_ALL_TABS") return;
+
+  // An explicit sync supersedes any coalesced refresh that is still queued.
+  if (pendingRefresh !== null) {
+    clearTimeout(pendingRefresh);
+    pendingRefresh = null;
+  }
+
+  const reply = (payload) => {
+    // The popup may be closing (pagehide) when it asks for this sync, in which
+    // case the response port is already gone and replying throws.
+    try {
+      sendResponse(payload);
+    } catch {
+      // Nothing to report to; the icons were still updated.
+    }
+  };
+
   refreshAllTabs()
-    .then(() => sendResponse({ ok: true }))
-    .catch((error) => sendResponse({ ok: false, error: error?.message ?? "sync_failed" }));
+    .then(() => reply({ ok: true }))
+    .catch((error) => reply({ ok: false, error: error?.message ?? "sync_failed" }));
   return true;
 });
 
-chrome.runtime.onInstalled.addListener(refreshAllSafely);
-chrome.runtime.onStartup.addListener(refreshAllSafely);
+chrome.runtime.onInstalled.addListener(refreshNow);
+chrome.runtime.onStartup.addListener(refreshNow);
 
-chrome.proxy.settings.onChange.addListener(refreshAllSafely);
+// Proxy and storage changes arrive in bursts, so they are coalesced.
+chrome.proxy.settings.onChange.addListener(() => scheduleRefresh(60));
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes.settings) refreshAllSafely();
+  if (areaName === "local" && changes.settings) scheduleRefresh(60);
 });
 
-chrome.permissions.onAdded.addListener(refreshAllSafely);
-chrome.permissions.onRemoved.addListener(refreshAllSafely);
+chrome.permissions.onAdded.addListener(refreshNow);
+chrome.permissions.onRemoved.addListener(refreshNow);
 
 chrome.tabs.onActivated.addListener(({ tabId }) => {
   void hasTabsPermission()

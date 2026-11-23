@@ -8,7 +8,9 @@ import {
   isHostBlacklisted,
   isHostWhitelisted,
   normalizeBlacklist,
+  normalizeDomainEntriesStrict,
   normalizeWhitelist,
+  RuleLimitError,
   resolveTabRoute,
   validateProxySettings
 } from "./core.js";
@@ -131,14 +133,22 @@ async function loadSettings() {
 }
 
 async function saveSettings(nextSettings) {
-  settings = {
-    ...settings,
-    ...nextSettings,
-    whitelist: normalizeWhitelist(nextSettings.whitelist ?? settings.whitelist),
-    blacklist: normalizeBlacklist(nextSettings.blacklist ?? settings.blacklist)
-  };
+  // Throws RuleLimitError instead of silently dropping entries past the cap.
+  // The throw happens before any write, so a rejected edit leaves state intact.
+  const whitelist = normalizeDomainEntriesStrict(nextSettings.whitelist ?? settings.whitelist);
+  const blacklist = normalizeDomainEntriesStrict(nextSettings.blacklist ?? settings.blacklist);
+  settings = { ...settings, ...nextSettings, whitelist, blacklist };
   await chromeCall(chrome.storage.local, "set", { settings });
   syncRuleCounts();
+}
+
+/** Reports a failed rule edit in the user's language, naming the actual limit. */
+function reportRuleError(error) {
+  if (error instanceof RuleLimitError) {
+    sendNotice(error.message, "error");
+    return;
+  }
+  sendNotice(`操作失败：${error.message}`, "error");
 }
 
 async function getCurrentTab() {
@@ -347,12 +357,14 @@ async function persistWithoutApplying(nextSettings, message) {
 }
 
 async function applyMode(mode, overrides = {}) {
+  // Normalised strictly so an over-cap edit fails before the proxy is touched.
+  // Throws RuleLimitError, leaving both storage and the browser proxy unchanged.
   const next = {
     ...settings,
     ...overrides,
     mode,
-    whitelist: normalizeWhitelist(overrides.whitelist ?? settings.whitelist),
-    blacklist: normalizeBlacklist(overrides.blacklist ?? settings.blacklist)
+    whitelist: normalizeDomainEntriesStrict(overrides.whitelist ?? settings.whitelist),
+    blacklist: normalizeDomainEntriesStrict(overrides.blacklist ?? settings.blacklist)
   };
 
   const proxyConfig = buildChromeProxyConfig(next);
@@ -387,7 +399,8 @@ async function addDomainRule(type, host, includeSubdomains = true) {
       sendNotice(`${normalized.host} 的规则已保存在本机，但浏览器代理正由其他程序控制，Alaxee Proxy 没有覆盖它。`, "warning");
     }
   } else {
-    await saveSettings(next);
+    // applyMode persists and applies in one pass; saving here first would have
+    // written storage twice and cost a second full tab refresh.
     await applyMode(activeMode, next);
     sendNotice(`${normalized.host} 已加入${type === "blacklist" ? "代理黑名单" : "直连白名单"}。`, "success");
   }
@@ -402,7 +415,6 @@ async function removeDomainRule(host, type) {
     await persistWithoutApplying({ [key]: nextEntries }, message);
     if (!activeMode) sendNotice(`${message}。代理设置由其他程序控制，因此没有更改浏览器代理。`, "warning");
   } else {
-    await saveSettings({ [key]: nextEntries });
     await applyMode(activeMode, { [key]: nextEntries });
     sendNotice(`${message}。`, "success");
   }
@@ -416,7 +428,6 @@ async function clearActiveRules() {
     await persistWithoutApplying(next, activeRuleType === "blacklist" ? "代理黑名单已清空" : "直连白名单已清空");
     if (!activeMode) sendNotice("规则已清空；当前浏览器代理由其他程序控制，未更改其设置。", "warning");
   } else {
-    await saveSettings(next);
     await applyMode(activeMode, next);
     sendNotice(activeRuleType === "blacklist" ? "代理黑名单已清空。" : "直连白名单已清空。", "success");
   }
@@ -431,7 +442,7 @@ async function addCurrentRule(type, permissionResult = true) {
       sendNotice("规则已保存，但未启用逐网页图标权限；工具栏暂时无法逐网页区分代理状态。", "warning");
     }
   } catch (error) {
-    sendNotice(`添加规则失败：${error.message}`, "error");
+    reportRuleError(error);
   }
 }
 
@@ -461,7 +472,7 @@ async function addManualRule(tabsPermissionGranted = null) {
       sendNotice("规则已保存；但逐网页图标权限未开启，工具栏暂时显示未知状态。", "warning");
     }
   } catch (error) {
-    sendNotice(`添加失败：${error.message}`, "error");
+    reportRuleError(error);
   }
 }
 
@@ -525,7 +536,7 @@ async function initialize() {
     requestTabsPermissionAndRun((granted) => addManualRule(granted));
   });
   ui.clearRules.addEventListener("click", () => {
-    void clearActiveRules().catch((error) => sendNotice(`清空失败：${error.message}`, "error"));
+    void clearActiveRules().catch(reportRuleError);
   });
 
   ui.statusPermissionButton.addEventListener("click", () => {
@@ -581,7 +592,7 @@ async function initialize() {
         await removeDomainRule(currentHostname, "whitelist");
       }
     } catch (error) {
-      sendNotice(`移除规则失败：${error.message}`, "error");
+      reportRuleError(error);
     }
   });
   ui.includeSubdomains.addEventListener("change", () => {
@@ -589,5 +600,16 @@ async function initialize() {
       .catch((error) => sendNotice(`保存选项失败：${error.message}`, "error"));
   });
 }
+
+// The service worker coalesces proxy and storage events into one refresh shortly
+// after they arrive. When the popup closes right after an edit, ask for an
+// immediate sync so the toolbar icon never stays on the previous state.
+window.addEventListener("pagehide", () => {
+  try {
+    chrome.runtime.sendMessage({ type: "SYNC_ALL_TABS" });
+  } catch {
+    // The worker may already be idle; the coalesced refresh still covers it.
+  }
+});
 
 initialize();
