@@ -31,3 +31,14 @@ jobs:
         run: python -m json.tool manifest.json >/dev/null
       - name: Build extension package
         run: npm run package:extension
+
+      # Every push produces a downloadable zip, so reviewing a change does not
+      # require a local Node/Python toolchain. Loading it is still one-time; see the
+      # install section of README for why reinstalling is not needed.
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: alaxee-proxy-${{ github.sha }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30

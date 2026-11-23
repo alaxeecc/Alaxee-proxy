@@ -1,0 +1,20 @@
+# Build output from scripts/package-extension.py
+dist/
+*.zip
+
+# Python bytecode (the packager is a Python script)
+__pycache__/
+*.py[cod]
+
+# Node (the project has no runtime dependencies, but keep these out anyway)
+node_modules/
+npm-debug.log*
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Baseline worktree created by scripts/preview-compare.mjs
+.preview-baseline/

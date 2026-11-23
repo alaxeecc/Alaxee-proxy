@@ -24,7 +24,7 @@
                 <stop stop-color="#8D8CFF"/><stop offset=".48" stop-color="#D99CFF"/><stop offset="1" stop-color="#69DDF2"/>
               </linearGradient>
             </defs>
-            <g class="route-shape route-clash">
+            <g class="route-shape route-proxy">
               <path class="route-orbit" d="M7.7 29.5C8.5 17.4 19.1 7.4 31.5 9.1c12.3 1.7 14.7 14.8 7.6 24.8-7.5 10.6-24 10.7-30.5.6-1.3-1.8-1.7-3.6-.9-5Z"/>
               <circle class="route-node node-one" cx="8.6" cy="29.7" r="3"/>
               <circle class="route-node node-two" cx="23.9" cy="41.1" r="3"/>
@@ -34,10 +34,6 @@
               <path class="direct-path" d="M6.8 37.1c7.9 4.5 19 2 24.3-11.1 4.4-10.7 8-15.5 13.2-20.1"/>
               <path class="direct-arrow" d="m36.8 6.2 7.3-.3-.2 7.3"/>
               <circle class="route-node" cx="7.3" cy="37.2" r="1.8"/>
-            </g>
-            <g class="route-shape route-system">
-              <path class="system-loop" d="M6 24C6 7 18 6 24 24s18 17 18 0S30 6 24 24 6 41 6 24Z"/>
-              <circle class="route-node" cx="6.2" cy="24" r="2.6"/><circle class="route-node" cx="41.8" cy="24" r="2.6"/>
             </g>
             <g class="route-shape route-unknown">
               <path class="unknown-orbit" d="M7.5 29.5C7 21.1 13.6 11.8 23 8.8M31.3 8.8c6.8 2.3 10.5 8.1 10.2 14.7M39.5 30.2c-3.9 7.5-12.3 12-20.7 10.1M11.3 37.1Q8.5 34.7 7.6 31"/>
@@ -50,7 +46,7 @@
         </div>
         <div>
           <div class="brand-name">ALAXEE <span>PROXY</span></div>
-          <div class="brand-caption">轻量浏览器代理控制</div>
+          <div class="brand-caption">浏览器代理 · 按域名分流</div>
         </div>
       </div>
       <div class="header-actions">
@@ -62,16 +58,7 @@
     <section id="fullPageIntro" class="full-page-intro" hidden aria-labelledby="fullPageTitle">
       <div class="eyebrow">ALAXEE PROXY · CONTROL CENTER</div>
       <h1 id="fullPageTitle">完整代理设置</h1>
-      <p>在同一个页面管理代理模式、本机连接、当前网站路由，以及直连白名单和强制代理黑名单。</p>
-    </section>
-
-    <section class="status-permission-panel" aria-label="逐网页状态">
-      <div class="status-permission-copy">
-        <span class="eyebrow">PER-TAB STATUS</span>
-        <strong>图标显示当前网页实际走哪条路由</strong>
-        <small id="statusPermissionHint">区分交给 Clash、白名单直连、黑名单强制代理和系统代理。</small>
-      </div>
-      <button id="statusPermissionButton" class="status-permission-button" type="button">启用逐网页显示</button>
+      <p>在同一个页面管理代理模式、代理服务器地址、当前网站路由，以及直连白名单和强制代理黑名单。</p>
     </section>
 
     <nav class="view-nav" aria-label="面板导航">
@@ -82,41 +69,61 @@
     <div id="overviewView" class="popup-view">
       <section class="mode-panel" aria-labelledby="modeTitle">
         <div class="section-heading">
-          <div><div class="eyebrow">CONNECTION</div><h1 id="modeTitle">代理模式</h1></div>
+          <div><div class="eyebrow">ROUTING</div><h1 id="modeTitle">默认路由</h1></div>
           <span class="subtle-label">仅影响 Edge</span>
         </div>
-        <div class="mode-grid" role="group" aria-label="代理模式">
-          <button class="mode-button" type="button" data-mode="clash" aria-pressed="true">
-            <span class="mode-icon">↗</span><span class="mode-title">Clash 代理</span><span class="mode-hint">默认交给 Clash</span>
+        <div class="mode-grid" id="modeGrid" role="group" aria-label="默认路由">
+          <button class="mode-button" type="button" data-mode="proxy" aria-pressed="true">
+            <span class="mode-icon">↗</span><span class="mode-title">走代理服务器</span><span class="mode-hint">白名单例外直连</span>
           </button>
           <button class="mode-button" type="button" data-mode="direct" aria-pressed="false">
-            <span class="mode-icon">○</span><span class="mode-title">直接连接</span><span class="mode-hint">黑名单例外走 Clash</span>
-          </button>
-          <button class="mode-button mode-button-wide" type="button" data-mode="system" aria-pressed="false">
-            <span class="mode-icon">◌</span><span class="mode-title">跟随系统代理</span><span class="mode-hint">此模式暂不应用域名规则</span>
+            <span class="mode-icon">○</span><span class="mode-title">直接连接</span><span class="mode-hint">黑名单例外走代理</span>
           </button>
         </div>
-        <p id="modeHelp" class="inline-help">普通网站交给 Clash，域名规则可以为指定网站设置直连或强制代理。</p>
+        <p class="endpoint-line" id="endpointLine">尚未填写代理服务器地址</p>
+        <details class="mode-help-details">
+          <summary class="rules-footnote-summary">这两种模式有什么区别</summary>
+          <p id="modeHelp" class="inline-help">普通网站交给代理服务器，域名规则可以为指定网站设置直连或强制走代理。</p>
+        </details>
       </section>
 
-      <section class="config-panel" aria-labelledby="configTitle">
-        <div class="section-heading compact-heading">
-          <div><div class="eyebrow">LOCAL CLASH / MIHOMO</div><h2 id="configTitle">连接设置</h2></div>
-          <span class="local-tag"><span></span>本机连接</span>
+      <details class="config-panel panel-collapsible" id="configPanel">
+        <summary class="section-heading compact-heading panel-summary">
+          <div><div class="eyebrow">PROXY SERVER</div><h2 id="configTitle">代理服务器</h2></div>
+          <span class="summary-meta">
+            <span class="local-tag"><span></span><span id="endpointTag">未配置</span></span>
+            <span class="chevron" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div class="panel-body">
+          <div class="field-grid">
+            <label class="field field-scheme"><span>协议</span>
+              <select id="schemeInput">
+                <option value="socks5">SOCKS5</option>
+                <option value="http">HTTP</option>
+              </select>
+            </label>
+            <label class="field field-host"><span>地址</span><input id="hostInput" type="text" value="" autocomplete="off" spellcheck="false" placeholder="127.0.0.1"></label>
+            <label class="field field-port"><span>端口</span><input id="portInput" type="number" min="1" max="65535" step="1" value="" inputmode="numeric" placeholder="7890"></label>
+          </div>
+          <div id="portSuggestions" class="port-chips" aria-label="常见端口，点击填入"></div>
+          <div class="quick-fill">
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true">⌁</span>
+              <input id="pasteAddressInput" type="text" autocomplete="off" spellcheck="false"
+                     placeholder="粘贴地址，如 127.0.0.1:7890 或 socks5://127.0.0.1:7890" aria-label="粘贴代理地址">
+            </label>
+            <button id="pasteAddressButton" class="secondary-button" type="button">识别</button>
+          </div>
+          <p class="microcopy" id="pasteAddressHint" hidden></p>
+          <button id="saveConnectButton" class="primary-button" type="button">保存并启用代理</button>
+          <p class="microcopy" id="connectHint">填你代理软件监听的本机地址和端口。列出的端口只是常见默认值，请以代理软件界面显示的「本地监听 / Mixed 端口」为准。控制面板端口（如 9090）不转发流量，填它没用。</p>
+          <details class="troubleshoot" id="troubleshoot">
+            <summary>填了端口但不生效？</summary>
+            <ol id="troubleshootList"></ol>
+          </details>
         </div>
-        <div class="field-grid">
-          <label class="field field-scheme"><span>代理协议</span>
-            <select id="schemeInput">
-              <option value="socks5">SOCKS5（推荐：Mixed / SOCKS5 端口）</option>
-              <option value="http">HTTP（Mixed / HTTP 端口）</option>
-            </select>
-          </label>
-          <label class="field field-host"><span>服务器地址</span><input id="hostInput" type="text" value="127.0.0.1" autocomplete="off" spellcheck="false" placeholder="127.0.0.1"></label>
-          <label class="field field-port"><span>端口</span><input id="portInput" type="number" min="1" max="65535" step="1" value="7890" inputmode="numeric"></label>
-        </div>
-        <button id="saveConnectButton" class="primary-button" type="button">保存并连接 Clash <span aria-hidden="true">→</span></button>
-        <p class="microcopy">Mixed Port 同时接受 SOCKS5 与 HTTP；默认使用 SOCKS5，不代表协议本身一定更快。端口以 Clash 当前配置为准。</p>
-      </section>
+      </details>
 
       <section class="site-panel" aria-labelledby="siteTitle">
         <div class="section-heading compact-heading">
@@ -136,11 +143,29 @@
         </label>
         <div class="site-actions">
           <button id="addCurrentDirectButton" class="secondary-button" type="button" disabled>＋ 加入直连白名单</button>
-          <button id="addCurrentProxyButton" class="secondary-button force-proxy-button" type="button" disabled>↗ 强制走 Clash</button>
+          <button id="addCurrentProxyButton" class="secondary-button force-proxy-button" type="button" disabled>↗ 强制走代理</button>
           <button id="removeCurrentRuleButton" class="text-button" type="button" hidden>移除当前规则</button>
         </div>
-        <p id="siteHint" class="microcopy">黑名单强制走 Clash，优先级高于直连白名单。</p>
+        <p id="siteHint" class="microcopy">黑名单强制走代理，优先级高于直连白名单。</p>
       </section>
+
+      <details class="bypass-panel panel-collapsible" id="bypassPanel">
+        <summary class="section-heading compact-heading panel-summary">
+          <div><div class="eyebrow">LOCAL ADDRESSES</div><h2 id="bypassTitle">本机地址</h2></div>
+          <span class="summary-meta">
+            <span class="local-tag"><span></span><span id="bypassTag">直接连接</span></span>
+            <span class="chevron" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div class="panel-body">
+          <label class="check-row">
+            <input id="localBypassToggle" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
+            <span>本机地址始终直连，不经过代理服务器</span>
+          </label>
+          <p class="microcopy">包括 localhost、127.0.0.1、::1、*.local 和没带点的主机名。内网 IP（如 192.168.x.x）不受影响，因为公司代理通常正是访问内网的唯一通道。</p>
+          <p class="microcopy warning-text" id="bypassWarning" hidden>关闭后，本机网页会先交给代理服务器。如果代理软件没有放行这些地址，你会打不开本地开发服务器或路由器管理页。</p>
+        </div>
+      </details>
     </div>
 
     <div id="rulesView" class="popup-view" hidden>
@@ -153,31 +178,108 @@
           <button id="whitelistTab" class="rule-tab" type="button" aria-pressed="true">直连白名单</button>
           <button id="blacklistTab" class="rule-tab" type="button" aria-pressed="false">代理黑名单</button>
         </div>
-        <p id="ruleDescription" class="inline-help">命中白名单的网站会绕过浏览器代理，直接连接。</p>
-        <form id="ruleForm" class="rule-form">
-          <label class="field"><span>添加域名</span><input id="ruleHostInput" type="text" autocomplete="off" spellcheck="false" placeholder="example.com"></label>
-          <button id="addRuleButton" class="secondary-button" type="submit">添加规则</button>
-        </form>
-        <label class="check-row rule-subdomain-row">
-          <input id="ruleIncludeSubdomainsInput" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
-          <span>同时应用到它的子域名</span>
-        </label>
         <div class="rule-list-heading">
           <span id="activeRuleTitle">直连白名单</span>
-          <button id="clearRulesButton" class="text-button danger-text" type="button" hidden>清空</button>
+          <span class="rule-heading-actions">
+            <button id="toggleAddRuleButton" class="text-button" type="button" aria-expanded="false" aria-controls="ruleAddArea">＋ 添加</button>
+            <button id="clearRulesButton" class="text-button danger-text" type="button" hidden>清空</button>
+          </span>
+        </div>
+        <div id="ruleAddArea" class="rule-add-area" hidden>
+          <p id="ruleDescription" class="inline-help">命中白名单的网站会绕过浏览器代理，直接连接。</p>
+          <form id="ruleForm" class="rule-form">
+            <label class="field"><span>添加域名</span><input id="ruleHostInput" type="text" autocomplete="off" spellcheck="false" placeholder="example.com"></label>
+            <button id="addRuleButton" class="secondary-button" type="submit">添加规则</button>
+          </form>
+          <label class="check-row rule-subdomain-row">
+            <input id="ruleIncludeSubdomainsInput" type="checkbox" checked><span class="custom-check" aria-hidden="true"></span>
+            <span>同时应用到它的子域名</span>
+          </label>
+        </div>
+        <div class="rule-toolbar">
+          <label class="search-field">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="ruleSearch" type="search" autocomplete="off" spellcheck="false" placeholder="搜索域名" aria-label="搜索域名">
+          </label>
+          <label class="group-toggle" title="按站点分组显示">
+            <input id="ruleGroupToggle" type="checkbox"><span class="custom-check" aria-hidden="true"></span>
+            <span>分组</span>
+          </label>
+          <label class="sort-field">
+            <span class="visually-hidden">排序方式</span>
+            <select id="ruleSort" aria-label="规则排序方式">
+              <option value="recent">最近添加</option>
+              <option value="name">按域名</option>
+            </select>
+          </label>
         </div>
         <div id="rulesEmpty" class="empty-state">
           <span class="empty-icon" aria-hidden="true">⌖</span><span>还没有添加域名</span>
           <span class="empty-subtitle">可以在概览页将当前网站加入规则</span>
         </div>
+        <div id="rulesNoMatch" class="empty-state" hidden>
+          <span class="empty-icon" aria-hidden="true">⌕</span><span>没有匹配的域名</span>
+          <span class="empty-subtitle">换个关键词，或清空搜索框</span>
+        </div>
         <ul id="rulesList" class="whitelist-list" aria-label="域名规则列表"></ul>
-        <p class="rules-footnote">黑名单表示强制经本机 Clash；白名单表示浏览器直连。两类规则重叠时黑名单优先。系统代理模式下两类规则暂不生效。</p>
+        <details class="rules-footnote-details">
+          <summary class="rules-footnote-summary">规则如何生效</summary>
+          <p class="rules-footnote">黑名单表示强制经代理服务器；白名单表示浏览器直连。两类规则重叠时黑名单优先。本机地址始终直连，不受这里的规则影响。</p>
+        </details>
+      </section>
+
+      <section id="syncPanel" class="sync-panel" aria-labelledby="syncTitle">
+        <div class="section-heading compact-heading">
+          <div><div class="eyebrow">SYNC</div><h2 id="syncTitle">跨设备同步</h2></div>
+          <span class="local-tag"><span></span><span id="syncTag">关闭</span></span>
+        </div>
+        <p class="microcopy">开启后，代理设置和域名规则会通过浏览器自带的同步存储，跟同一个账号的其他设备保持一致。不需要注册，也不用任何服务器。</p>
+        <div class="sync-privacy" id="syncPrivacy">
+          <strong>开启前请确认你接受这一点</strong>
+          <p>同步的数据会经过微软的服务器。域名规则会暴露「哪些网站你必须绕过代理」——对使用代理的人来说，这可能正是最敏感的信息。默认关闭，只有你自己打开才会开始上传。</p>
+          <p>不会同步：浏览历史、页面内容、任何网页数据。只同步这个面板里的设置和规则。</p>
+        </div>
+        <div class="sync-actions">
+          <button id="syncEnableButton" class="secondary-button" type="button">我已了解，开启同步</button>
+          <button id="syncDisableButton" class="secondary-button" type="button" hidden>关闭同步</button>
+          <button id="syncNowButton" class="secondary-button" type="button" hidden>立即上传</button>
+        </div>
+        <p id="syncStatus" class="microcopy"></p>
+      </section>
+
+      <section class="status-permission-panel" aria-label="逐网页状态">
+        <div class="status-permission-copy">
+          <span class="eyebrow">PER-TAB STATUS</span>
+          <strong>图标显示当前网页实际走哪条路由</strong>
+          <small id="statusPermissionHint">区分交给代理服务器、白名单直连和黑名单强制走代理。</small>
+        </div>
+        <button id="statusPermissionButton" class="status-permission-button" type="button">启用逐网页显示</button>
+      </section>
+
+      <section class="backup-panel" aria-labelledby="backupTitle">
+        <div class="section-heading compact-heading">
+          <div><div class="eyebrow">BACKUP</div><h2 id="backupTitle">备份与恢复</h2></div>
+          <span class="local-tag"><span></span>仅本地文件</span>
+        </div>
+        <p class="microcopy">设置和规则只存在这台电脑的这个浏览器配置里。导出一个 JSON 文件，可以在重装、换电脑或配置损坏时恢复。</p>
+        <div class="backup-actions">
+          <button id="exportBackupButton" class="secondary-button" type="button">导出 JSON</button>
+          <button id="importBackupButton" class="secondary-button" type="button">从文件恢复</button>
+        </div>
+        <input id="importBackupFile" type="file" accept="application/json,.json" hidden>
+        <div id="restorePreview" class="restore-preview" hidden>
+          <div id="restoreSummary"></div>
+          <div class="restore-actions">
+            <button id="confirmRestoreButton" class="danger-button" type="button">确认替换</button>
+            <button id="cancelRestoreButton" class="secondary-button" type="button">取消</button>
+          </div>
+        </div>
       </section>
     </div>
 
     <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
     <footer class="footer"><span>ALAXEE PROXY</span><span>本地保存 · 无云端服务</span></footer>
   </main>
-  <script type="module" src="popup.js"></script>
+  <script type="module" src="popup-controller.js"></script>
 </body>
 </html>
