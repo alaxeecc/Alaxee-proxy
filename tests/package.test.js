@@ -178,3 +178,30 @@ test("repository keeps its release and privacy documentation", () => {
     assertLocalFile(file, "project document");
   }
 });
+
+test("the settings listener reacts to the sync area without rendering it as local state", async () => {
+  // A peer writing chunks arrives as sync-area storage events. Rendering those as if
+  // they were local settings would bypass the merge entirely, so the handler must
+  // route them to a reconcile instead. This asserts the wiring exists; the merge
+  // behaviour itself is covered in sync.test.js.
+  const controller = await readFile(path.join(root, "src/popup-controller.js"), "utf8");
+  const start = controller.indexOf("function startWatchingOtherSurface()");
+  assert.ok(start > -1);
+  const body = controller.slice(start, controller.indexOf("\n}\n", start));
+  assert.match(body, /areaName === "sync"/, "sync-area changes must be handled");
+  assert.match(body, /scheduleReconcile\(\)/, "sync-area changes must trigger a reconcile");
+  assert.match(body, /areaName !== "local"/, "local handling must stay separate");
+});
+
+test("no module reads the sync area except through sync.js", async () => {
+  // One place decides how the payload is shaped and validated. A second reader would
+  // drift, and a drifted reader is how a truncated rule list gets adopted.
+  const offenders = [];
+  for (const file of ["src/popup-controller.js", "src/popup-render.js", "src/backup.js", "background.js"]) {
+    const source = await readFile(path.join(root, file), "utf8");
+    if (/chrome\.storage\.sync/.test(source) && !file.endsWith("popup-controller.js")) {
+      offenders.push(file);
+    }
+  }
+  assert.deepEqual(offenders, [], "sync reads belong in the controller via sync.js");
+});

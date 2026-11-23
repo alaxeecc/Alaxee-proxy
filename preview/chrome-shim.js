@@ -13,6 +13,7 @@
 (() => {
   const SETTINGS_KEY = "settings";
   const listeners = [];
+  const syncListeners = [];
   let store = {};
 
   // Simulation knobs, overridable from the preview page's query string.
@@ -116,7 +117,12 @@
           return undefined;
         })
       },
-      onChanged: { addListener: (listener) => listeners.push(listener) }
+      onChanged: {
+        addListener: (listener) => {
+          listeners.push(listener);
+          syncListeners.push(listener);
+        }
+      }
     },
     proxy: {
       settings: {
@@ -140,6 +146,7 @@
         const all = JSON.parse(localStorage.getItem("preview.sync") ?? "{}");
         Object.assign(all, items);
         localStorage.setItem("preview.sync", JSON.stringify(all));
+        queueMicrotask(() => syncListeners.forEach((listener) => listener({}, "sync")));
         return undefined;
       }),
       remove: callbackify((keys) => {

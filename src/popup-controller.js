@@ -545,6 +545,18 @@ async function uploadIfEnabled({ force = false } = {}) {
   }
 }
 
+// A peer writing several chunks produces several storage events. Coalescing them
+// keeps one reconcile per burst instead of one per chunk.
+let reconcileTimer = null;
+
+function scheduleReconcile() {
+  if (reconcileTimer) clearTimeout(reconcileTimer);
+  reconcileTimer = setTimeout(() => {
+    reconcileTimer = null;
+    void reconcileSync({ silent: true });
+  }, 1200);
+}
+
 /** Debounced so a burst of rule edits becomes one upload. */
 function scheduleUpload() {
   if (!syncEnabled) return;
@@ -942,6 +954,14 @@ async function initialize() {
  */
 function startWatchingOtherSurface() {
   chrome.storage.onChanged.addListener((changes, areaName) => {
+    // The sync area changing means another device wrote, or this one did a moment
+    // ago. Re-rendering storage here would be wrong - it needs a merge, not a
+    // render - so the handler only updates the status line. Pulling on every event
+    // would also mean a reconcile per keystroke on a peer.
+    if (areaName === "sync") {
+      if (syncEnabled) scheduleReconcile();
+      return;
+    }
     if (areaName !== "local" || !changes.settings) return;
     let migrated;
     try {
