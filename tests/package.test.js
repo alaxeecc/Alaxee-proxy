@@ -239,3 +239,13 @@ test("the development workbench stays out of the package", async () => {
   }
   assert.ok(names.includes("src/popup.html"));
 });
+
+test("the comparison harness cannot leak into the package", async () => {
+  // scripts/preview-compare.mjs creates a git worktree at runtime. If it were ever
+  // packaged it would be a script that shells out to git from inside an extension.
+  const { files } = await resolveRuntimeFiles(root);
+  for (const name of files) {
+    assert.ok(!name.includes("compare"), `unexpected runtime file: ${name}`);
+    assert.ok(!name.startsWith("scripts/"), `build scripts must not ship: ${name}`);
+  }
+});

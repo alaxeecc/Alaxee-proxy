@@ -15,3 +15,6 @@ npm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+# Baseline worktree created by scripts/preview-compare.mjs
+.preview-baseline/

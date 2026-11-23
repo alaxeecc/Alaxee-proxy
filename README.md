@@ -96,8 +96,19 @@ bash scripts/update-unpacked.sh
 ### 不想安装也能看界面
 
 ```bash
-npm run preview     # 打开 http://localhost:4173
-npm run preview     # 然后访问 /lab 看并排对比
+npm run preview     # http://localhost:4173         单个面板
+                    # http://localhost:4173/lab     四种状态并排，自动刷新
+npm run compare     # http://localhost:4174/compare 当前版本 vs 某个旧提交
+```
+
+`/lab` 在我改完文件时会自动刷新，用来确认改动生效。
+`/compare` 让当前工作区和任意旧提交同屏显示，可以叠加对比——它会在
+`.preview-baseline/` 建一个临时 worktree，退出时自动删除。
+
+对照时默认基准是 `HEAD~1`，也可以指定：
+
+```bash
+node scripts/preview-compare.mjs 15a0eee
 ```
 
 预览用的是真实的 `popup.html` / `popup.css` / 控制器，只是把 `chrome.*` 换成了替身。改样式时改完刷新即可，**改一次看一次，不用碰浏览器扩展页**。涉及真实代理行为的部分（`chrome.proxy`、PAC 实际生效）预览做不到，那些必须装到 Edge 里看。

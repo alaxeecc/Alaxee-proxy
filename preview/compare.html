@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Alaxee Proxy · 改动对照</title>
+<style>
+  :root { color-scheme: light dark; --bg:#eef2f3; --surface:#fff; --ink:#172327; --muted:#627074; --line:#dbe4e4; --accent:#0a7568; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1416; --surface:#151e20; --ink:#eaf1ef; --muted:#9aabaa; --line:#263436; --accent:#66c7b6; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+         font:13px/1.5 Inter,"Segoe UI","Microsoft YaHei",sans-serif; }
+  header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+           padding:12px 22px; background:var(--surface); border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:15px; }
+  .hint { color:var(--muted); font-size:12px; }
+  .controls { margin-left:auto; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  label { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; }
+  main { padding:18px 22px 40px; }
+  .stage { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .stage.overlay { grid-template-columns:1fr; position:relative; }
+  .pane { background:var(--surface); border:1px solid var(--line); border-radius:13px; overflow:hidden; }
+  .pane-head { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line);
+               font-size:12px; font-weight:700; color:var(--muted); }
+  .pane iframe { border:0; width:100%; height:640px; display:block; background:#fff; }
+  .stage.overlay .pane { grid-column:1; grid-row:1; }
+  .stage.overlay .pane.side { opacity:var(--alpha, .5); z-index:2; mix-blend-mode:normal; }
+  .stage.overlay .pane.side iframe { background:transparent; }
+  input[type=range] { width:130px; }
+  .flash { animation:flash 1.2s ease; }
+  @keyframes flash { from { background:color-mix(in srgb, var(--accent) 22%, transparent); } to { background:transparent; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>改动对照</h1>
+  <span class="hint">左=当前工作区　右=基准 __BASELINE_LABEL__</span>
+  <div class="controls">
+    <label><input type="checkbox" id="overlay"> 叠加对比</label>
+    <label>透明度 <input type="range" id="alpha" min="0.1" max="0.9" step="0.05" value="0.5"></label>
+    <label>状态
+      <select id="scene">
+        <option value="">概览</option>
+        <option value="rules=40">40 条规则</option>
+        <option value="sync=1">同步已开启</option>
+        <option value="full=1&rules=12">完整设置</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="sync-scroll" checked> 同步滚动</label>
+  </div>
+</header>
+
+<main>
+  <div class="stage" id="stage">
+    <section class="pane"><div class="pane-head">当前</div><iframe id="left" title="当前"></iframe></section>
+    <section class="pane side"><div class="pane-head">基准</div><iframe id="right" title="基准"></iframe></section>
+  </div>
+</main>
+
+<script>
+  // Two independent documents from two origins-worth-of-paths. Scrolling and the
+  // overlay are the two things that make a visual diff obvious without describing it.
+  const left = document.getElementById("left");
+  const right = document.getElementById("right");
+  const stage = document.getElementById("stage");
+  const overlay = document.getElementById("overlay");
+  const alpha = document.getElementById("alpha");
+  const scene = document.getElementById("scene");
+  const syncScroll = document.getElementById("sync-scroll");
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("scene")) scene.value = params.get("scene");
+
+  function load() {
+    const query = scene.value ? `?${scene.value}` : "";
+    left.src = `/${query}`;
+    right.src = `/baseline${query}`;
+  }
+  load();
+  scene.addEventListener("change", load);
+
+  overlay.addEventListener("change", () => {
+    stage.classList.toggle("overlay", overlay.checked);
+    stage.style.setProperty("--alpha", alpha.value);
+  });
+  alpha.addEventListener("input", () => stage.style.setProperty("--alpha", alpha.value));
+
+  // Mirroring scroll is what makes two screenshots comparable: without it the panes
+  // drift apart as soon as anything above the fold changes height.
+  let syncing = false;
+  function mirror(source, target) {
+    if (!syncScroll.checked || syncing) return;
+    syncing = true;
+    try {
+      const doc = source.contentDocument;
+      target.contentWindow?.scrollTo?.(0, doc.documentElement.scrollTop || doc.body.scrollTop || 0);
+    } catch {}
+    syncing = false;
+  }
+  left.addEventListener("load", () => left.contentWindow?.addEventListener("scroll", () => mirror(left, right)));
+  right.addEventListener("load", () => right.contentWindow?.addEventListener("scroll", () => mirror(right, left)));
+</script>
+</body>
+</html>

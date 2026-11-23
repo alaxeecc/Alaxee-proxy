@@ -10,7 +10,8 @@
     "package:extension": "python scripts/package-extension.py",
     "icons": "python scripts/render-icons.py",
     "preview": "node scripts/preview-server.mjs",
-    "lab": "node scripts/preview-server.mjs"
+    "lab": "node scripts/preview-server.mjs",
+    "compare": "node scripts/preview-compare.mjs"
   },
   "engines": {
     "node": ">=20"

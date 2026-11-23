@@ -10,6 +10,11 @@ Two layers, in order of how often they should be used:
    live-reloading whenever `src/`, `preview/` or `icons/` changes. This is the real
    `popup.html`, real stylesheet and real controller with `chrome.*` stubbed. Use it
    for anything visual.
+1b. **`npm run compare`** - puts the working tree next to a chosen commit, from two
+   path prefixes on one port. Use it when the question is "is this actually better"
+   rather than "does this work"; a side-by-side or overlay answers that without
+   anyone having to describe the difference.
+
 2. **Reload the unpacked extension** - only needed when the change touches
    `background.js`, or when what you are verifying is actual browser proxy behaviour
    (`chrome.proxy`, PAC taking effect, toolbar icons per tab). In `edge://extensions`,
