@@ -34,7 +34,8 @@ import {
   describeSyncStatus,
   readSyncState,
   settingsDiffer,
-  staleChunkKeys
+  staleChunkKeys,
+  syncDirection
 } from "./sync.js";
 import {
   applyPastedAddress,
@@ -190,7 +191,18 @@ async function saveSettings(nextSettings) {
   // The throw happens before any write, so a rejected edit leaves state intact.
   const whitelist = normalizeDomainEntriesStrict(nextSettings.whitelist ?? settings.whitelist);
   const blacklist = normalizeDomainEntriesStrict(nextSettings.blacklist ?? settings.blacklist);
-  settings = { ...settings, ...nextSettings, whitelist, blacklist, updatedAt: Date.now() };
+  // `updatedAt` means "the configuration was edited", not "storage was written".
+  // Toggling sync is not an edit: stamping it here made a fresh install look newer
+  // than the cloud the instant the user turned sync on, and its empty rule list
+  // then overwrote every other device. Only content counts.
+  const edited = contentShape({ ...settings, ...nextSettings, whitelist, blacklist }) !== contentShape(settings);
+  settings = {
+    ...settings,
+    ...nextSettings,
+    whitelist,
+    blacklist,
+    updatedAt: edited ? Date.now() : (settings.updatedAt ?? 0)
+  };
   await chromeCall(chrome.storage.local, "set", { settings });
   syncRuleCounts();
   if (syncEnabled) scheduleUpload();
@@ -324,6 +336,19 @@ async function applyMode(mode, overrides = {}) {
   await readProxyState();
 }
 
+/** Everything that is synced and edited, and nothing that is only a preference flag. */
+function contentShape(value) {
+  return JSON.stringify({
+    mode: value.mode,
+    scheme: value.scheme,
+    host: value.host,
+    port: value.port,
+    localBypass: value.localBypass !== false,
+    whitelist: value.whitelist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains })),
+    blacklist: value.blacklist.map(({ host, includeSubdomains }) => ({ host, includeSubdomains }))
+  });
+}
+
 const RULE_LABELS = Object.freeze({ blacklist: "代理黑名单", whitelist: "直连白名单" });
 
 async function addDomainRule(type, host, includeSubdomains = true) {
@@ -447,6 +472,7 @@ let syncTimer = null;
 // two surfaces (popup and settings page) from re-uploading what they just read.
 let lastSyncedShape = null;
 
+
 /** Reads the opt-in flag and pushes the current settings if sync is on. */
 async function uploadIfEnabled({ force = false } = {}) {
   if (!syncEnabled) return;
@@ -522,14 +548,21 @@ async function reconcileSync({ silent = true } = {}) {
     return;
   }
 
-  const syncedAt = Date.parse(result.meta.updatedAt);
-  const localWrite = Number(settings.updatedAt ?? 0);
-  const localIsNewer = Number.isFinite(syncedAt) && Number.isFinite(localWrite) && localWrite > syncedAt;
-
-  if (localIsNewer) {
+  // Three outcomes, decided before anything is written:
+  //   "local-wins"  - this device was edited after the cloud record
+  //   "cloud-wins"  - adopt the cloud record
+  //   "ambiguous"   - never upload. A device that has never been edited has
+  //                   updatedAt === 0 and no basis to claim its (empty) rule list
+  //                   is newer than anyone else's; guessing here is what let a
+  //                   fresh install erase an existing sync record.
+  const direction = syncDirection({ local: settings, meta: result.meta });
+  if (direction === "ambiguous") {
+    syncStatusText = "本机没有编辑记录，云端有另一份设置。已改为从云端读取。";
+    // Fall through to adoption.
+  } else if (direction === "local-wins") {
     syncStatusText = "本机设置比同步数据更新，正在上传本机版本。";
     renderSyncPanel(ui, { enabled: true, status: syncStatusText, pendingUpload: true });
-    await uploadIfEnabled();
+    await uploadIfEnabled({ force: true });
     return;
   }
 

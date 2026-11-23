@@ -19,6 +19,7 @@ import {
   describeSyncStatus,
   readSyncState,
   settingsDiffer,
+  syncDirection,
   staleChunkKeys
 } from "../src/sync.js";
 
@@ -207,3 +208,62 @@ test("the export and the sync payload agree on what counts as a setting", () => 
   assert.deepEqual(synced.blacklist, exported.blacklist);
 });
 
+
+/* -------------------------------------------------------------------------- */
+/* Direction of travel                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Regression tests for a data-loss bug found after the first version shipped.
+ *
+ * The failure: a fresh install (no edit history, empty rule list) turned sync on,
+ * decided its state was newer, and uploaded. That erased the rules every other
+ * device had written, and reported "已上传：0 条规则" as though it had worked.
+ */
+test("a fresh install never claims to be newer than the cloud", () => {
+  const local = { ...SETTINGS, updatedAt: 0 };
+  const meta = { updatedAt: "2026-11-23T10:00:00.000Z" };
+  assert.equal(syncDirection({ local, meta }), "ambiguous");
+  assert.notEqual(syncDirection({ local, meta }), "local-wins");
+});
+
+test("a record with no timestamp at all is treated the same as a fresh install", () => {
+  for (const updatedAt of [undefined, null, "", 0, -1, Number.NaN]) {
+    assert.equal(syncDirection({ local: { updatedAt }, meta: { updatedAt: "2026-11-23T10:00:00.000Z" } }), "ambiguous");
+  }
+});
+
+test("a local edit after the cloud record wins", () => {
+  const local = { updatedAt: Date.parse("2026-11-23T12:00:00.000Z") };
+  const meta = { updatedAt: "2026-11-23T10:00:00.000Z" };
+  assert.equal(syncDirection({ local, meta }), "local-wins");
+});
+
+test("a cloud record written after the local edit wins", () => {
+  const local = { updatedAt: Date.parse("2026-11-23T09:00:00.000Z") };
+  const meta = { updatedAt: "2026-11-23T10:00:00.000Z" };
+  assert.equal(syncDirection({ local, meta }), "cloud-wins");
+});
+
+test("an unreadable cloud timestamp does not become a reason to upload", () => {
+  // A corrupt meta must not be read as "the cloud is older than me". Local wins
+  // only when it has a real edit history to point at.
+  const local = { updatedAt: Date.parse("2026-11-23T09:00:00.000Z") };
+  assert.equal(syncDirection({ local, meta: { updatedAt: "not a date" } }), "local-wins");
+  assert.equal(syncDirection({ local: { updatedAt: 0 }, meta: { updatedAt: "not a date" } }), "ambiguous");
+});
+
+test("turning sync on is not an edit, so it does not make the device look newer", () => {
+  // The enabling write used to stamp updatedAt, which is what put a fresh install
+  // ahead of the cloud it had just joined.
+  const before = { ...SETTINGS, syncEnabled: false, updatedAt: 0 };
+  const afterToggle = { ...before, syncEnabled: true, updatedAt: 0 };
+  assert.equal(syncDirection({ local: afterToggle, meta: { updatedAt: "2026-11-23T10:00:00.000Z" } }), "ambiguous");
+  assert.equal(settingsDiffer(before, afterToggle), false, "enabling sync must not look like a content change");
+});
+
+test("the upload guard refuses when the cloud already matches local", () => {
+  // uploadIfEnabled compares against the last-seen record; equal shapes must not
+  // produce a write, or two devices ping-pong forever.
+  assert.equal(settingsDiffer({ ...SETTINGS, updatedAt: 5 }, { ...SETTINGS, updatedAt: 99 }), false);
+});

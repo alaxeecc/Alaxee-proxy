@@ -230,3 +230,22 @@ export function describeSyncStatus(status) {
         : "同步已开启。";
   }
 }
+
+/**
+ * Decides whether local settings or the synced record should win.
+ *
+ * A wrong guess here uploads one device's state over everyone else's, so the rule
+ * is deliberately conservative: a device with no edit history (updatedAt === 0)
+ * never claims to be newer, because it has no basis for that claim. That case is
+ * "ambiguous" and resolves to reading the cloud record - which is what a person
+ * who just enabled sync on a new machine expects anyway.
+ *
+ * @returns {"local-wins"|"cloud-wins"|"ambiguous"}
+ */
+export function syncDirection({ local, meta }) {
+  const localWrite = Number(local?.updatedAt ?? 0);
+  if (!Number.isFinite(localWrite) || localWrite <= 0) return "ambiguous";
+  const syncedAt = Date.parse(String(meta?.updatedAt ?? ""));
+  if (!Number.isFinite(syncedAt)) return "local-wins";
+  return localWrite > syncedAt ? "local-wins" : "cloud-wins";
+}
