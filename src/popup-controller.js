@@ -19,6 +19,7 @@ import {
   isConfigured,
   migrateStoredSettings,
   normalizeDomainEntriesStrict,
+  reconcileRuleLists,
   requiresProxyEndpoint,
   validateProxySettings
 } from "./core.js";
@@ -382,12 +383,17 @@ async function addDomainRule(type, host, includeSubdomains = true) {
   const normalized = createDomainEntry(host, includeSubdomains);
   const ownKey = type === "blacklist" ? "blacklist" : "whitelist";
   const otherKey = ownKey === "blacklist" ? "whitelist" : "blacklist";
-  const ownEntries = settings[ownKey].filter((entry) => entry.host !== normalized.host);
-  const otherEntries = settings[otherKey].filter((entry) => entry.host !== normalized.host);
-  const next = {
-    [ownKey]: [...ownEntries, normalized],
-    [otherKey]: otherEntries
-  };
+  // Replace on the target list and drop from the other one, then let the shared
+  // invariant settle any remaining overlap.
+  const lists = reconcileRuleLists({
+    whitelist: ownKey === "whitelist"
+      ? [...settings.whitelist.filter((entry) => entry.host !== normalized.host), normalized]
+      : settings.whitelist.filter((entry) => entry.host !== normalized.host),
+    blacklist: ownKey === "blacklist"
+      ? [...settings.blacklist.filter((entry) => entry.host !== normalized.host), normalized]
+      : settings.blacklist.filter((entry) => entry.host !== normalized.host)
+  });
+  const next = { whitelist: lists.whitelist, blacklist: lists.blacklist };
 
   // applyMode persists and applies in one pass; saving here first would have
   // written storage twice and cost a second full tab refresh.
@@ -618,8 +624,9 @@ async function reconcileSync({ silent = true } = {}) {
 
   if (localChanged) {
     try {
-      const whitelist = normalizeDomainEntriesStrict(merged.whitelist);
-      const blacklist = normalizeDomainEntriesStrict(merged.blacklist);
+      const settled = reconcileRuleLists({ whitelist: merged.whitelist, blacklist: merged.blacklist });
+      const whitelist = normalizeDomainEntriesStrict(settled.whitelist);
+      const blacklist = normalizeDomainEntriesStrict(settled.blacklist);
       const adopted = {
         ...settings,
         ...merged,

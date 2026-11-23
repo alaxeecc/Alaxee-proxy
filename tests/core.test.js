@@ -20,6 +20,7 @@ import {
   normalizeWhitelist,
   parseProxyAddress,
   readPacFingerprint,
+  reconcileRuleLists,
   requiresProxyEndpoint,
   resolveDomainRoute,
   resolveGlobalRoute,
@@ -358,4 +359,59 @@ test("common ports are offered as hints and always validated before use", () => 
 test("troubleshooting text names the control-panel-port mistake, the most common cause", () => {
   assert.match(ENDPOINT_TROUBLESHOOTING.join(" "), /9090/);
   assert.ok(ENDPOINT_TROUBLESHOOTING.length >= 3);
+});
+
+/* -------------------------------------------------------------------------- */
+/* One host, one list                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The invariant: a host never appears on both lists.
+ *
+ * Routing already resolves the overlap in favour of the blacklist, so this is not a
+ * behaviour bug - it is a comprehension bug. The rule list shows the same domain
+ * twice with opposite labels and no indication that one of them never fires.
+ *
+ * Three separate paths can create the overlap (typing a rule, importing a file,
+ * merging a synced record) which is why the fix belongs in core, not in the handler
+ * that happened to be written first.
+ */
+test("a host on the force-proxy list is removed from the direct list", () => {
+  const { whitelist, blacklist } = reconcileRuleLists({
+    whitelist: [
+      { host: "dup.example", includeSubdomains: true },
+      { host: "keep.example", includeSubdomains: true }
+    ],
+    blacklist: [{ host: "dup.example", includeSubdomains: false }]
+  });
+  assert.deepEqual(whitelist.map((entry) => entry.host), ["keep.example"]);
+  assert.deepEqual(blacklist.map((entry) => entry.host), ["dup.example"]);
+});
+
+test("host matching is case- and dot-insensitive when collapsing", () => {
+  const { whitelist, blacklist } = reconcileRuleLists({
+    whitelist: [{ host: "dup.example", includeSubdomains: true }],
+    blacklist: [{ host: "DUP.example.", includeSubdomains: true }]
+  });
+  assert.equal(whitelist.length, 0);
+  assert.equal(blacklist.length, 1);
+});
+
+test("a parent and a child on opposite lists are both kept", () => {
+  // *.example.com direct with api.example.com forced through the proxy is a
+  // deliberate, supported configuration - only the same host is a duplicate.
+  const { whitelist, blacklist } = reconcileRuleLists({
+    whitelist: [{ host: "example.com", includeSubdomains: true }],
+    blacklist: [{ host: "api.example.com", includeSubdomains: true }]
+  });
+  assert.equal(whitelist.length, 1);
+  assert.equal(blacklist.length, 1);
+});
+
+test("reconciling an already-clean pair changes nothing", () => {
+  const input = {
+    whitelist: [{ host: "a.example", includeSubdomains: true }],
+    blacklist: [{ host: "b.example", includeSubdomains: false }]
+  };
+  assert.deepEqual(reconcileRuleLists(input), input);
 });

@@ -116,3 +116,20 @@ test("restoring a different configuration changes the rule lists", () => {
   assert.deepEqual(same.settings.whitelist, SETTINGS.whitelist);
   assert.deepEqual(same.settings.blacklist, SETTINGS.blacklist);
 });
+
+test("importing a file whose host sits on both lists keeps only the stronger rule", () => {
+  // The overlap survives routing (blacklist wins) but produces two rows for one
+  // domain with opposite labels, and one of them never fires.
+  const file = exportSettings({
+    ...SETTINGS,
+    whitelist: [{ host: "dup.example", includeSubdomains: true }, { host: "keep.example", includeSubdomains: true }],
+    blacklist: [{ host: "dup.example", includeSubdomains: false }]
+  });
+  const { ok, plan } = planImport(JSON.stringify(file));
+  assert.equal(ok, true);
+  assert.deepEqual(plan.settings.whitelist.map((entry) => entry.host), ["keep.example"]);
+  assert.deepEqual(plan.settings.blacklist.map((entry) => entry.host), ["dup.example"]);
+  // The user is told a rule was dropped rather than finding it missing later.
+  assert.equal(plan.dropped.whitelist, 1);
+  assert.match(describeImportPlan(plan), /1 条无效或重复/);
+});

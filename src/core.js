@@ -737,3 +737,25 @@ export const ENDPOINT_TROUBLESHOOTING = Object.freeze([
   "协议选对：Mixed / SOCKS 端口选 SOCKS5，纯 HTTP 端口选 HTTP。选错时浏览器会连上但握手中断。",
   "确认没有其他代理扩展或组织策略同时控制 Edge 的代理设置（面板顶部会显示「其他代理配置」）。"
 ]);
+
+/**
+ * Removes direct entries that a force-proxy entry already covers for the same host.
+ *
+ * The invariant: **a host never appears on both lists.** Routing already resolves
+ * the overlap (the blacklist wins), so the duplicate is not a behaviour bug - but it
+ * is a UI bug: the rule list then shows the same domain twice with opposite labels,
+ * and the user has no way to tell which one is doing anything. The answer is always
+ * the blacklist entry, so the direct one is dead weight.
+ *
+ * This lives in core rather than in the add-rule handler because there are three
+ * ways a duplicate can appear - typing it, importing a backup file, and merging a
+ * synced record from another device - and only the first went through the handler.
+ * Any path that writes rules should call this.
+ */
+export function reconcileRuleLists({ whitelist, blacklist }) {
+  const forced = new Set(normalizeDomainEntries(blacklist).map((entry) => entry.host));
+  return {
+    whitelist: normalizeDomainEntries(whitelist).filter((entry) => !forced.has(entry.host)),
+    blacklist: normalizeDomainEntries(blacklist)
+  };
+}

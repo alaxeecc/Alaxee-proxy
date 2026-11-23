@@ -11,6 +11,8 @@
  * silently - see planImport for why.
  */
 
+import { reconcileRuleLists } from "./core.js";
+
 export const BACKUP_FORMAT = "alaxee-proxy-settings";
 export const BACKUP_VERSION = 1;
 
@@ -83,8 +85,13 @@ export function planImport(text, { normalize } = {}) {
   const validMode = raw.mode === "direct" ? "direct" : "proxy";
   const clean = normalize ?? defaultNormalize;
 
-  const whitelist = clean(raw.whitelist);
-  const blacklist = clean(raw.blacklist);
+  // A backup file can carry the same host on both lists. Routing already resolves
+  // that in favour of the blacklist, so the direct entry is dead weight that only
+  // makes the list confusing; drop it here so import and manual editing agree.
+  const { whitelist, blacklist } = reconcileRuleLists({
+    whitelist: clean(raw.whitelist),
+    blacklist: clean(raw.blacklist)
+  });
   const droppedWhitelist = (Array.isArray(raw.whitelist) ? raw.whitelist.length : 0) - whitelist.length;
   const droppedBlacklist = (Array.isArray(raw.blacklist) ? raw.blacklist.length : 0) - blacklist.length;
 
