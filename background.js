@@ -1,22 +1,20 @@
 import {
-  DEFAULT_SETTINGS,
-  normalizeBlacklist,
-  normalizeWhitelist,
+  migrateStoredSettings,
   resolveGlobalRoute,
   resolveTabRoute
 } from "./src/core.js";
 
 const ICON_PATHS = Object.freeze({
-  clash: { 16: "icons/status/clash16.png", 32: "icons/status/clash32.png" },
+  proxy: { 16: "icons/status/proxy16.png", 32: "icons/status/proxy32.png" },
   direct: { 16: "icons/status/direct16.png", 32: "icons/status/direct32.png" },
-  system: { 16: "icons/status/system16.png", 32: "icons/status/system32.png" },
   unknown: { 16: "icons/status/unknown16.png", 32: "icons/status/unknown32.png" }
 });
 
+// The titles describe the browser-level route only. They never claim to know
+// which program is listening on the other end, or what it does with the request.
 const ICON_TITLES = Object.freeze({
-  clash: "Alaxee Proxy · 此网页交由 Clash 处理",
+  proxy: "Alaxee Proxy · 此网页交给代理服务器",
   direct: "Alaxee Proxy · 此网页浏览器直连",
-  system: "Alaxee Proxy · 此网页跟随系统代理",
   unknown: "Alaxee Proxy · 当前网页状态未知，或代理设置由其他程序控制"
 });
 
@@ -44,13 +42,10 @@ async function readContext() {
     chromeCall(chrome.storage.local, "get", "settings"),
     chromeCall(chrome.proxy.settings, "get", { incognito: false })
   ]);
-  const raw = stored?.settings ?? {};
-  const settings = {
-    ...DEFAULT_SETTINGS,
-    ...raw,
-    whitelist: normalizeWhitelist(raw.whitelist),
-    blacklist: normalizeBlacklist(raw.blacklist)
-  };
+  // Migration is applied on read but not written back here: the service worker
+  // must not rewrite storage while the popup may be mid-edit. The popup owns the
+  // write-back (popup-controller.js).
+  const { settings } = migrateStoredSettings(stored?.settings);
   return { settings, proxyState };
 }
 

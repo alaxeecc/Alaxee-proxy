@@ -17,6 +17,8 @@ import {
   describeSiteHint,
   proxyStateClass,
   renderCurrentPage,
+  renderEndpointLine,
+  renderLocalBypass,
   renderRuleCounts,
   renderRuleTab,
   renderRules,
@@ -67,7 +69,7 @@ function installDomShim() {
 installDomShim();
 
 const BASE = {
-  mode: "clash",
+  mode: "proxy",
   host: "127.0.0.1",
   port: "7890",
   scheme: "socks5",
@@ -84,6 +86,16 @@ function fakeUi() {
     disabled: false,
     dataset: {},
     attributes: {},
+    classList: {
+      values: new Set(),
+      toggle(name, force) {
+        if (force) this.values.add(name);
+        else this.values.delete(name);
+      },
+      contains(name) {
+        return this.values.has(name);
+      }
+    },
     setAttribute(name, value) {
       this.attributes[name] = value;
     },
@@ -107,6 +119,7 @@ function fakeUi() {
     includeSubdomains: element(),
     ruleList: element(),
     ruleEmpty: element(),
+    ruleNoMatch: element(),
     clearRules: element(),
     ruleCount: element(),
     totalRuleCount: element(),
@@ -116,7 +129,12 @@ function fakeUi() {
     activeRuleTitle: element(),
     ruleDescription: element(),
     ruleHostInput: element(),
-    addRuleButton: element()
+    addRuleButton: element(),
+    endpointLine: element(),
+    endpointTag: element(),
+    localBypassToggle: element(),
+    bypassWarning: element(),
+    bypassTag: element()
   };
 }
 
@@ -125,15 +143,15 @@ function fakeUi() {
 /* -------------------------------------------------------------------------- */
 
 test("every route has a user-facing label", () => {
-  for (const route of ["clash", "direct", "system", "unknown"]) {
+  for (const route of ["proxy", "direct", "unknown"]) {
     assert.equal(typeof ROUTE_LABELS[route], "string");
     assert.ok(ROUTE_LABELS[route].length > 0);
   }
 });
 
-test("clash copy distinguishes a blacklist hit from a default proxy decision", () => {
-  const blacklisted = describeRoute("clash", { whitelisted: false, blacklisted: true });
-  const byDefault = describeRoute("clash", { whitelisted: false, blacklisted: false });
+test("proxy copy distinguishes a blacklist hit from a default proxy decision", () => {
+  const blacklisted = describeRoute("proxy", { whitelisted: false, blacklisted: true });
+  const byDefault = describeRoute("proxy", { whitelisted: false, blacklisted: false });
   assert.match(blacklisted, /黑名单/);
   assert.match(byDefault, /未命中直连白名单/);
   assert.notEqual(blacklisted, byDefault);
@@ -146,13 +164,12 @@ test("direct copy distinguishes a whitelist hit from global direct mode", () => 
   assert.match(globalMode, /全局直连/);
 });
 
-test("system and unknown routes never claim rules are applied", () => {
-  assert.match(describeRoute("system", {}), /不生效/);
+test("an unknown route never claims rules are applied", () => {
   assert.match(describeRoute("unknown", {}), /无法确认/);
 });
 
 test("blacklisted hint outranks the whitelisted hint", () => {
-  const both = describeSiteHint("clash", { whitelisted: true, blacklisted: true });
+  const both = describeSiteHint("proxy", { whitelisted: true, blacklisted: true });
   assert.match(both, /黑名单/);
 });
 
@@ -160,11 +177,18 @@ test("blacklisted hint outranks the whitelisted hint", () => {
 /* Mode help                                                                  */
 /* -------------------------------------------------------------------------- */
 
-test("mode help explains that rules are suspended under system proxy", () => {
-  assert.match(describeModeHelp("system"), /不生效/);
-  assert.match(describeModeHelp("clash"), /白名单/);
-  assert.match(describeModeHelp("direct"), /黑名单/);
-  assert.match(describeModeHelp(null), /无法识别/);
+test("mode help states the active mode's rule semantics", () => {
+  assert.match(describeModeHelp("proxy", BASE), /白名单/);
+  assert.match(describeModeHelp("direct", BASE), /黑名单/);
+  assert.match(describeModeHelp(null, BASE), /无法识别/);
+});
+
+test("proxy mode help warns when no endpoint has been entered yet", () => {
+  // Claiming rules are live while the endpoint is blank would be a lie: the PAC
+  // cannot even be generated until an address exists.
+  const help = describeModeHelp("proxy", { ...BASE, host: "", port: "" });
+  assert.match(help, /还没有填写代理服务器地址/);
+  assert.doesNotMatch(help, /白名单网站直连/);
 });
 
 /* -------------------------------------------------------------------------- */
@@ -179,7 +203,7 @@ test("state pill reflects control level", () => {
 });
 
 test("a foreign proxy configuration is reported as a warning, not as ours", () => {
-  for (const label of ["其他代理配置", "自动检测代理", "其他 PAC 代理配置"]) {
+  for (const label of ["其他代理配置", "自动检测代理", "其他 PAC 配置"]) {
     assert.match(proxyStateClass(label, "controlled_by_this_extension"), /state-warn/, label);
   }
 });
@@ -304,15 +328,108 @@ test("rule rows pass their host and list type to the remove callback", () => {
   const row = ui.ruleList.children[0];
   const removeButton = row.children[1];
   removeButton.click();
-  assert.deepEqual(calls, [["force.example", "blacklist"]]);
+  assert.deepEqual(calls, [["exact.example", "blacklist"]]);
 });
 
 test("rule tab copy matches the selected list", () => {
   const ui = fakeUi();
   renderRuleTab(ui, "blacklist");
-  assert.match(ui.ruleDescription.textContent, /强制通过本机 Clash/);
+  assert.match(ui.ruleDescription.textContent, /强制通过代理服务器/);
   assert.equal(ui.addRuleButton.textContent, "添加代理规则");
   renderRuleTab(ui, "whitelist");
   assert.match(ui.ruleDescription.textContent, /绕过浏览器代理/);
   assert.equal(ui.addRuleButton.textContent, "添加直连规则");
+});
+
+/* -------------------------------------------------------------------------- */
+/* Rule list: search, sort, match badge                                       */
+/* -------------------------------------------------------------------------- */
+
+const RULES = [
+  { host: "zeta.example", includeSubdomains: true },
+  { host: "alpha.example", includeSubdomains: false },
+  { host: "mike.example", includeSubdomains: true }
+];
+
+test("the rule list shows the most recently added entry first", () => {
+  const ui = fakeUi();
+  renderRules(ui, { settings: { ...BASE, whitelist: RULES }, activeRuleType: "whitelist", onRemove: () => {} });
+  assert.deepEqual(
+    ui.ruleList.children.map((row) => row.children[0].children[0].textContent),
+    ["mike.example", "alpha.example", "zeta.example"]
+  );
+});
+
+test("sorting by name is a view-only change and never rewrites stored order", () => {
+  const settings = { ...BASE, whitelist: RULES };
+  const before = settings.whitelist.map((entry) => entry.host);
+  const ui = fakeUi();
+  renderRules(ui, { settings, activeRuleType: "whitelist", sort: "name", onRemove: () => {} });
+  assert.deepEqual(
+    ui.ruleList.children.map((row) => row.children[0].children[0].textContent),
+    ["alpha.example", "mike.example", "zeta.example"]
+  );
+  // Reordering the stored list would change the PAC fingerprint and force a
+  // pointless re-apply, so sorting must stay inside the view.
+  assert.deepEqual(settings.whitelist.map((entry) => entry.host), before);
+});
+
+test("searching filters without altering the stored list", () => {
+  const settings = { ...BASE, whitelist: RULES };
+  const ui = fakeUi();
+  renderRules(ui, { settings, activeRuleType: "whitelist", search: "ALPHA", onRemove: () => {} });
+  assert.equal(ui.ruleList.children.length, 1);
+  assert.equal(settings.whitelist.length, 3);
+  assert.equal(ui.ruleNoMatch.hidden, true);
+});
+
+test("a search with no matches explains itself instead of showing an empty list", () => {
+  const ui = fakeUi();
+  renderRules(ui, { settings: { ...BASE, whitelist: RULES }, activeRuleType: "whitelist", search: "nope", onRemove: () => {} });
+  assert.equal(ui.ruleNoMatch.hidden, false);
+  assert.equal(ui.ruleEmpty.hidden, true, "an empty search result is not an empty list");
+  assert.equal(ui.clearRules.hidden, false);
+});
+
+test("the rule that decides the current page is marked in the list", () => {
+  const ui = fakeUi();
+  renderRules(ui, {
+    settings: { ...BASE, whitelist: RULES },
+    activeRuleType: "whitelist",
+    matchedHost: "alpha.example",
+    onRemove: () => {}
+  });
+  const marked = ui.ruleList.children.filter((row) =>
+    row.children[0].children.some((child) => child.className === "rule-match-badge")
+  );
+  assert.equal(marked.length, 1);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Local addresses and unconfigured state                                     */
+/* -------------------------------------------------------------------------- */
+
+test("a local host is described as local, not as a rule hit", () => {
+  const copy = describeRoute("direct", { whitelisted: false, blacklisted: false, local: true });
+  assert.match(copy, /本机/);
+  assert.doesNotMatch(copy, /全局直连模式/);
+});
+
+test("an unconfigured proxy is surfaced on the endpoint line, not hidden in the status pill", () => {
+  const ui = fakeUi();
+  renderEndpointLine(ui, { ...BASE, host: "", port: "" });
+  assert.match(ui.endpointLine.textContent, /尚未填写/);
+  assert.equal(ui.endpointLine.classList.contains("is-unset"), true);
+  renderEndpointLine(ui, BASE);
+  assert.match(ui.endpointLine.textContent, /socks5:\/\/127\.0\.0\.1:7890/);
+  assert.equal(ui.endpointLine.classList.contains("is-unset"), false);
+});
+
+test("disabling the local bypass shows the consequence before the user hits it", () => {
+  const ui = fakeUi();
+  renderLocalBypass(ui, false);
+  assert.equal(ui.bypassWarning.hidden, false);
+  assert.equal(ui.localBypassToggle.checked, false);
+  renderLocalBypass(ui, true);
+  assert.equal(ui.bypassWarning.hidden, true);
 });

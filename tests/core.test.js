@@ -2,16 +2,22 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_SETTINGS,
+  MODES,
   createDomainEntry,
+  describeProxyEndpoint,
   buildChromeProxyConfig,
   buildPacScript,
   getPageHostname,
   inferActiveMode,
   isHostBlacklisted,
+  isLocalHost,
   isHostWhitelisted,
   normalizeBlacklist,
   normalizeHostname,
+  migrateStoredSettings,
   normalizeWhitelist,
+  readPacFingerprint,
+  requiresProxyEndpoint,
   resolveDomainRoute,
   resolveGlobalRoute,
   resolveTabRoute,
@@ -19,7 +25,7 @@ import {
 } from "../src/core.js";
 
 const BASE = {
-  mode: "clash",
+  mode: "proxy",
   host: "127.0.0.1",
   port: "7890",
   scheme: "http",
@@ -95,12 +101,18 @@ test("matches apex and subdomains only on DNS label boundaries", () => {
   assert.equal(isHostBlacklisted("a.example.com", [createDomainEntry("example.com", true)]), true);
 });
 
-test("direct and system modes without force-proxy exceptions preserve native modes", () => {
+test("direct mode without force-proxy exceptions uses the native browser mode", () => {
   assert.deepEqual(buildChromeProxyConfig({ ...BASE, mode: "direct" }), { mode: "direct" });
-  assert.deepEqual(buildChromeProxyConfig({ ...BASE, mode: "system" }), { mode: "system" });
 });
 
-test("Clash mode creates mandatory PAC rules with direct whitelist and force-proxy blacklist", () => {
+test("a removed system mode is rejected instead of silently applied", () => {
+  // "system" made both domain lists inert while leaving them visible in the UI.
+  // It must fail loudly rather than fall through to some default.
+  assert.throws(() => buildChromeProxyConfig({ ...BASE, mode: "system" }), /未知的代理模式/);
+  assert.throws(() => buildPacScript({ ...BASE, mode: "system" }), /未知的代理模式|只支持/);
+});
+
+test("proxy mode creates mandatory PAC rules with direct whitelist and force-proxy blacklist", () => {
   const settings = {
     ...BASE,
     whitelist: [{ host: "direct.example", includeSubdomains: true }],
@@ -140,8 +152,8 @@ test("blacklist has priority over a broader whitelist when rules overlap", () =>
   };
   assert.equal(resolveDomainRoute("www.example.com", settings), "direct");
   assert.equal(resolveDomainRoute("example.com", settings), "direct");
-  assert.equal(resolveDomainRoute("api.example.com", settings), "clash");
-  assert.equal(resolveDomainRoute("v2.api.example.com", settings), "clash");
+  assert.equal(resolveDomainRoute("api.example.com", settings), "proxy");
+  assert.equal(resolveDomainRoute("v2.api.example.com", settings), "proxy");
 });
 
 test("PAC route resolver reports the actual page route for all rule combinations", () => {
@@ -152,13 +164,13 @@ test("PAC route resolver reports the actual page route for all rule combinations
   };
   const state = stateFor(settings);
   assert.equal(resolveTabRoute("https://www.direct.example/", state, settings), "direct");
-  assert.equal(resolveTabRoute("https://other.example/", state, settings), "clash");
-  assert.equal(resolveTabRoute("https://force.example/", state, settings), "clash");
-  assert.equal(resolveTabRoute("https://sub.force.example/", state, settings), "clash");
-  assert.equal(resolveGlobalRoute(state, settings), "clash");
+  assert.equal(resolveTabRoute("https://other.example/", state, settings), "proxy");
+  assert.equal(resolveTabRoute("https://force.example/", state, settings), "proxy");
+  assert.equal(resolveTabRoute("https://sub.force.example/", state, settings), "proxy");
+  assert.equal(resolveGlobalRoute(state, settings), "proxy");
 });
 
-test("global direct route marks only blacklisted domains as Clash", () => {
+test("global direct route marks only blacklisted domains as proxied", () => {
   const settings = {
     ...BASE,
     mode: "direct",
@@ -166,20 +178,17 @@ test("global direct route marks only blacklisted domains as Clash", () => {
   };
   const state = stateFor(settings);
   assert.equal(resolveTabRoute("https://normal.example/", state, settings), "direct");
-  assert.equal(resolveTabRoute("https://force.example/", state, settings), "clash");
+  assert.equal(resolveTabRoute("https://force.example/", state, settings), "proxy");
   assert.equal(resolveGlobalRoute(state, settings), "direct");
 });
 
-test("system proxy mode explicitly ignores both domain lists", () => {
-  const settings = {
-    ...BASE,
-    mode: "system",
-    whitelist: [{ host: "direct.example", includeSubdomains: true }],
-    blacklist: [{ host: "force.example", includeSubdomains: true }]
-  };
-  const state = stateFor(settings);
-  assert.equal(resolveTabRoute("https://direct.example/", state, settings), "system");
-  assert.equal(resolveTabRoute("https://force.example/", state, settings), "system");
+test("a browser left on system proxy is reported as unknown, not as a mode", () => {
+  // The extension no longer writes "system"; if the browser reports it, the value
+  // came from elsewhere and the extension must not claim it as its own state.
+  const settings = { ...BASE };
+  const state = { levelOfControl: "controlled_by_this_extension", value: { mode: "system" } };
+  assert.equal(inferActiveMode(state.value, settings), null);
+  assert.equal(resolveTabRoute("https://example.com/", state, settings), "unknown");
 });
 
 test("does not report a route when another extension controls proxy settings", () => {
@@ -199,19 +208,19 @@ test("does not infer a foreign PAC script as Alaxee-owned", () => {
   assert.equal(inferActiveMode({ mode: "pac_script", pacScript: { data: "function FindProxyForURL(){return 'DIRECT'}" } }, settings), null);
 });
 
-test("keeps backward compatibility with the prior fixed-server Clash config", () => {
+test("keeps backward compatibility with the prior fixed-server config", () => {
   const saved = { ...BASE, whitelist: [{ host: "example.com", includeSubdomains: true }] };
   const legacy = {
     mode: "fixed_servers",
     rules: { singleProxy: { host: "127.0.0.1", port: 7890, scheme: "http" } }
   };
-  assert.equal(inferActiveMode(legacy, saved), "clash");
+  assert.equal(inferActiveMode(legacy, saved), "proxy");
   assert.equal(resolveTabRoute("https://example.com/", {
     levelOfControl: "controlled_by_this_extension", value: legacy
   }, saved), "direct");
   assert.equal(resolveTabRoute("https://elsewhere.example/", {
     levelOfControl: "controlled_by_this_extension", value: legacy
-  }, saved), "clash");
+  }, saved), "proxy");
 });
 
 test("PAC output contains only JSON-serialized validated domain records", () => {
@@ -228,4 +237,69 @@ test("reads only HTTP and HTTPS page hostnames", () => {
   assert.equal(getPageHostname("https://www.example.com/a?b=1"), "www.example.com");
   assert.equal(getPageHostname("edge://extensions"), null);
   assert.equal(getPageHostname("file:///C:/test.html"), null);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Standalone model: no proxy product is assumed                              */
+/* -------------------------------------------------------------------------- */
+
+test("a fresh install ships no endpoint instead of guessing a proxy port", () => {
+  // Assuming 127.0.0.1:7890 means a first-time user's traffic is pointed at a
+  // port that may belong to nothing at all - or to something else.
+  assert.equal(DEFAULT_SETTINGS.host, "");
+  assert.equal(DEFAULT_SETTINGS.port, "");
+  assert.equal(DEFAULT_SETTINGS.mode, "proxy");
+});
+
+test("an endpoint is required, and blank input is rejected with a usable message", () => {
+  assert.throws(() => validateProxySettings({ host: "", port: "7890", scheme: "socks5" }), /代理服务器地址/);
+  assert.throws(() => validateProxySettings({ host: "127.0.0.1", port: "", scheme: "socks5" }), /端口/);
+  assert.throws(() => validateProxySettings({ host: "   ", port: "7890" }), /代理服务器地址/);
+});
+
+test("only proxy mode or a non-empty force-proxy list needs a reachable endpoint", () => {
+  assert.equal(requiresProxyEndpoint({ ...BASE, mode: "proxy" }), true);
+  assert.equal(requiresProxyEndpoint({ ...BASE, mode: "direct" }), false);
+  assert.equal(requiresProxyEndpoint({
+    ...BASE, mode: "direct", blacklist: [{ host: "force.example", includeSubdomains: true }]
+  }), true);
+});
+
+test("legacy mode names are migrated once and reported to the caller", () => {
+  const fromClash = migrateStoredSettings({ mode: "clash", host: "127.0.0.1", port: "7890" });
+  assert.equal(fromClash.settings.mode, "proxy");
+  assert.equal(fromClash.changed, true);
+  assert.equal(fromClash.legacyMode, "clash");
+
+  const fromSystem = migrateStoredSettings({ mode: "system", host: "", port: "" });
+  assert.equal(fromSystem.settings.mode, "direct");
+  assert.equal(fromSystem.legacyMode, "system");
+});
+
+test("migration is idempotent so the popup does not rewrite storage on every open", () => {
+  const once = migrateStoredSettings({ mode: "clash", host: "127.0.0.1", port: "7890", whitelist: [], blacklist: [] });
+  const twice = migrateStoredSettings(once.settings);
+  assert.equal(twice.changed, false);
+  assert.equal(twice.legacyMode, null);
+  assert.deepEqual(twice.settings, once.settings);
+});
+
+test("migration never throws on a settings record it does not understand", () => {
+  for (const raw of [undefined, null, {}, { mode: "nonsense" }, { mode: 7 }, { host: 12, whitelist: "x" }]) {
+    const { settings } = migrateStoredSettings(raw);
+    assert.ok(MODES.includes(settings.mode), `mode should fall back, got ${settings.mode}`);
+    assert.ok(Array.isArray(settings.whitelist));
+  }
+});
+
+test("the endpoint line describes an address instead of naming a proxy product", () => {
+  assert.equal(describeProxyEndpoint({ ...BASE }), "浏览器代理 → http://127.0.0.1:7890");
+  assert.match(describeProxyEndpoint({ ...BASE, host: "", port: "" }), /尚未填写/);
+});
+
+test("a PAC written by 0.1.x is not claimed as ours after the format change", () => {
+  // V2 scripts routed localhost through the proxy. Trusting them would leave the
+  // local-address fix silently unapplied on upgrade.
+  const v2 = '/* ALAXEE_PROXY_RULES_V2 fp:deadbeef */\nfunction FindProxyForURL(){return "DIRECT"}';
+  assert.equal(readPacFingerprint(v2), null);
 });

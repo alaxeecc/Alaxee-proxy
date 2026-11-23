@@ -11,10 +11,10 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildPacScript, buildChromeProxyConfig } from "../src/core.js";
+import { buildPacScript, buildChromeProxyConfig, pacFingerprint } from "../src/core.js";
 
 const BASE = {
-  mode: "clash",
+  mode: "proxy",
   host: "127.0.0.1",
   port: "7890",
   scheme: "socks5",
@@ -41,7 +41,7 @@ test("default route follows the selected global mode", () => {
   assert.equal(loadPac({ ...BASE, mode: "direct" })("https://example.com/", "example.com"), "DIRECT");
 });
 
-test("Clash mode sends whitelisted hosts direct and everything else to the listener", () => {
+test("proxy mode sends whitelisted hosts direct and everything else to the listener", () => {
   const find = loadPac({
     ...BASE,
     whitelist: [{ host: "direct.example", includeSubdomains: true }]
@@ -164,4 +164,48 @@ test("config object embeds a mandatory PAC script in rule-bearing modes", () => 
   const config = buildChromeProxyConfig({ ...BASE, whitelist: [{ host: "a.example", includeSubdomains: true }] });
   assert.equal(config.mode, "pac_script");
   assert.equal(config.pacScript.mandatory, true);
+});
+
+/* -------------------------------------------------------------------------- */
+/* Local addresses                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Using any PAC script discards Chromium's built-in bypass list. Before this was
+ * handled, the default configuration sent localhost, 127.0.0.1, ::1, .local names
+ * and LAN addresses to the proxy - so a local dev server failed to load with no
+ * explanation while every remote site worked.
+ */
+test("loopback, link-local and dotless hosts never reach the proxy by default", () => {
+  const find = loadPac({ ...BASE });
+  for (const host of ["localhost", "127.0.0.1", "127.0.0.53", "::1", "0.0.0.0", "myapp.local", "router", "fe80::1"]) {
+    assert.equal(find(`http://${host.includes(":") ? `[${host}]` : host}/`, host), "DIRECT", `${host} must stay local`);
+  }
+});
+
+test("the local bypass stops at RFC1918 ranges, which a corporate proxy may be the only route to", () => {
+  const find = loadPac({ ...BASE });
+  for (const host of ["192.168.1.10", "10.0.0.5", "172.16.4.4", "intranet.example.com"]) {
+    const result = find(`http://${host}/`, host);
+    assert.equal(result, PROXY, `${host} must keep following the default route`);
+  }
+});
+
+test("an explicit force-proxy rule overrides the local bypass", () => {
+  // Someone may deliberately run an HTTPS-intercepting proxy for a local name.
+  const find = loadPac({ ...BASE, blacklist: [{ host: "localhost", includeSubdomains: true }] });
+  assert.equal(find("http://localhost/", "localhost"), PROXY);
+});
+
+test("the local bypass can be switched off and is recorded in the PAC", () => {
+  const find = loadPac({ ...BASE, localBypass: false });
+  assert.equal(find("http://localhost/", "localhost"), PROXY);
+  assert.match(buildPacScript({ ...BASE, localBypass: false }), /ALAXEE_LOCAL_BYPASS = false/);
+  assert.match(buildPacScript({ ...BASE, localBypass: true }), /ALAXEE_LOCAL_BYPASS = true/);
+});
+
+test("toggling the local bypass changes the fingerprint, so the PAC is re-applied", () => {
+  // Otherwise the toggle would update storage, leave the old script in the
+  // browser, and the extension would report its own PAC as foreign.
+  assert.notEqual(pacFingerprint({ ...BASE, localBypass: true }), pacFingerprint({ ...BASE, localBypass: false }));
 });

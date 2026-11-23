@@ -52,7 +52,7 @@ test("every manifest icon and status icon is part of the runtime closure", async
   const { files } = await resolveRuntimeFiles(root);
   for (const icon of Object.values(manifest.icons)) assert.ok(files.includes(icon), `missing icon: ${icon}`);
   for (const icon of Object.values(manifest.action.default_icon)) assert.ok(files.includes(icon), `missing action icon: ${icon}`);
-  for (const state of ["clash", "direct", "system", "unknown"]) {
+  for (const state of ["proxy", "direct", "unknown"]) {
     for (const size of [16, 32]) {
       const icon = `icons/status/${state}${size}.png`;
       assert.ok(files.includes(icon), `missing status icon: ${icon}`);
@@ -159,7 +159,7 @@ test("every toolbar state has a distinct visual treatment in the popup", async (
   const html = await readFile(path.join(root, "src/popup.html"), "utf8");
   const css = await readFile(path.join(root, "src/popup.css"), "utf8");
   assert.match(html, /id="brandMark"/);
-  for (const route of ["clash", "direct", "system", "unknown"]) {
+  for (const route of ["proxy", "direct", "unknown"]) {
     assert.ok(html.includes(`route-shape route-${route}`), `missing ${route} silhouette`);
     assert.ok(css.includes(`data-route="${route}"`), `missing ${route} styling`);
   }

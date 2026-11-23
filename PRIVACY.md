@@ -7,22 +7,22 @@ Alaxee Proxy is a local-only Microsoft Edge extension that lets the user control
 ## Information the extension accesses
 
 - When the user invokes the extension on a web page, `activeTab` is used to read that tab's URL so the user can add the current hostname to the bypass list.
-- The extension stores its proxy mode, local proxy address and port, and bypass-list hostnames in the browser's local extension storage (`chrome.storage.local`).
+- The extension stores its proxy mode, proxy address and port, and domain rule lists in the browser's local extension storage (`chrome.storage.local`).
 - The extension does not read page contents, form fields, passwords, or browsing history.
 
 ## Optional per-tab status icons
 
-If the user enables the optional `tabs` permission, the extension reads tab URLs to determine whether each HTTP/HTTPS tab is assigned to the configured Clash listener, bypassed by the local direct list, using system proxy mode, or has an unknown/externally controlled state. This processing happens locally in the extension service worker and is used only to update that tab's toolbar icon and tooltip. The extension does not read page contents, form fields, passwords, browsing history, or transmit tab URLs to any server. The permission can remain ungranted; in that case the toolbar displays the global proxy mode.
+If the user enables the optional `tabs` permission, the extension reads tab URLs to determine whether each HTTP/HTTPS tab is sent to the configured proxy listener, bypassed by the direct list (including local addresses), or has an unknown/externally controlled state. This processing happens locally in the extension service worker and is used only to update that tab's toolbar icon and tooltip. The extension does not read page contents, form fields, passwords, browsing history, or transmit tab URLs to any server. The permission can remain ungranted; in that case the toolbar shows an unknown per-page state rather than guessing.
 
 ## Collection, transmission, and sharing
 
 Alaxee Proxy does not send this information to Alaxee, a developer-operated server, analytics provider, or other third party. It does not include accounts, cloud sync, telemetry, remote configuration, or advertising. The settings and bypass list remain in the local Edge profile.
 
-When proxy mode is enabled, Edge sends browser network requests to the proxy endpoint configured by the user (normally a local Clash/Mihomo listener such as `127.0.0.1`). The proxy application and its operator may process network traffic according to their own configuration and privacy practices. Alaxee Proxy does not operate that proxy service.
+When proxy mode is enabled, Edge sends browser network requests to the endpoint configured by the user (typically a listener on `127.0.0.1`). The proxy application and its operator may process network traffic according to their own configuration and privacy practices. Alaxee Proxy does not operate that proxy service.
 
 ## User controls
 
-Users can change or remove the proxy endpoint and bypass-list entries in the extension, switch Edge to direct or system proxy mode, or uninstall the extension. Uninstalling the extension removes its local extension storage according to Edge's extension-data behavior.
+Users can change or remove the proxy endpoint and domain rules in the extension, switch Edge to direct connection, or uninstall the extension. Uninstalling the extension removes its local extension storage according to Edge's extension-data behavior.
 
 ## Changes and contact
 

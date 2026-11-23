@@ -1,10 +1,10 @@
 /**
  * Icon integrity.
  *
- * Three of the eight toolbar PNGs shipped in 0.1.3 were corrupt: clash16 had a
- * bad palette CRC, and clash32 and system32 were truncated mid-file. Nothing
- * checked them, so the only symptom would have been a blank toolbar icon at high
- * DPI - and clash32 is exactly what manifest action.default_icon points at.
+ * Three of the eight toolbar PNGs shipped in 0.1.3 were corrupt: one had a bad
+ * palette CRC and two were truncated mid-file. Nothing checked them, so the only
+ * symptom would have been a blank toolbar icon at high DPI - and the 32px proxy
+ * icon is exactly what manifest action.default_icon points at.
  *
  * These tests assert that every shipped PNG is structurally valid and that the
  * committed bytes match scripts/render-icons.py, so the artwork has a source of
@@ -19,7 +19,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const manifest = JSON.parse(await readFile(path.join(root, "manifest.json"), "utf8"));
-const STATES = ["clash", "direct", "system", "unknown"];
+const STATES = ["proxy", "direct", "unknown"];
 const SIZES = [16, 32];
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);

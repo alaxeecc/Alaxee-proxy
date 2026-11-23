@@ -7,7 +7,7 @@ The toolbar icons used to exist in three independent forms: ~193 lines of
 OffscreenCanvas drawing in background.js, an inline SVG in popup.html, and eight
 committed PNGs. The PNGs could not be regenerated from anything, so a broken file
 had no source of truth to fall back on - and three of them were in fact corrupt
-(clash16 had a bad palette CRC, clash32 and system32 were truncated).
+(proxy16 had a bad palette CRC, and two 32px files were truncated).
 
 This script is the source of truth for the PNGs. It draws the same geometry as
 the popup SVG using only the Python standard library: no Pillow, no cairo, no
@@ -214,7 +214,7 @@ def linear(stops, x0: float, y0: float, x1: float, y1: float, order: str = "x"):
 
 
 # --------------------------------------------------------------------------- #
-# The four state silhouettes                                                   #
+# The state silhouettes                                                   #
 # --------------------------------------------------------------------------- #
 def route_bounds(route: str) -> tuple[float, float, float, float]:
     """Bounding box of the route silhouette, including half its stroke width.
@@ -222,12 +222,10 @@ def route_bounds(route: str) -> tuple[float, float, float, float]:
     The central X is intentionally excluded: it is the constant part of the mark
     and should keep its size relative to the silhouette that carries the meaning.
     """
-    if route == "clash":
+    if route == "proxy":
         return (24 - 18.2 - 1.95, 24 - 18.2 - 1.95, 24 + 18.2 + 1.95, 24 + 18.2 + 1.95)
     if route == "direct":
         return (6.8 - 2.1, 7.0 - 2.1, 44.0 + 2.1, 40.0 + 2.1)
-    if route == "system":
-        return (24 - 17.2 - 1.8, 24 - 11.0 - 1.8, 24 + 17.2 + 1.8, 24 + 11.0 + 1.8)
     # unknown: broken orbit fragments plus the warning diamond.
     return (7.0, 5.5, 42.0, 41.0)
 
@@ -237,7 +235,7 @@ def draw_route(canvas: Canvas, route: str) -> None:
     orbit = linear(ORBIT_STOPS, canvas.to_device(7, 39)[0], 0, canvas.to_device(43, 13)[0], 0)
     flow = linear(FLOW_STOPS, canvas.to_device(7, 39)[0], 0, canvas.to_device(44, 7)[0], 0)
 
-    if route == "clash":
+    if route == "proxy":
         # Closed orbit: a ring that reaches close to the canvas edge, plus three
         # route nodes sitting on the ring.
         canvas.circle_outline(24, 24, 18.2, 3.9, orbit)
@@ -257,22 +255,6 @@ def draw_route(canvas: Canvas, route: str) -> None:
         )
         canvas.fill_disc(7.3, 37.2, 1.65, NODE_BLUE)
 
-    elif route == "system":
-        # Figure-eight traced as one continuous lemniscate, so the two lanes
-        # visibly cross at the centre instead of reading as two separate hooks.
-        points = []
-        steps = 160
-        for index in range(steps + 1):
-            t = 2 * math.pi * index / steps
-            denominator = 1.0 + math.sin(t) ** 2
-            points.append((
-                24 + 17.2 * math.cos(t) / denominator,
-                24 + 17.2 * math.sin(t) * math.cos(t) / denominator,
-            ))
-        canvas.stroke(points, 3.6, orbit)
-        canvas.fill_disc(6.8, 24, 2.7, NODE_BLUE)
-        canvas.fill_disc(41.2, 24, 2.7, NODE_CYAN)
-
     elif route == "unknown":
         # Broken orbit fragments plus a warning diamond.
         canvas.stroke([(7.5, 29.5), (8.0, 22.0), (14.0, 12.5), (23.0, 8.8)], 3.1, orbit)
@@ -290,7 +272,7 @@ def draw_route(canvas: Canvas, route: str) -> None:
 
 
 def draw_xee(canvas: Canvas) -> None:
-    """The central crossing mark, identical in all four states."""
+    """The central crossing mark, identical in every state."""
     xee = linear(XEE_STOPS, canvas.to_device(9, 9)[0], 0, canvas.to_device(41, 40)[0], 0, "diag")
     canvas.stroke([(13, 12.5), (35, 35.5)], 5.1, xee)
     canvas.stroke([(35, 12.5), (13, 35.5)], 5.1, xee)
@@ -336,7 +318,7 @@ def render(route: str, size: int) -> list[Rgba]:
     return canvas.to_rgba()
 
 
-ROUTES = ("clash", "direct", "system", "unknown")
+ROUTES = ("proxy", "direct", "unknown")
 
 
 def main() -> int:

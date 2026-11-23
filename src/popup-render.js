@@ -13,22 +13,23 @@
  * State and chrome.* calls live in popup-controller.js.
  */
 import {
+  describeProxyEndpoint,
+  isConfigured,
   isHostBlacklisted,
   isHostWhitelisted,
+  isLocalHost,
   resolveTabRoute
 } from "./core.js";
 
 export const ROUTE_LABELS = Object.freeze({
-  clash: "交给 Clash",
+  proxy: "交给代理",
   direct: "浏览器直连",
-  system: "系统代理",
   unknown: "状态未知"
 });
 
 const ROUTE_CLASSES = Object.freeze({
-  clash: "route-proxy",
+  proxy: "route-proxy",
   direct: "route-good",
-  system: "route-system",
   unknown: "route-unknown"
 });
 
@@ -39,6 +40,8 @@ export function createUi() {
     statePill: $("statePill"),
     stateText: $("stateText"),
     modeHelp: $("modeHelp"),
+    endpointLine: $("endpointLine"),
+    endpointTag: $("endpointTag"),
     scheme: $("schemeInput"),
     host: $("hostInput"),
     port: $("portInput"),
@@ -70,8 +73,14 @@ export function createUi() {
     activeRuleTitle: $("activeRuleTitle"),
     ruleList: $("rulesList"),
     ruleEmpty: $("rulesEmpty"),
+    ruleNoMatch: $("rulesNoMatch"),
     ruleCount: $("listCount"),
-    clearRules: $("clearRulesButton")
+    clearRules: $("clearRulesButton"),
+    ruleSearch: $("ruleSearch"),
+    ruleSort: $("ruleSort"),
+    localBypassToggle: $("localBypassToggle"),
+    bypassWarning: $("bypassWarning"),
+    bypassTag: $("bypassTag")
   };
 }
 
@@ -94,30 +103,49 @@ export function showNotice(ui, message, kind, timers = globalThis) {
 /* Current page                                                               */
 /* -------------------------------------------------------------------------- */
 
-/** Message shown under the hostname, given the resolved route and rule hits. */
-export function describeRoute(route, { whitelisted, blacklisted }) {
+/**
+ * Message shown under the hostname, given the resolved route and rule hits.
+ *
+ * The local case is stated before the rule hits because "this address can only
+ * mean your own machine" is a stronger and more useful explanation than "you have
+ * a rule for it" when both happen to be true.
+ */
+export function describeRoute(route, { whitelisted, blacklisted, local }) {
+  if (local && route === "direct") {
+    return "这是本机或局域网地址，浏览器会直接连接，不经过代理服务器。";
+  }
   switch (route) {
-    case "clash":
+    case "proxy":
       return blacklisted
-        ? "此网站命中代理黑名单，浏览器请求会强制交给本机 Clash。"
-        : "此网站未命中直连白名单，浏览器请求会交给本机 Clash 处理。";
+        ? "此网站命中代理黑名单，浏览器请求会强制交给代理服务器。"
+        : "此网站未命中直连白名单，浏览器请求会交给代理服务器处理。";
     case "direct":
       return whitelisted
         ? "此网站命中直连白名单，浏览器请求会绕过浏览器代理。"
         : "当前浏览器处于全局直连模式，所有网站都会直接连接。";
-    case "system":
-      return "此网站跟随 Windows 系统代理设置；白名单和黑名单在此模式下暂不生效。";
     default:
       return "无法确认此网站的浏览器代理路由；可能由其他扩展或管理策略接管。";
   }
 }
 
-/** Hint below the action buttons for the current page. */
-export function describeSiteHint(route, { whitelisted, blacklisted }) {
-  if (route === "system") return "系统代理模式会把规则暂时搁置；切回 Clash 或全局直连后规则会重新生效。";
-  if (blacklisted) return "当前命中代理黑名单；即使同时匹配上级白名单，也会优先交给 Clash。";
-  if (whitelisted) return "当前命中直连白名单；浏览器会跳过本机代理。";
-  return "白名单让网站直连；代理黑名单让网站强制经 Clash。重叠时黑名单优先。";
+/**
+ * Hint below the action buttons for the current page.
+ *
+ * An unknown route is checked first: when the browser's proxy configuration is not
+ * one this extension wrote, the whitelist and blacklist are not in force, so
+ * claiming "this site will skip the proxy" would be false even though the rule
+ * lookup itself succeeds.
+ */
+export function describeSiteHint(route, { whitelisted, blacklisted, local }) {
+  if (route === "unknown") {
+    return "浏览器代理当前不由本扩展控制，因此这里的规则不会生效。切换上方任一模式即可重新接管。";
+  }
+  if (local && route === "direct") {
+    return "本机地址始终直连；如需让它走代理，请在代理黑名单里加入它。";
+  }
+  if (blacklisted) return "当前命中代理黑名单；即使同时匹配上级白名单，也会优先交给代理服务器。";
+  if (whitelisted) return "当前命中直连白名单；浏览器会跳过代理服务器。";
+  return "白名单让网站直连；代理黑名单让网站强制走代理。重叠时黑名单优先。";
 }
 
 /**
@@ -129,8 +157,11 @@ export function describeSiteHint(route, { whitelisted, blacklisted }) {
  */
 export function renderCurrentPage(ui, { currentTabUrl, currentHostname, settings, proxyState }) {
   const route = resolveTabRoute(currentTabUrl, proxyState, settings);
-  const whitelisted = Boolean(currentHostname && isHostWhitelisted(currentHostname, settings.whitelist));
-  const blacklisted = Boolean(currentHostname && isHostBlacklisted(currentHostname, settings.blacklist));
+  const facts = {
+    whitelisted: Boolean(currentHostname && isHostWhitelisted(currentHostname, settings.whitelist)),
+    blacklisted: Boolean(currentHostname && isHostBlacklisted(currentHostname, settings.blacklist)),
+    local: Boolean(currentHostname && isLocalHost(currentHostname))
+  };
   const whitelistExact = Boolean(currentHostname && settings.whitelist.some((entry) => entry.host === currentHostname));
   const blacklistExact = Boolean(currentHostname && settings.blacklist.some((entry) => entry.host === currentHostname));
 
@@ -151,39 +182,58 @@ export function renderCurrentPage(ui, { currentTabUrl, currentHostname, settings
   }
 
   ui.currentHost.textContent = currentHostname;
-  ui.currentRoute.textContent = describeRoute(route, { whitelisted, blacklisted });
+  ui.currentRoute.textContent = describeRoute(route, facts);
 
   // Disable the add buttons when the host is already covered by any rule,
   // including a parent domain's subdomain rule. Checking exact equality only
   // left the button active on a subdomain the UI was simultaneously reporting as
   // whitelisted, which invited duplicate entries.
-  ui.addCurrentDirect.disabled = whitelisted;
-  ui.addCurrentProxy.disabled = blacklisted;
+  ui.addCurrentDirect.disabled = facts.whitelisted;
+  ui.addCurrentProxy.disabled = facts.blacklisted;
 
   // Removal is only offered for a rule that matches this host verbatim, because
   // the button deletes by exact host and would otherwise do nothing visible.
   ui.removeCurrentRule.hidden = !whitelistExact && !blacklistExact;
-  ui.includeSubdomains.disabled = whitelisted || blacklisted;
-  ui.siteHint.textContent = describeSiteHint(route, { whitelisted, blacklisted });
+  ui.includeSubdomains.disabled = facts.whitelisted || facts.blacklisted;
+  ui.siteHint.textContent = describeSiteHint(route, facts);
   return route;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Mode                                                                       */
+/* Mode and endpoint                                                          */
 /* -------------------------------------------------------------------------- */
 
-export function describeModeHelp(activeMode) {
-  if (activeMode === "clash") return "默认网站交给 Clash；白名单网站直连，代理黑名单网站强制经 Clash。";
-  if (activeMode === "direct") return "默认网站直接连接；代理黑名单是例外，会强制经本机 Clash。";
-  if (activeMode === "system") return "Edge 使用 Windows 系统代理设置；域名白名单和黑名单在此模式下暂不生效。";
-  return "当前代理设置无法识别。你仍可在这里选择一个模式接管 Edge。";
+export function describeModeHelp(activeMode, settings) {
+  const configured = isConfigured(settings);
+  if (activeMode === "proxy") {
+    return configured
+      ? "普通网站交给代理服务器；白名单网站直连，代理黑名单网站强制走代理。"
+      : "还没有填写代理服务器地址，这条模式暂时不会生效。先在下方填好地址和端口。";
+  }
+  if (activeMode === "direct") {
+    return "默认网站直接连接；代理黑名单是例外，会强制走代理服务器。";
+  }
+  return "当前浏览器代理设置无法识别。你仍可在这里选择一个模式接管 Edge。";
 }
 
-export function renderModes(ui, activeMode) {
+/** The endpoint summary under the mode buttons. */
+export function renderEndpointLine(ui, settings) {
+  ui.endpointLine.textContent = describeProxyEndpoint(settings);
+  ui.endpointLine.classList.toggle("is-unset", !isConfigured(settings));
+}
+
+/** The small "未配置 / 已配置" tag in the server card heading. */
+export function renderEndpointTag(ui, settings) {
+  const configured = isConfigured(settings);
+  ui.endpointTag.textContent = configured ? "已配置" : "未配置";
+  ui.endpointTag.parentElement.dataset.state = configured ? "set" : "unset";
+}
+
+export function renderModes(ui, activeMode, settings) {
   for (const button of document.querySelectorAll("[data-mode]")) {
     button.setAttribute("aria-pressed", String(button.dataset.mode === activeMode));
   }
-  ui.modeHelp.textContent = describeModeHelp(activeMode);
+  ui.modeHelp.textContent = describeModeHelp(activeMode, settings);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -205,7 +255,7 @@ export function renderRuleTab(ui, activeRuleType) {
   ui.blacklistTab.setAttribute("aria-pressed", String(isBlacklist));
   ui.activeRuleTitle.textContent = isBlacklist ? "代理黑名单" : "直连白名单";
   ui.ruleDescription.textContent = isBlacklist
-    ? "命中的网站会强制通过本机 Clash，即使它也匹配某条上级直连白名单。"
+    ? "命中的网站会强制通过代理服务器，即使它也匹配某条上级直连白名单。"
     : "命中的网站会绕过浏览器代理，直接连接。";
   ui.ruleHostInput.placeholder = isBlacklist ? "force-proxy.example.com" : "direct.example.com";
   ui.addRuleButton.textContent = isBlacklist ? "添加代理规则" : "添加直连规则";
@@ -223,6 +273,22 @@ export function totalRuleCount(settings) {
   return settings.whitelist.length + settings.blacklist.length;
 }
 
+/**
+ * Filters and orders the visible rules without touching the stored order.
+ *
+ * Sorting is a view concern: the PAC compares rule sets, not sequences, so
+ * reordering the list must never rewrite storage and invalidate the fingerprint.
+ * "Recently added" reverses the stored order because entries are appended.
+ */
+export function visibleRules(entries, { search = "", sort = "recent" } = {}) {
+  const needle = String(search ?? "").trim().toLowerCase();
+  const filtered = needle
+    ? entries.filter((entry) => entry.host.toLowerCase().includes(needle))
+    : [...entries];
+  if (sort === "name") return filtered.sort((a, b) => (a.host < b.host ? -1 : a.host > b.host ? 1 : 0));
+  return filtered.reverse();
+}
+
 export function renderRuleCounts(ui, settings, activeRuleType) {
   ui.totalRuleCount.textContent = String(totalRuleCount(settings));
   ui.ruleCount.textContent = String(ruleEntries(settings, activeRuleType).length);
@@ -232,16 +298,21 @@ export function renderRuleCounts(ui, settings, activeRuleType) {
  * Rebuilds the rule list in one layout pass.
  *
  * @param {object} ui
- * @param {{settings: object, activeRuleType: string, onRemove: (host: string, type: string) => void}} view
+ * @param {{settings: object, activeRuleType: string, search?: string, sort?: string,
+ *          matchedHost?: string|null,
+ *          onRemove: (host: string, type: string) => void}} view
  */
-export function renderRules(ui, { settings, activeRuleType, onRemove }) {
-  const entries = ruleEntries(settings, activeRuleType);
+export function renderRules(ui, { settings, activeRuleType, search = "", sort = "recent", matchedHost = null, onRemove }) {
+  const all = ruleEntries(settings, activeRuleType);
+  const entries = visibleRules(all, { search, sort });
   const isBlacklist = activeRuleType === "blacklist";
+  const searching = String(search ?? "").trim() !== "";
 
   ui.ruleList.replaceChildren();
-  ui.ruleCount.textContent = String(entries.length);
-  ui.ruleEmpty.hidden = entries.length > 0;
-  ui.clearRules.hidden = entries.length === 0;
+  ui.ruleCount.textContent = String(all.length);
+  ui.ruleEmpty.hidden = all.length > 0;
+  ui.ruleNoMatch.hidden = !(searching && all.length > 0 && entries.length === 0);
+  ui.clearRules.hidden = all.length === 0;
   ui.totalRuleCount.textContent = String(totalRuleCount(settings));
 
   const fragment = document.createDocumentFragment();
@@ -259,8 +330,15 @@ export function renderRules(ui, { settings, activeRuleType, onRemove }) {
     meta.textContent = entry.includeSubdomains ? "主域名及其子域名" : "仅此主机名";
     const type = document.createElement("span");
     type.className = `rule-type-label ${isBlacklist ? "rule-type-proxy" : "rule-type-direct"}`;
-    type.textContent = isBlacklist ? "强制 Clash" : "直连";
-    detail.append(domain, meta, type);
+    type.textContent = isBlacklist ? "强制代理" : "直连";
+    detail.append(domain, meta);
+    if (matchedHost && entry.host === matchedHost) {
+      const badge = document.createElement("span");
+      badge.className = "rule-match-badge";
+      badge.textContent = "当前网站命中";
+      detail.append(badge);
+    }
+    detail.append(type);
 
     const remove = document.createElement("button");
     remove.className = "remove-button";
@@ -276,6 +354,16 @@ export function renderRules(ui, { settings, activeRuleType, onRemove }) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Local bypass                                                               */
+/* -------------------------------------------------------------------------- */
+
+export function renderLocalBypass(ui, enabled) {
+  ui.localBypassToggle.checked = Boolean(enabled);
+  ui.bypassWarning.hidden = Boolean(enabled);
+  ui.bypassTag.textContent = enabled ? "直接连接" : "已关闭";
+}
+
+/* -------------------------------------------------------------------------- */
 /* Proxy state and permissions                                                */
 /* -------------------------------------------------------------------------- */
 
@@ -285,7 +373,7 @@ const LEVEL_CLASSES = Object.freeze({
   controlled_by_other_extensions: "state-bad"
 });
 
-const FOREIGN_LABELS = new Set(["其他代理配置", "自动检测代理", "其他 PAC 代理配置"]);
+const FOREIGN_LABELS = new Set(["其他代理配置", "自动检测代理", "其他 PAC 配置"]);
 
 /** Maps a describeProxyMode() label plus levelOfControl onto pill styling. */
 export function proxyStateClass(label, level) {

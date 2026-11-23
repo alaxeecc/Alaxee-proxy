@@ -22,7 +22,7 @@ import {
 } from "../src/core.js";
 
 const BASE = {
-  mode: "clash",
+  mode: "proxy",
   host: "127.0.0.1",
   port: "7890",
   scheme: "socks5",
@@ -140,7 +140,7 @@ test("a foreign PAC script is never claimed as ours", () => {
 test("inferActiveMode recognises our own PAC through the fingerprint", () => {
   const settings = { ...BASE, whitelist: rules(4) };
   const state = { levelOfControl: "controlled_by_this_extension", value: buildChromeProxyConfig(settings) };
-  assert.equal(inferActiveMode(state.value, settings), "clash");
+  assert.equal(inferActiveMode(state.value, settings), "proxy");
 });
 
 test("inferActiveMode rejects our PAC once the saved rules diverge", () => {
