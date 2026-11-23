@@ -1,19 +1,38 @@
+/**
+ * State and side effects for the popup and the full settings page.
+ *
+ * This module owns everything that reads or writes chrome.* APIs or keeps
+ * mutable state. Pure DOM work is imported from popup-render.js so the two
+ * surfaces share one implementation and rendering stays independently testable.
+ *
+ * Both surfaces load this same module: the options page redirects to
+ * src/popup.html?full=1, so only one instance exists at a time.
+ */
 import {
   DEFAULT_SETTINGS,
+  RuleLimitError,
   buildChromeProxyConfig,
   createDomainEntry,
   describeProxyMode,
   getPageHostname,
   inferActiveMode,
-  isHostBlacklisted,
-  isHostWhitelisted,
-  normalizeBlacklist,
   normalizeDomainEntriesStrict,
-  normalizeWhitelist,
-  RuleLimitError,
-  resolveTabRoute,
   validateProxySettings
 } from "./core.js";
+import {
+  createUi,
+  renderConnectionFields,
+  renderCurrentPage as renderCurrentPageView,
+  renderModes as renderModesView,
+  renderProxyState,
+  renderProxyStateError,
+  renderRuleCounts,
+  renderRuleTab,
+  renderRules as renderRulesView,
+  renderStatusPermission as renderStatusPermissionView,
+  renderViewSwitch,
+  showNotice
+} from "./popup-render.js";
 
 const fullPageMode = new URLSearchParams(window.location.search).get("full") === "1";
 if (fullPageMode) {
@@ -29,45 +48,7 @@ if (fullPageMode) {
   }
 }
 
-const $ = (id) => document.getElementById(id);
-const ui = {
-  statePill: $("statePill"),
-  stateText: $("stateText"),
-  modeHelp: $("modeHelp"),
-  scheme: $("schemeInput"),
-  host: $("hostInput"),
-  port: $("portInput"),
-  saveConnect: $("saveConnectButton"),
-  currentHost: $("currentHost"),
-  currentRoute: $("currentRoute"),
-  routePill: $("siteRoutePill"),
-  includeSubdomains: $("includeSubdomainsInput"),
-  addCurrentDirect: $("addCurrentDirectButton"),
-  addCurrentProxy: $("addCurrentProxyButton"),
-  removeCurrentRule: $("removeCurrentRuleButton"),
-  siteHint: $("siteHint"),
-  notice: $("notice"),
-  openSettings: $("openSettingsButton"),
-  statusPermissionButton: $("statusPermissionButton"),
-  statusPermissionHint: $("statusPermissionHint"),
-  brandMark: $("brandMark"),
-  totalRuleCount: $("totalRuleCount"),
-  overviewView: $("overviewView"),
-  rulesView: $("rulesView"),
-  viewButtons: [...document.querySelectorAll("[data-view]")],
-  whitelistTab: $("whitelistTab"),
-  blacklistTab: $("blacklistTab"),
-  ruleDescription: $("ruleDescription"),
-  ruleForm: $("ruleForm"),
-  ruleHostInput: $("ruleHostInput"),
-  ruleIncludeSubdomains: $("ruleIncludeSubdomainsInput"),
-  addRuleButton: $("addRuleButton"),
-  activeRuleTitle: $("activeRuleTitle"),
-  ruleList: $("rulesList"),
-  ruleEmpty: $("rulesEmpty"),
-  ruleCount: $("listCount"),
-  clearRules: $("clearRulesButton")
-};
+const ui = createUi();
 
 let settings = { ...DEFAULT_SETTINGS, whitelist: [], blacklist: [] };
 let currentHostname = null;
@@ -78,12 +59,57 @@ let activeView = "overview";
 let activeRuleType = "whitelist";
 let noticeTimer = null;
 
+/* ------------------------------------------------------------------ */
+/* Render wrappers                                                     */
+/*                                                                     */
+/* Rendering takes explicit inputs; these wrappers bind the current    */
+/* state so the call sites below stay close to their original shape.   */
+/* ------------------------------------------------------------------ */
+
+function renderCurrentPage() {
+  return renderCurrentPageView(ui, {
+    currentTabUrl,
+    currentHostname,
+    settings,
+    proxyState: proxyStateSnapshot
+  });
+}
+
+function renderModes() {
+  renderModesView(ui, activeMode);
+}
+
+function renderRules() {
+  renderRulesView(ui, {
+    settings,
+    activeRuleType,
+    onRemove: (host, type) => {
+      void removeDomainRule(host, type).catch(reportRuleError);
+    }
+  });
+}
+
+function renderStatusPermission() {
+  chrome.permissions.contains({ permissions: ["tabs"] }, (granted) => {
+    renderStatusPermissionView(ui, Boolean(granted));
+  });
+}
+
+function syncRuleCounts() {
+  renderRuleCounts(ui, settings, activeRuleType);
+}
+
+function getRuleList(type) {
+  return type === "blacklist" ? settings.blacklist : settings.whitelist;
+}
+
+function countRules() {
+  return settings.whitelist.length + settings.blacklist.length;
+}
+
 function sendNotice(message, kind = "success") {
-  clearTimeout(noticeTimer);
-  ui.notice.textContent = message;
-  ui.notice.className = `notice notice-${kind}`;
-  ui.notice.hidden = false;
-  noticeTimer = setTimeout(() => { ui.notice.hidden = true; }, 4600);
+  noticeTimer?.();
+  noticeTimer = showNotice(ui, message, kind);
 }
 
 function chromeCall(target, method, ...args) {
@@ -100,19 +126,6 @@ function chromeCall(target, method, ...args) {
   });
 }
 
-function getRuleList(type) {
-  return type === "blacklist" ? settings.blacklist : settings.whitelist;
-}
-
-function countRules() {
-  return settings.whitelist.length + settings.blacklist.length;
-}
-
-function syncRuleCounts() {
-  ui.totalRuleCount.textContent = String(countRules());
-  ui.ruleCount.textContent = String(getRuleList(activeRuleType).length);
-}
-
 async function loadSettings() {
   const stored = await chromeCall(chrome.storage.local, "get", "settings");
   const raw = stored?.settings ?? {};
@@ -123,11 +136,7 @@ async function loadSettings() {
     blacklist: normalizeBlacklist(raw.blacklist)
   };
   activeMode = ["clash", "direct", "system"].includes(settings.mode) ? settings.mode : "clash";
-  ui.host.value = settings.host;
-  ui.port.value = settings.port;
-  ui.scheme.value = settings.scheme;
-  ui.includeSubdomains.checked = settings.includeSubdomains !== false;
-  ui.ruleIncludeSubdomains.checked = true;
+  renderConnectionFields(ui, settings);
   renderRules();
   renderModes();
 }
@@ -142,7 +151,6 @@ async function saveSettings(nextSettings) {
   syncRuleCounts();
 }
 
-/** Reports a failed rule edit in the user's language, naming the actual limit. */
 function reportRuleError(error) {
   if (error instanceof RuleLimitError) {
     sendNotice(error.message, "error");
@@ -179,143 +187,18 @@ async function inspectCurrentPage() {
   }
   renderCurrentPage();
 }
-
-function renderCurrentPage() {
-  const route = resolveTabRoute(currentTabUrl, proxyStateSnapshot, settings);
-  const whitelisted = Boolean(currentHostname && isHostWhitelisted(currentHostname, settings.whitelist));
-  const blacklisted = Boolean(currentHostname && isHostBlacklisted(currentHostname, settings.blacklist));
-  const whitelistExact = Boolean(currentHostname && settings.whitelist.some((entry) => entry.host === currentHostname));
-  const blacklistExact = Boolean(currentHostname && settings.blacklist.some((entry) => entry.host === currentHostname));
-  const labels = {
-    clash: "交给 Clash",
-    direct: "浏览器直连",
-    system: "系统代理",
-    unknown: "状态未知"
-  };
-  const messages = {
-    clash: blacklisted
-      ? "此网站命中代理黑名单，浏览器请求会强制交给本机 Clash。"
-      : "此网站未命中直连白名单，浏览器请求会交给本机 Clash 处理。",
-    direct: whitelisted
-      ? "此网站命中直连白名单，浏览器请求会绕过浏览器代理。"
-      : "当前浏览器处于全局直连模式，所有网站都会直接连接。",
-    system: "此网站跟随 Windows 系统代理设置；白名单和黑名单在此模式下暂不生效。",
-    unknown: "无法确认此网站的浏览器代理路由；可能由其他扩展或管理策略接管。"
-  };
-  const classes = {
-    clash: "route-proxy",
-    direct: "route-good",
-    system: "route-system",
-    unknown: "route-unknown"
-  };
-
-  ui.brandMark.dataset.route = route;
-  ui.brandMark.setAttribute("aria-label", `当前页面状态：${labels[route]}`);
-  ui.routePill.textContent = labels[route];
-  ui.routePill.className = `route-pill ${classes[route]}`;
-
-  if (!currentHostname) {
-    ui.currentHost.textContent = "当前页面不可用";
-    ui.currentRoute.textContent = "请打开普通 HTTP 或 HTTPS 网站后再查看网页路由。";
-    ui.addCurrentDirect.disabled = true;
-    ui.addCurrentProxy.disabled = true;
-    ui.removeCurrentRule.hidden = true;
-    ui.includeSubdomains.disabled = true;
-    ui.siteHint.textContent = "浏览器内部页面不属于普通网站，无法加入域名规则。";
-    return;
-  }
-
-  ui.currentHost.textContent = currentHostname;
-  ui.currentRoute.textContent = messages[route];
-  ui.addCurrentDirect.disabled = whitelistExact;
-  ui.addCurrentProxy.disabled = blacklistExact;
-  ui.removeCurrentRule.hidden = !whitelistExact && !blacklistExact;
-  ui.includeSubdomains.disabled = whitelistExact || blacklistExact;
-
-  if (route === "system") {
-    ui.siteHint.textContent = "系统代理模式会把规则暂时搁置；切回 Clash 或全局直连后规则会重新生效。";
-  } else if (blacklisted) {
-    ui.siteHint.textContent = "当前命中代理黑名单；即使同时匹配上级白名单，也会优先交给 Clash。";
-  } else if (whitelisted) {
-    ui.siteHint.textContent = "当前命中直连白名单；浏览器会跳过本机代理。";
-  } else {
-    ui.siteHint.textContent = "白名单让网站直连；代理黑名单让网站强制经 Clash。重叠时黑名单优先。";
-  }
-}
-
-function renderModes() {
-  document.querySelectorAll("[data-mode]").forEach((button) => {
-    button.setAttribute("aria-pressed", String(button.dataset.mode === activeMode));
-  });
-  ui.modeHelp.textContent = activeMode === "clash"
-    ? "默认网站交给 Clash；白名单网站直连，代理黑名单网站强制经 Clash。"
-    : activeMode === "direct"
-      ? "默认网站直接连接；代理黑名单是例外，会强制经本机 Clash。"
-      : activeMode === "system"
-        ? "Edge 使用 Windows 系统代理设置；域名白名单和黑名单在此模式下暂不生效。"
-        : "当前代理设置无法识别。你仍可在这里选择一个模式接管 Edge。";
-}
-
 function switchView(view) {
   activeView = view === "rules" ? "rules" : "overview";
-  ui.overviewView.hidden = activeView !== "overview";
-  ui.rulesView.hidden = activeView !== "rules";
-  ui.viewButtons.forEach((button) => {
-    if (button.dataset.view === activeView) button.setAttribute("aria-current", "page");
-    else button.removeAttribute("aria-current");
-  });
+  renderViewSwitch(ui, activeView);
   if (activeView === "rules") renderRules();
 }
 
 function switchRuleType(type) {
   activeRuleType = type === "blacklist" ? "blacklist" : "whitelist";
-  ui.whitelistTab.setAttribute("aria-pressed", String(activeRuleType === "whitelist"));
-  ui.blacklistTab.setAttribute("aria-pressed", String(activeRuleType === "blacklist"));
-  ui.activeRuleTitle.textContent = activeRuleType === "blacklist" ? "代理黑名单" : "直连白名单";
-  ui.ruleDescription.textContent = activeRuleType === "blacklist"
-    ? "命中的网站会强制通过本机 Clash，即使它也匹配某条上级直连白名单。"
-    : "命中的网站会绕过浏览器代理，直接连接。";
-  ui.ruleHostInput.placeholder = activeRuleType === "blacklist" ? "force-proxy.example.com" : "direct.example.com";
-  ui.addRuleButton.textContent = activeRuleType === "blacklist" ? "添加代理规则" : "添加直连规则";
+  renderRuleTab(ui, activeRuleType);
   renderRules();
 }
 
-function renderRules() {
-  const entries = getRuleList(activeRuleType);
-  ui.ruleList.replaceChildren();
-  ui.ruleCount.textContent = String(entries.length);
-  ui.ruleEmpty.hidden = entries.length > 0;
-  ui.clearRules.hidden = entries.length === 0;
-  ui.totalRuleCount.textContent = String(countRules());
-
-  for (const entry of entries) {
-    const item = document.createElement("li");
-    item.className = "whitelist-item";
-
-    const detail = document.createElement("div");
-    detail.className = "rule-detail";
-    const domain = document.createElement("div");
-    domain.className = "whitelist-domain";
-    domain.textContent = entry.host;
-    const meta = document.createElement("div");
-    meta.className = "whitelist-meta";
-    meta.textContent = entry.includeSubdomains ? "主域名及其子域名" : "仅此主机名";
-    const type = document.createElement("span");
-    type.className = `rule-type-label ${activeRuleType === "blacklist" ? "rule-type-proxy" : "rule-type-direct"}`;
-    type.textContent = activeRuleType === "blacklist" ? "强制 Clash" : "直连";
-    detail.append(domain, meta, type);
-
-    const remove = document.createElement("button");
-    remove.className = "remove-button";
-    remove.type = "button";
-    remove.textContent = "×";
-    remove.setAttribute("aria-label", `移除 ${entry.host}`);
-    remove.addEventListener("click", () => removeDomainRule(entry.host, activeRuleType));
-
-    item.append(detail, remove);
-    ui.ruleList.append(item);
-  }
-}
 
 async function readProxyState() {
   try {
@@ -327,19 +210,14 @@ async function readProxyState() {
     activeMode = inferActiveMode(current, settings);
     renderModes();
     renderCurrentPage();
-    ui.stateText.textContent = label;
-    ui.statePill.className = `state-pill ${level === "controlled_by_this_extension" ? "state-good" : level === "not_controllable" || level === "controlled_by_other_extensions" ? "state-bad" : "state-neutral"}`;
+    renderProxyState(ui, { label, level });
 
     if (level === "not_controllable" || level === "controlled_by_other_extensions") {
       sendNotice("浏览器代理设置当前由其他扩展或管理策略控制，Alaxee Proxy 可能无法切换。", "error");
     }
-    if (label === "其他代理配置" || label === "自动检测代理" || label === "其他 PAC 代理配置") {
-      ui.statePill.className = "state-pill state-warn";
-    }
     return { level, current };
   } catch (error) {
-    ui.stateText.textContent = "无法读取状态";
-    ui.statePill.className = "state-pill state-bad";
+    renderProxyStateError(ui);
     sendNotice(`读取浏览器代理状态失败：${error.message}`, "error");
     return null;
   }
@@ -487,16 +365,6 @@ async function connectClash() {
   }
 }
 
-function renderStatusPermission() {
-  chrome.permissions.contains({ permissions: ["tabs"] }, (granted) => {
-    ui.statusPermissionButton.textContent = granted ? "已启用 · 刷新" : "启用逐网页显示";
-    ui.statusPermissionButton.setAttribute("aria-pressed", String(granted));
-    ui.statusPermissionHint.textContent = granted
-      ? "逐网页状态已启用：根据白名单、黑名单和全局模式分别显示。仅本地读取标签页网址。"
-      : "逐网页图标需要读取标签页网址；不会读取网页内容或上传浏览数据。添加规则仍然可用。";
-  });
-}
-
 async function initialize() {
   try {
     await loadSettings();
@@ -598,6 +466,41 @@ async function initialize() {
   ui.includeSubdomains.addEventListener("change", () => {
     void saveSettings({ includeSubdomains: ui.includeSubdomains.checked })
       .catch((error) => sendNotice(`保存选项失败：${error.message}`, "error"));
+  });
+
+  startWatchingOtherSurface();
+}
+
+/**
+ * Keeps this surface in sync when the other one writes settings.
+ *
+ * Both the toolbar popup and the full settings page can be open at once, and they
+ * share one settings record. Without this, an edit on one surface left the other
+ * showing stale rules and a stale current-site route until it was reopened.
+ *
+ * The listener only re-reads and re-renders. It never writes, so there is no
+ * feedback loop between the two surfaces.
+ */
+function startWatchingOtherSurface() {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local" || !changes.settings) return;
+    const stored = changes.settings.newValue ?? {};
+    let whitelist;
+    let blacklist;
+    try {
+      whitelist = normalizeDomainEntriesStrict(stored.whitelist);
+      blacklist = normalizeDomainEntriesStrict(stored.blacklist);
+    } catch {
+      // Another surface persisted something invalid; leave the UI as it is rather
+      // than rendering a half-applied state.
+      return;
+    }
+    settings = { ...DEFAULT_SETTINGS, ...stored, whitelist, blacklist };
+    if (["clash", "direct", "system"].includes(settings.mode)) activeMode = settings.mode;
+    renderModes();
+    renderConnectionFields(ui, settings);
+    renderRules();
+    renderCurrentPage();
   });
 }
 

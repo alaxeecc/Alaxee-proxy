@@ -3,7 +3,7 @@
  *
  * Scope note: this file deliberately asserts *structure* — that files exist,
  * references resolve, the artifact matches the runtime closure, and the DOM
- * contract between popup.js and popup.html holds. It does not assert that
+ * contract between the UI modules and popup.html holds. It does not assert that
  * particular source lines exist. Earlier versions did, which produced a green
  * suite that could not be trusted: it failed on harmless refactors and passed
  * on real bugs. Behaviour belongs in core.test.js and pac.test.js.
@@ -75,6 +75,8 @@ test("module imports in the runtime closure all resolve to packaged files", asyn
 
 test("the packaged artifact contains exactly the runtime closure", async () => {
   const { manifest: builtManifest, files } = await resolveRuntimeFiles(root);
+  // Rebuild so the archive cannot be stale from an earlier layout.
+  execFileSync("python3", [path.join(root, "scripts/package-extension.py")], { cwd: root, stdio: "ignore" });
   const archivePath = path.join(root, "dist", `Alaxee-Proxy-v${builtManifest.version}.zip`);
   assert.ok(existsSync(archivePath), `package was not created: ${archivePath}`);
 
@@ -100,13 +102,49 @@ test("options page reuses the popup controller instead of duplicating it", async
   assert.match(entry, /window\.location\.replace/);
 });
 
-test("popup.js only queries element ids that popup.html actually defines", async () => {
+test("the UI modules only query element ids that popup.html actually defines", async () => {
   const html = await readFile(path.join(root, manifest.action.default_popup), "utf8");
-  const script = await readFile(path.join(root, "src/popup.js"), "utf8");
   const declared = new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
-  const queried = new Set([...script.matchAll(/\$\("([^"]+)"\)/g)].map((m) => m[1]));
-  const missing = [...queried].filter((id) => !declared.has(id));
-  assert.deepEqual(missing, [], `popup.js queries ids that do not exist: ${missing.join(", ")}`);
+  const missing = [];
+  for (const file of ["src/popup-render.js", "src/popup-controller.js"]) {
+    const source = await readFile(path.join(root, file), "utf8");
+    for (const [, id] of source.matchAll(/\$\("([^"]+)"\)/g)) {
+      if (!declared.has(id)) missing.push(`${file}: ${id}`);
+    }
+  }
+  assert.deepEqual(missing, [], `UI modules query ids that do not exist: ${missing.join(", ")}`);
+});
+
+test("the popup entry point loads the controller, not a removed module", async () => {
+  const html = await readFile(path.join(root, manifest.action.default_popup), "utf8");
+  const [, entry] = html.match(/<script[^>]+src="([^"]+)"/) ?? [];
+  assert.ok(entry, "popup.html has no module entry point");
+  assert.ok(existsSync(path.join(root, "src", path.basename(entry))), `missing entry point: ${entry}`);
+});
+
+test("both UI surfaces stay in sync through a write-free storage listener", async () => {
+  // The toolbar popup and the full settings page can be open at once and share
+  // one settings record. An edit on one must reach the other without a reload,
+  // and the listener must not write or it would ping-pong between surfaces.
+  const controller = await readFile(path.join(root, "src/popup-controller.js"), "utf8");
+  assert.match(controller, /chrome\.storage\.onChanged\.addListener/);
+
+  const start = controller.indexOf("function startWatchingOtherSurface()");
+  assert.ok(start > -1, "missing cross-surface sync");
+  const end = controller.indexOf("\n}\n", start);
+  const body = controller.slice(start, end);
+  assert.doesNotMatch(body, /storage\.local"?,?\s*"set/, "sync listener must not write storage");
+  assert.doesNotMatch(body, /proxy\.settings/, "sync listener must not touch proxy settings");
+  assert.match(body, /renderRules\(\)/, "sync listener must re-render the rule list");
+  assert.match(body, /renderCurrentPage\(\)/, "sync listener must re-render the current site");
+});
+
+test("rendering module does not touch chrome APIs or storage", async () => {
+  // The split only earns its keep if the render layer stays free of side effects.
+  const render = await readFile(path.join(root, "src/popup-render.js"), "utf8");
+  const stripped = render.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  assert.doesNotMatch(stripped, /\bchrome\./, "popup-render.js must not call chrome.*");
+  assert.doesNotMatch(stripped, /\bawait\b/, "popup-render.js must stay synchronous");
 });
 
 test("popup keeps one bounded scroll container and respects reduced motion", async () => {
