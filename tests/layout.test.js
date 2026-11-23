@@ -107,3 +107,66 @@ test("a collapsible panel does not add padding on top of its summary", () => {
   assert.match(rule[1], /padding:\s*0/);
   assert.match(rule[0], /\.bypass-panel\.panel-collapsible/);
 });
+
+/* -------------------------------------------------------------------------- */
+/* Nothing overflows or is crushed                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * All three of these came from the same mistake: text was added to elements that sit
+ * in flex rows without any rule about what happens when it does not fit. The result
+ * was an endpoint clipped by the card edge, a status label one character wide, and
+ * button labels broken mid-word - all visible in a single screenshot.
+ */
+
+const rule = (selector) => {
+  // Anchored to the start of a line so a mention in a comment cannot satisfy it.
+  const pattern = new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "m");
+  const match = pattern.exec(css);
+  assert.ok(match, `missing rule: ${selector}`);
+  const end = css.indexOf("}", match.index);
+  return css.slice(match.index, end);
+};
+
+test("a status label never collapses to one character per line", () => {
+  // ".local-tag span" gave every child span a 6px width, including the text one, so
+  // "直接连接" wrapped to four lines. Only the leading dot may be sized.
+  const dots = css.match(/\.state-dot,\s*\.local-tag > span:empty\s*\{([^}]*)\}/);
+  assert.ok(dots, "the dot rule must target only the empty leading span");
+  const tag = rule(".local-tag {");
+  assert.match(tag, /white-space:\s*nowrap/);
+  assert.match(tag, /min-width:\s*0/, "it has to be allowed to shrink, not just refuse to wrap");
+});
+
+test("the summary value shrinks instead of spilling past the card", () => {
+  // The endpoint read "socks5://12" with the rest outside the panel, because the meta
+  // block refused to shrink.
+  const meta = rule(".panel-summary .summary-meta");
+  assert.match(meta, /min-width:\s*0/);
+  const heading = rule(".panel-summary > div:first-child");
+  assert.match(heading, /min-width:\s*0/);
+});
+
+test("buttons do not break their labels across lines", () => {
+  const secondary = rule(".secondary-button {");
+  assert.match(secondary, /white-space:\s*nowrap/);
+});
+
+test("the current-site actions wrap rather than squeeze", () => {
+  // Three buttons and a text link in one row at 380px cannot all fit; the row has to
+  // break, and the destructive link belongs on its own line.
+  const actions = rule(".site-actions {");
+  assert.match(actions, /flex-wrap:\s*wrap/);
+  // It must not float to the right on its own line once the row wraps.
+  assert.match(rule(".site-actions .text-button"), /flex:\s*0 0 auto/);
+});
+
+test("the collapsed endpoint is short enough to fit its own summary", () => {
+  // A scheme prefix costs about 60px at this width. The tooltip keeps the full URL.
+  const host = "127.0.0.1";
+  const port = "7890";
+  const short = `${host}:${port}`;
+  const full = `socks5://${host}:${port}`;
+  assert.ok(short.length <= 22, "the summary value must stay short");
+  assert.ok(full.length > short.length);
+});

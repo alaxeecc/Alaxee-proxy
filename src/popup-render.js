@@ -272,9 +272,12 @@ export function renderEndpointTag(ui, settings) {
   // The panel collapses, so this tag is the only thing visible when it is shut. It
   // shows the current endpoint rather than just "configured", otherwise the user has
   // to open the panel to read a value that never changes.
-  ui.endpointTag.textContent = configured
+  // host:port rather than a full URL: at 380px the scheme prefix costs 60px and the
+  // value is the first thing to overflow the summary. The scheme is one click away.
+  ui.endpointTag.textContent = configured ? `${settings.host}:${settings.port}` : "未配置";
+  ui.endpointTag.title = configured
     ? `${settings.scheme}://${settings.host}:${settings.port}`
-    : "未配置";
+    : "还没有填写代理服务器地址";
   ui.endpointTag.parentElement.dataset.state = configured ? "set" : "unset";
 }
 

@@ -739,7 +739,8 @@ test("the collapsed endpoint tag shows the endpoint, not just 'configured'", () 
   // force opening it to see a value that never changes.
   const ui = { endpointTag: { ...element(), parentElement: element() } };
   renderEndpointTag(ui, BASE);
-  assert.match(ui.endpointTag.textContent, /127\.0\.0\.1:7890/);
+  assert.equal(ui.endpointTag.textContent, "127.0.0.1:7890", "short enough to fit the summary");
+  assert.match(ui.endpointTag.title, /socks5:\/\/127\.0\.0\.1:7890/, "the full URL stays in the tooltip");
   const unset = { endpointTag: { ...element(), parentElement: element() } };
   renderEndpointTag(unset, { ...BASE, host: "", port: "" });
   assert.equal(unset.endpointTag.textContent, "未配置");
