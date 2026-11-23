@@ -101,3 +101,18 @@ test("the filename is chronological and filesystem-safe", () => {
   assert.equal(name, "alaxee-proxy-20261123-0905.json");
   assert.match(name, /^[a-z0-9.-]+$/);
 });
+
+test("restoring a different configuration changes the rule lists", () => {
+  // Guards a subtle path: if a restore did not change the synced fields, updatedAt
+  // would not advance and the restored rules would never reach the other devices.
+  const local = { mode: "direct", scheme: "http", host: "", port: "", whitelist: [], blacklist: [] };
+  const { plan } = planImport(JSON.stringify(exportSettings(SETTINGS)));
+  const changed = JSON.stringify(plan.settings.whitelist) !== JSON.stringify(local.whitelist) ||
+    JSON.stringify(plan.settings.blacklist) !== JSON.stringify(local.blacklist);
+  assert.equal(changed, true);
+
+  // Restoring exactly what is already here must not look like a change.
+  const same = planImport(JSON.stringify(exportSettings(SETTINGS))).plan;
+  assert.deepEqual(same.settings.whitelist, SETTINGS.whitelist);
+  assert.deepEqual(same.settings.blacklist, SETTINGS.blacklist);
+});

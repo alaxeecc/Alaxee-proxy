@@ -57,6 +57,10 @@ export function backupFilename(now = new Date()) {
  * @returns {{ok: true, plan: object} | {ok: false, error: string}}
  */
 export function planImport(text, { normalize } = {}) {
+  // Note: import replaces, unlike sync which merges. That is deliberate - the user
+  // picked a file and confirmed a summary that says "replace" - but it means an
+  // import can drop rules that sync has. The confirmation text has to keep saying
+  // so; see describeImportPlan.
   let parsed;
   try {
     parsed = JSON.parse(String(text ?? ""));
