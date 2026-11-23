@@ -10,6 +10,9 @@
  * Usage:
  *   node scripts/preview-compare.mjs [baseline-ref] [port]
  *
+ * The baseline defaults to HEAD: left is what is on disk now, including edits that
+ * are not committed, right is the last commit.
+ *
  * A worktree is created at .preview-baseline/ and removed when the process exits.
  * Development only - never packaged (a test asserts preview/ stays out of the zip).
  */
@@ -20,7 +23,10 @@ import { existsSync, rmSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
-const baselineRef = process.argv[2] ?? "HEAD~1";
+// Default to the last commit, so the comparison shows what is different in the
+// working tree right now. HEAD~1 would compare two commits and hide uncommitted work,
+// which is exactly what someone reviewing a change is looking at.
+const baselineRef = process.argv[2] ?? "HEAD";
 const port = Number(process.argv[3] ?? process.env.PORT ?? 4174);
 const worktree = path.join(root, ".preview-baseline");
 

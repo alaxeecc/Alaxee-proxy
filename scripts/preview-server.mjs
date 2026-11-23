@@ -52,7 +52,15 @@ const TYPES = {
  * imports were resolved.
  */
 function injectShim(html) {
-  return html.replace(
+  // The popup is served from two different URLs - /src/popup.html and the short
+  // alias / - but its own href/src values are relative ("popup.css"). At "/" those
+  // resolve to /popup.css, which does not exist, so the stylesheet and the controller
+  // both 404 and the page renders unstyled and dead. Rewriting them to absolute paths
+  // makes the response independent of the URL it was requested from.
+  const absolute = html
+    .replace(/href="popup\.css"/g, 'href="/src/popup.css"')
+    .replace(/src="popup-controller\.js"/g, 'src="/src/popup-controller.js"');
+  return absolute.replace(
     '<script type="module"',
     '<script src="/preview/chrome-shim.js"></script>\n  <script type="module"'
   );
@@ -113,8 +121,12 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  // Every entry point is reachable from every other one on one port. A link to a
+  // second port the user has not started is a dead link, which is what /lab's
+  // pointer to the comparison page used to be.
   if (pathname === "/") pathname = "/src/popup.html";
   if (pathname === "/lab") pathname = "/preview/lab.html";
+  if (pathname === "/compare") pathname = "/preview/compare.html";
   if (pathname === "/favicon.ico") {
     response.writeHead(204).end();
     return;

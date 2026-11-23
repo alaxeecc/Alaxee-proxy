@@ -34,6 +34,10 @@
   .pane.popup iframe { height:600px; }
   .pane.full iframe { height:760px; }
   .warm { background:color-mix(in srgb, #f0b95a 26%, transparent); }
+  .compare-hint { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+  .compare-hint a { color:var(--accent); font-weight:700; }
+  .compare-hint code { padding:1px 5px; border-radius:5px; background:color-mix(in srgb, var(--ink) 8%, transparent);
+                       font-family:ui-monospace,Consolas,monospace; font-size:11px; }
 </style>
 </head>
 <body>
@@ -41,9 +45,11 @@
   <h1>Alaxee Proxy</h1>
   <span class="tag">开发工作台</span>
   <div class="controls">
-    <a href="/compare" target="_blank" style="font-size:12px; color:var(--accent); font-weight:700; text-decoration:none;">
-      与旧版本对照 ↗
-    </a>
+    <span id="compareHint" class="compare-hint" hidden>
+      对照页在
+      <a id="compareLink" target="_blank" rel="noopener"></a>
+      启动后可用（<code>npm run compare</code>）
+    </span>
     <label>主题
       <select id="theme">
         <option value="">跟随系统</option>
@@ -115,6 +121,23 @@
     else next.set("auto", "0");
     history.replaceState(null, "", `?${next.toString()}`);
   });
+
+  // The comparison view runs on its own port against its own baseline worktree, so
+  // it cannot be linked blindly. Probe it and only offer the link if it answers.
+  (async () => {
+    const target = `${location.protocol}//${location.hostname}:4174/compare`;
+    try {
+      const response = await fetch(target, { method: "GET", mode: "no-cors" });
+      void response;
+      const hint = document.getElementById("compareHint");
+      const link = document.getElementById("compareLink");
+      link.href = target;
+      link.textContent = target;
+      hint.hidden = false;
+    } catch {
+      // Not running. Say nothing rather than showing a link that 404s.
+    }
+  })();
 
   const events = new EventSource("/__events");
   events.addEventListener("change", (event) => {
