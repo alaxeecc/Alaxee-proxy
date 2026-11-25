@@ -1,0 +1,35 @@
+:root{
+  /* 颜色 */
+  --ax-night:#181C5E; --ax-deep:#0C1024; --ax-violet:#6E5CD2; --ax-sakura:#E880BE;
+  --ax-peach:#FFA894; --ax-gold:#FFD9A8; --ax-moon:#F6F4FF; --ax-muted:#9A9ED4;
+  --ax-success:#4FD1B8; --ax-warning:#FFA76B; --ax-danger:#F0607E; --ax-info:#6E9CF6;
+  /* 渐变（停靠点即配方） */
+  --ax-grad-sky:linear-gradient(180deg,#181C5E 0%,#3A3E9E 22%,#6E5CD2 44%,#AB74D8 62%,#E880BE 74%,#FFA894 86%,#FFD8A8 94%,#FFF4CC 100%);
+  --ax-grad-cta:linear-gradient(135deg,#7B6AE8 0%,#F092C2 52%,#FFD09E 100%);
+  --ax-grad-bar:linear-gradient(90deg,#7B6AE8,#F092C2,#FFD9A8);
+  /* 形状与光 */
+  --ax-radius-card:20px; --ax-radius-btn:999px; --ax-icon-radius:32%;
+  --ax-glow:0 0 24px rgba(255,201,140,.45);
+  --ax-shadow-card:0 8px 32px rgba(4,4,14,.45);
+  --ax-shadow-btn:0 6px 20px rgba(240,146,194,.35);
+  /* 间距 8pt */
+  --ax-s1:4px; --ax-s2:8px; --ax-s3:12px; --ax-s4:16px; --ax-s5:24px; --ax-s6:32px; --ax-s7:48px;
+  /* 动效 V11 强呼吸 */
+  --ax-breath-dur:3.6s;  --ax-breath-ease:cubic-bezier(.4,0,.6,1);  /* scale .84→1.26 */
+  --ax-orbit-dur:5.6s;
+  --ax-ui-dur:200ms;     --ax-ui-ease:cubic-bezier(.2,.8,.2,1);
+  --ax-page-dur:360ms;   --ax-sheen-dur:3.4s;
+}
+[data-sky="night"]{ --ax-bg:#07081E; --ax-surface:#121540; --ax-text:#DCE0FF; }
+[data-sky="dawn"] { --ax-bg:#0C1024; --ax-surface:#171B44; --ax-text:#F6F4FF; }
+[data-sky="day"]  { --ax-bg:#FBF8FF; --ax-surface:#FFFFFF; --ax-text:#2B2F78; }
+@media (prefers-reduced-motion: reduce){ *{ animation:none!important; transition:none!important; } }
+```
+
+天色自动切换（网页端，十行搞定）：
+
+```js
+const h = new Date().getHours();
+const sky = h<5 ? 'night' : h<7 ? 'dawn' : h<10 ? 'morning' : h<18 ? 'day' : 'dawn';
+document.documentElement.dataset.sky = sky; // 图标、字标、UI 背景成套切换
+```

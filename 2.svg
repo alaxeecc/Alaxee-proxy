@@ -1,0 +1,187 @@
+<svg width="960" height="1240" viewBox="0 0 960 1240" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <path id="sp" d="M0 -1 C.05 -.18 .18 -.05 1 0 C.18 .05 .05 .18 0 1 C-.05 .18 -.18 .05 -1 0 C-.18 -.05 -.05 -.18 0 -1Z"/>
+  <path id="fat" d="M0 -1 C.3 -.45 .45 -.3 1 0 C.45 .3 .3 .45 0 1 C-.3 .45 -.45 .3 -1 0 C-.45 -.3 -.3 -.45 0 -1Z"/>
+  <linearGradient id="skyV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#181C5E"/><stop offset=".35" stop-color="#4A46B0"/><stop offset=".62" stop-color="#9A6ED8"/><stop offset=".82" stop-color="#EE8EBE"/><stop offset="1" stop-color="#FFD0A8"/></linearGradient>
+  <linearGradient id="seaV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD8B4"/><stop offset=".3" stop-color="#E884B8"/><stop offset="1" stop-color="#1F1C50"/></linearGradient>
+  <linearGradient id="btn" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7B6AE8"/><stop offset=".52" stop-color="#F092C2"/><stop offset="1" stop-color="#FFD09E"/></linearGradient>
+  <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF" stop-opacity="0"/><stop offset=".5" stop-color="#FFF" stop-opacity=".55"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+  <linearGradient id="hz" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF" stop-opacity="0"/><stop offset=".55" stop-color="#FFF"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+  <radialGradient id="aura"><stop offset="0" stop-color="#FFFBE8" stop-opacity=".95"/><stop offset=".35" stop-color="#FFD0A8" stop-opacity=".45"/><stop offset="1" stop-color="#F294C4" stop-opacity="0"/></radialGradient>
+  <radialGradient id="moonG" cx=".78" cy=".32" r=".82"><stop offset="0" stop-color="#FFFEFA"/><stop offset=".3" stop-color="#FCEEF4"/><stop offset="1" stop-color="#9A88D8"/></radialGradient>
+  <radialGradient id="mascotG" cx=".42" cy=".36" r=".7"><stop offset="0" stop-color="#FFFDF4"/><stop offset=".5" stop-color="#FFE2B8"/><stop offset="1" stop-color="#FF9CB8"/></radialGradient>
+  <linearGradient id="barG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7B6AE8"/><stop offset=".55" stop-color="#F092C2"/><stop offset="1" stop-color="#FFD9A8"/></linearGradient>
+  <filter id="glowF" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter>
+  <filter id="cardSh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#04040E" flood-opacity=".45"/></filter>
+  <clipPath id="btnC"><rect width="128" height="44" rx="22"/></clipPath>
+  <clipPath id="icC"><rect width="140" height="140" rx="32"/></clipPath>
+  <mask id="mm" maskUnits="userSpaceOnUse" x="-30" y="-30" width="200" height="200"><rect x="-30" y="-30" width="200" height="200" fill="#fff"/><circle cx="78" cy="54" r="42.5" fill="#000"/></mask>
+  <g id="em"><g clip-path="url(#icC)"><rect width="140" height="140" fill="url(#skyV)"/><rect y="104" width="140" height="36" fill="url(#seaV)"/><rect y="103" width="140" height="2" fill="url(#hz)"/>
+    <circle cx="56" cy="66" r="49" fill="url(#moonG)" mask="url(#mm)"/>
+    <circle cx="88" cy="53" r="40" fill="url(#aura)"><animate attributeName="r" values="32;50;32" dur="3.6s" repeatCount="indefinite"/></circle>
+    <g transform="translate(88 53)"><g><use href="#sp" transform="rotate(45) scale(24 38)" fill="#FFC898"/><use href="#sp" transform="rotate(45) scale(11 17)" fill="#FFF"/>
+    <animateTransform attributeName="transform" type="scale" values=".84;1.26;.84" dur="3.6s" repeatCount="indefinite"/></g></g></g>
+    <rect width="140" height="140" rx="32" fill="none" stroke="#FFF" stroke-opacity=".25"/></g>
+  <g id="xi"><circle r="44" fill="url(#aura)" opacity=".7"/><use href="#fat" transform="scale(34)" fill="url(#mascotG)"/>
+    <ellipse cx="-7" cy="-2" rx="2.3" ry="3.1" fill="#3A2C6A"/><ellipse cx="7" cy="-2" rx="2.3" ry="3.1" fill="#3A2C6A"/>
+    <path d="M-4 5 Q0 9 4 5" fill="none" stroke="#3A2C6A" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="-12" cy="6" r="3.4" fill="#FF8CB0" opacity=".5"/><circle cx="12" cy="6" r="3.4" fill="#FF8CB0" opacity=".5"/></g>
+</defs>
+
+<rect width="960" height="1240" fill="#060814"/>
+<text x="480" y="30" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="16" font-weight="600" letter-spacing="2" fill="#F2F0FF">ALAXEE · UI 可复现规范 V11</text>
+<text x="480" y="50" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="11" fill="#8E96C4">每个效果都拆成数字：色值 · 尺寸 · 时长 · 曲线 —— 存档后任何人都能 1:1 还原</text>
+
+<!-- 1 Tokens -->
+<rect x="20" y="66" width="920" height="216" rx="20" fill="#0C1024" stroke="#1C244C"/>
+<text x="44" y="94" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" font-weight="600" fill="#E6E4FA">① 设计 Tokens（唯一数据源，先定它，其余全部引用它）</text>
+<g font-family="monospace" font-size="10.5">
+  <rect x="44" y="108" width="104" height="52" rx="10" fill="#181C5E"/><text x="54" y="130" fill="#C0C6F8">--ax-night</text><text x="54" y="148" fill="#FFF">#181C5E</text>
+  <rect x="156" y="108" width="104" height="52" rx="10" fill="#6E5CD2"/><text x="166" y="130" fill="#E4DEFF">--ax-violet</text><text x="166" y="148" fill="#FFF">#6E5CD2</text>
+  <rect x="268" y="108" width="104" height="52" rx="10" fill="#E880BE"/><text x="278" y="130" fill="#FFE6F2">--ax-sakura</text><text x="278" y="148" fill="#FFF">#E880BE</text>
+  <rect x="380" y="108" width="104" height="52" rx="10" fill="#FFA894"/><text x="390" y="130" fill="#5A2A1A">--ax-peach</text><text x="390" y="148" fill="#FFF">#FFA894</text>
+  <rect x="492" y="108" width="104" height="52" rx="10" fill="#FFD9A8"/><text x="502" y="130" fill="#6A4A1A">--ax-gold</text><text x="502" y="148" fill="#FFF">#FFD9A8</text>
+  <rect x="604" y="108" width="104" height="52" rx="10" fill="#F6F4FF"/><text x="614" y="130" fill="#2A2C5E">--ax-moon</text><text x="614" y="148" fill="#2A2C5E">#F6F4FF</text>
+  <rect x="716" y="108" width="104" height="52" rx="10" fill="#4FD1B8"/><text x="726" y="130" fill="#063A30">--ax-success</text><text x="726" y="148" fill="#FFF">#4FD1B8</text>
+  <rect x="828" y="108" width="92" height="52" rx="10" fill="#F0607E"/><text x="838" y="130" fill="#FFE0E6">--ax-danger</text><text x="838" y="148" fill="#FFF">#F0607E</text>
+  <rect x="44" y="172" width="420" height="40" rx="10" fill="url(#btn)"/>
+  <text x="60" y="190" fill="#2A1246">--ax-grad-cta: linear-gradient(135deg,#7B6AE8 0%,#F092C2 52%,#FFD09E 100%)</text>
+  <text x="60" y="204" fill="#2A1246">--ax-grad-sky: linear-gradient(180deg,#181C5E,#6E5CD2 44%,#E880BE 74%,#FFD8A8)</text>
+  <rect x="476" y="172" width="444" height="40" rx="10" fill="#11142E" stroke="#2A3262"/>
+  <text x="492" y="190" fill="#C8C4E8">--ax-glow: 0 0 24px rgba(255,201,140,.45)   --ax-shadow-card: 0 8px 32px rgba(4,4,14,.45)</text>
+  <text x="492" y="204" fill="#C8C4E8">--ax-radius: 20px（卡片）/ 999px（按钮）/ 32%（图标圆角）</text>
+</g>
+<g font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8E96C4">
+  <text x="44" y="236">字体：Display "First Light" Jost Light 30/1.2 · H1 思源黑体 Medium 20 · Body 14/1.6 · Caption 12 · 字距：拉丁标题 +2%</text>
+  <text x="44" y="254">间距 8pt 网格：4 / 8 / 12 / 16 / 24 / 32 / 48 · 页面边距 移动端 20 · 桌面 32 · 内容最大宽 1200</text>
+  <text x="44" y="272">图标：24×24 网格 · 线宽 1.8 · 圆角端点 · 每图标必含一颗 3px 金色星点缀（位置：右上或中心）</text>
+</g>
+
+<!-- 2 组件尺寸标注 -->
+<rect x="20" y="298" width="920" height="300" rx="20" fill="#0C1024" stroke="#1C244C"/>
+<text x="44" y="326" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" font-weight="600" fill="#E6E4FA">② 组件规范（带尺寸标注，照数字搭即可）</text>
+<!-- 主按钮 -->
+<g transform="translate(44 344)">
+  <rect width="128" height="44" rx="22" fill="url(#btn)"/>
+  <g clip-path="url(#btnC)"><polygon points="-30,-4 0,-4 -16,48 -46,48" fill="url(#sheen)"><animateTransform attributeName="transform" type="translate" values="0,0;210,0;210,0" keyTimes="0;.45;1" dur="3.4s" repeatCount="indefinite"/></polygon></g>
+  <text x="64" y="27" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" font-weight="600" fill="#2A1246">开始探索</text>
+  <g stroke="#5E66A0" stroke-width=".8"><line x1="0" y1="54" x2="128" y2="54"/><line x1="0" y1="50" x2="0" y2="58"/><line x1="128" y1="50" x2="128" y2="58"/></g>
+  <text x="64" y="70" text-anchor="middle" font-family="monospace" font-size="9" fill="#8E96C4">128 × 44 · r=22 · 渐变 CTA</text>
+  <text x="64" y="84" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="9" fill="#5E66A0">hover: +glow · active: scale .97 · 流光 3.4s</text>
+</g>
+<!-- 次按钮/输入/开关 -->
+<rect x="196" y="344" width="120" height="44" rx="22" fill="none" stroke="#9A88F2" stroke-width="1.4"/>
+<text x="256" y="371" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" fill="#DCD6FF">了解更多</text>
+<text x="256" y="414" text-anchor="middle" font-family="monospace" font-size="9" fill="#8E96C4">次按钮 · 描边 1.4</text>
+<rect x="340" y="344" width="216" height="44" rx="12" fill="#0F1230" stroke="#FFC27A"/>
+<rect x="340" y="344" width="216" height="44" rx="12" fill="none" stroke="#FFC27A" opacity=".45" filter="url(#glowF)"/>
+<text x="362" y="371" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12" fill="#9AA3C8">搜索晨曦…</text>
+<line x1="428" y1="358" x2="428" y2="374" stroke="#FFE4B8" stroke-width="1.4"><animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/></line>
+<text x="448" y="414" text-anchor="middle" font-family="monospace" font-size="9" fill="#8E96C4">输入聚焦 · 边框金 + 外发光 12px</text>
+<rect x="580" y="350" width="62" height="34" rx="17" fill="#2A2C66" stroke="#9A88F2"/>
+<g transform="translate(626 367)"><g><use href="#sp" transform="rotate(45) scale(9 13)" fill="#FFE4B8"/><animateTransform attributeName="transform" type="scale" values=".84;1.22;.84" dur="2.6s" repeatCount="indefinite"/></g></g>
+<text x="611" y="414" text-anchor="middle" font-family="monospace" font-size="9" fill="#8E96C4">开关 62×34 · 星形钮</text>
+<rect x="666" y="352" width="76" height="28" rx="14" fill="#262860" stroke="#9A88F2" stroke-opacity=".6"/>
+<use href="#sp" transform="translate(680 366) rotate(45) scale(3.4 5)" fill="#FFD9A8"/>
+<text x="690" y="370" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="11" fill="#DCD6FF">晨曦</text>
+<text x="704" y="414" text-anchor="middle" font-family="monospace" font-size="9" fill="#8E96C4">标签 h=28 r=14</text>
+<rect x="766" y="344" width="150" height="44" rx="12" fill="#1A1E44"/>
+<rect x="778" y="360" width="90" height="8" rx="4" fill="#0B0E28"/><rect x="778" y="360" width="64" height="8" rx="4" fill="url(#barG)"/>
+<g transform="translate(842 364)"><circle r="8" fill="#FFE4AE" opacity=".35"><animate attributeName="r" values="5;11;5" dur="2.6s" repeatCount="indefinite"/></circle><use href="#sp" transform="rotate(45) scale(5 7.5)" fill="#FFF"/></g>
+<text x="841" y="414" text-anchor="middle" font-family="monospace" font-size="9" fill="#8E96C4">进度 · 星形游标呼吸</text>
+<!-- 卡片样例 -->
+<g transform="translate(44 446)" filter="url(#cardSh)">
+  <rect width="872" height="128" rx="20" fill="#141838" stroke="#2A3070"/>
+  <use href="#em" transform="translate(20 20) scale(.42)"/>
+  <text x="96" y="46" font-family="Jost,'Helvetica Neue',sans-serif" font-size="17" letter-spacing="1" fill="#FFF">alaxee 晨曦工作台</text>
+  <text x="96" y="66" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="11" fill="#9A9ED4">卡片规范：r=20 · 内边距 20 · 表面 #141838 · 描边 #2A3070 · 阴影见 tokens</text>
+  <rect x="96" y="80" width="300" height="8" rx="4" fill="#0B0E28"/><rect x="96" y="80" width="216" height="8" rx="4" fill="url(#barG)"/>
+  <use href="#sp" transform="translate(312 84) rotate(45) scale(5 7.5)" fill="#FFF"/>
+  <rect x="724" y="70" width="128" height="44" rx="22" fill="url(#btn)"/>
+  <text x="788" y="97" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" font-weight="600" fill="#2A1246">打开项目</text>
+</g>
+
+<!-- 3 动效规范 -->
+<rect x="20" y="614" width="920" height="216" rx="20" fill="#0C1024" stroke="#1C244C"/>
+<text x="44" y="642" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" font-weight="600" fill="#E6E4FA">③ 动效规范（V11 强呼吸参数，写进代码即复现）</text>
+<g font-family="'PingFang SC','Microsoft YaHei',sans-serif">
+  <rect x="44" y="658" width="272" height="118" rx="14" fill="#090C1E" stroke="#202854"/>
+  <g transform="translate(74 716)"><circle r="26" fill="url(#aura)"><animate attributeName="r" values="20;34;20" dur="3.6s" repeatCount="indefinite"/></circle>
+    <g><use href="#sp" transform="rotate(45) scale(15 23)" fill="#FFC898"/><use href="#sp" transform="rotate(45) scale(7 10)" fill="#FFF"/>
+    <animateTransform attributeName="transform" type="scale" values=".84;1.26;.84" dur="3.6s" repeatCount="indefinite"/></g></g>
+  <text x="126" y="682" font-size="12" fill="#FFE3B8">呼吸 Breath（主星/Logo）</text>
+  <text x="126" y="700" font-family="monospace" font-size="9.5" fill="#8E96C4">scale .84→1.26 · aura r 34→58</text>
+  <text x="126" y="714" font-family="monospace" font-size="9.5" fill="#8E96C4">3.6s · cubic-bezier(.4,0,.6,1) · 无限</text>
+  <text x="126" y="732" font-size="9.5" fill="#5E66A0">涟漪 r 11→60 同周期 · 光芒 opacity .35→.95 同步</text>
+
+  <rect x="332" y="658" width="272" height="118" rx="14" fill="#090C1E" stroke="#202854"/>
+  <g transform="translate(392 716)"><ellipse rx="42" ry="13" fill="none" stroke="url(#barG)" stroke-width="2"/>
+    <use href="#sp" transform="scale(5 7.5)" fill="#FFF"/>
+    <circle r="4.5" fill="#FFE6BC"><animateMotion path="M-42 0 A42 13 0 0 1 42 0 A42 13 0 0 1 -42 0" dur="5.6s" repeatCount="indefinite"/></circle></g>
+  <text x="452" y="682" font-size="12" fill="#F6B8DA">公转 Orbit（星轨/卫星）</text>
+  <text x="452" y="700" font-family="monospace" font-size="9.5" fill="#8E96C4">5.6s · linear · 近大远小</text>
+  <text x="452" y="714" font-family="monospace" font-size="9.5" fill="#8E96C4">前后半圈 opacity 切换（遮挡）</text>
+  <text x="452" y="732" font-size="9.5" fill="#5E66A0">云层视差：近 5.4s / 中 7.5–8s / 远 11–16s</text>
+
+  <rect x="620" y="658" width="296" height="118" rx="14" fill="#090C1E" stroke="#202854"/>
+  <text x="644" y="682" font-size="12" fill="#C8C4FF">交互 Interact（按钮/输入/开关）</text>
+  <text x="644" y="702" font-family="monospace" font-size="9.5" fill="#8E96C4">hover 200ms · cubic-bezier(.2,.8,.2,1)</text>
+  <text x="644" y="716" font-family="monospace" font-size="9.5" fill="#8E96C4">active scale .97 · 120ms</text>
+  <text x="644" y="730" font-family="monospace" font-size="9.5" fill="#8E96C4">页面转场 360ms · fade + translateY 8px</text>
+  <text x="644" y="748" font-size="9.5" fill="#5E66A0">闪烁 Twinkle 1.3–3.1s 随机错峰 · 流光 Sheen 3.4s</text>
+  <text x="644" y="764" font-size="9.5" fill="#5E66A0">无障碍：prefers-reduced-motion 时全部静止</text>
+</g>
+<text x="44" y="806" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10" fill="#6E76A4">四天色切换：按本地时间 00–05 深夜 / 05–07 破晓 / 07–10 晨曦 / 10–18 白昼 / 18–24 破晓；也可跟随系统深浅色。切换时天空渐变交叉淡化 600ms，符号不变。</text>
+
+<!-- 4 页面模板 -->
+<rect x="20" y="846" width="920" height="330" rx="20" fill="#0C1024" stroke="#1C244C"/>
+<text x="44" y="874" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" font-weight="600" fill="#E6E4FA">④ 页面模板（用上面的 tokens + 组件拼出来，证明可落地）</text>
+<!-- 移动端 -->
+<g transform="translate(44 890)">
+  <rect width="196" height="262" rx="24" fill="#11142E" stroke="#2A3262"/>
+  <rect width="196" height="86" rx="24" fill="url(#skyV)"/><rect y="70" width="196" height="16" fill="url(#seaV)" opacity=".8"/>
+  <use href="#em" transform="translate(14 12) scale(.26)"/>
+  <text x="58" y="32" font-family="Jost,sans-serif" font-size="12" letter-spacing="1" fill="#FFF">alaxee</text>
+  <text x="58" y="46" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="8.5" fill="#E0D8FF">早上好，第一缕光到了</text>
+  <use href="#xi" transform="translate(164 52) scale(.55)"/>
+  <rect x="14" y="98" width="168" height="62" rx="14" fill="#1A1E46" stroke="#2E3670"/>
+  <text x="26" y="118" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10.5" font-weight="600" fill="#F4F0FF">今日项目</text>
+  <rect x="26" y="128" width="120" height="6" rx="3" fill="#0B0E28"/><rect x="26" y="128" width="86" height="6" rx="3" fill="url(#barG)"/>
+  <use href="#sp" transform="translate(112 131) rotate(45) scale(4 6)" fill="#FFF"/>
+  <text x="26" y="150" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="8.5" fill="#8E96C4">进度组件直接引用 ②</text>
+  <rect x="14" y="170" width="80" height="30" rx="15" fill="url(#btn)"/>
+  <text x="54" y="189" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10" font-weight="600" fill="#2A1246">新建</text>
+  <rect x="102" y="170" width="80" height="30" rx="15" fill="none" stroke="#9A88F2"/>
+  <text x="142" y="189" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10" fill="#DCD6FF">导入</text>
+  <line x1="14" y1="216" x2="182" y2="216" stroke="#232860"/>
+  <g fill="#8E96C4"><circle cx="34" cy="232" r="7"/><circle cx="80" cy="232" r="7"/><circle cx="126" cy="232" r="7"/></g>
+  <use href="#sp" transform="translate(172 232) rotate(45) scale(6 9)" fill="#FFD9A8"/>
+  <text x="98" y="272" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="9" fill="#5E66A0">移动端模板 · 边距 20 · 底栏 64</text>
+</g>
+<!-- 桌面端 -->
+<g transform="translate(264 890)">
+  <rect width="652" height="262" rx="16" fill="#0E1128" stroke="#2A3262"/>
+  <rect width="652" height="40" rx="16" fill="#171B34"/>
+  <circle cx="18" cy="20" r="4" fill="#F0607E"/><circle cx="32" cy="20" r="4" fill="#FFD27A"/><circle cx="46" cy="20" r="4" fill="#4FD1B8"/>
+  <use href="#em" transform="translate(66 8) scale(.17)"/>
+  <text x="94" y="25" font-family="Jost,sans-serif" font-size="11" letter-spacing="1" fill="#FFF">alaxee.studio</text>
+  <rect x="0" y="40" width="132" height="222" fill="#12153A"/>
+  <g font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10" fill="#9A9ED4">
+    <rect x="12" y="56" width="108" height="28" rx="9" fill="#262860"/><use href="#sp" transform="translate(28 70) rotate(45) scale(3.4 5)" fill="#FFD9A8"/><text x="40" y="74" fill="#FFF">工作台</text>
+    <text x="24" y="106">项目</text><text x="24" y="132">灵感库</text><text x="24" y="158">日程</text><text x="24" y="184">设置（星轨图标）</text>
+  </g>
+  <text x="156" y="72" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="16" font-weight="600" fill="#FFF">让每个想法都有第一缕光</text>
+  <text x="156" y="92" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10" fill="#9A9ED4">主标题 H1 20→页面级可用 28/600 · 副文 Body</text>
+  <g><rect x="156" y="108" width="228" height="118" rx="16" fill="#171B44" stroke="#2E3670"/>
+    <text x="172" y="130" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="11" fill="#E4E0FA">周活跃（数据色 = tokens）</text>
+    <g fill="url(#btn)"><rect x="176" y="176" width="20" height="34" rx="5"/><rect x="204" y="160" width="20" height="50" rx="5"/><rect x="232" y="168" width="20" height="42" rx="5"/><rect x="260" y="146" width="20" height="64" rx="5"/><rect x="288" y="154" width="20" height="56" rx="5"/><rect x="316" y="140" width="20" height="70" rx="5"/></g>
+    <use href="#sp" transform="translate(326 132) rotate(45) scale(4 6)" fill="#FFE4B8"/></g>
+  <g><rect x="400" y="108" width="228" height="118" rx="16" fill="#171B44" stroke="#2E3670"/>
+    <text x="416" y="130" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="11" fill="#E4E0FA">空状态 = 小曦（组件 ② 的家族）</text>
+    <use href="#xi" transform="translate(514 172) scale(.8)"/>
+    <text x="514" y="216" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="9.5" fill="#8E96C4">暂无内容，小曦陪你等光</text></g>
+  <text x="326" y="272" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="9" fill="#5E66A0">桌面模板 · 侧栏 132（实际项目 240）· 内容区卡片网格 24 间距</text>
+</g>
+<text x="480" y="1216" text-anchor="middle" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#8E96C4">复现方法：存档 tokens.css + 本图两张 SVG + 字体（Jost / 思源黑体）→ 任何新项目先引入 tokens，再按 ②③④ 拼装</text>
+<text x="480" y="1232" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#4A5180">ALAXEE UI SYSTEM · V11 · REPRODUCIBLE SPEC</text>
+</svg>
