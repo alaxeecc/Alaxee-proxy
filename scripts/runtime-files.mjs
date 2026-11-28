@@ -11,27 +11,40 @@
  * Resolution deliberately mirrors the browser rather than a bundler:
  *   - ES module `import ... from "./x.js"` resolves relative to the importer
  *   - HTML `src` / `href` resolve relative to the importing document
+ *   - CSS `url(...)` resolves relative to the stylesheet, so a @font-face or a
+ *     background image cannot be dropped from the package
  *   - the service worker, popup, options page and icons are entry points
  *
  * Unresolvable references are reported, never skipped.
+ *
+ * Licence files are added separately. The brand fonts are SIL OFL, which requires the
+ * licence to travel with the font, but nothing in the code references the text - an
+ * import walk cannot see a legal obligation.
  */
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
 export const MANIFEST_FILE = "manifest.json";
 
+/**
+ * Directories whose licence text must ship even though no code references it.
+ * Matching is by prefix, so every OFL-*.txt beside a bundled font is included.
+ */
+const LICENCE_DIRECTORIES = ["src/brand/fonts"];
+
 const HTML_REF = /(?:src|href)\s*=\s*"([^"]+)"/g;
 const JS_FROM = /\bfrom\s*["']([^"']+)["']/g;
 const JS_BARE = /\bimport\s*["']([^"']+)["']/g;
 const JS_DYNAMIC = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
+const CSS_URL = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
 const EXTERNAL_REF = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;
 
 // Icon PNGs are not imported; background.js addresses them as string literals
 // so a failed canvas draw can fall back to a shipped file. A pure import walk
 // would silently drop them from the package, so string literals rooted at an
 // asset directory are treated as file references and must exist.
-const ASSET_ROOTS = ["icons/", "assets/"];
+const ASSET_ROOTS = ["icons/", "assets/", "brand/", "src/brand/"];
 const ASSET_LITERAL = /["'`]([^"'`\s]+\.(?:png|jpe?g|svg|gif|webp|ico|bmp))["'`]/gi;
 
 function assetRefs(source) {
@@ -39,14 +52,34 @@ function assetRefs(source) {
   for (const match of source.matchAll(ASSET_LITERAL)) {
     const ref = match[1].trim();
     if (EXTERNAL_REF.test(ref)) continue;
-    if (!ASSET_ROOTS.some((root) => ref.startsWith(root))) continue;
-    refs.add(ref);
+    // A leading slash means "extension root", so strip it before matching a root -
+    // otherwise /src/brand/icons/x.svg never matches "src/brand/".
+    const bare = ref.replace(/^\/+/, "");
+    if (!ASSET_ROOTS.some((root) => bare.startsWith(root))) continue;
+    // Keep the leading slash when it was there: it tells resolveRef the path is
+    // extension-root-relative rather than relative to the importing script.
+    refs.add(ref.startsWith("/") ? ref : bare);
   }
   return [...refs];
 }
 
 function toPosix(value) {
   return value.split(path.sep).join("/").replace(/^\.\//, "");
+}
+
+/**
+ * Joins a reference onto the directory that referenced it, extension-style.
+ *
+ * A leading slash in a web-extension reference means "from the extension root", not
+ * "from the filesystem root". Resolving /src/brand/icons/x.svg with path.join gives a
+ * host-absolute path, which the walker then rejects - so an icon referenced absolutely
+ * (which is correct in script, where img.src resolves against the document URL) would
+ * be reported as missing rather than packaged.
+ */
+function resolveRef(directory, ref) {
+  // Extension-root references (leading slash) are already root-relative.
+  if (ref.startsWith("/")) return ref.slice(1);
+  return toPosix(path.join(directory, ref));
 }
 
 /** Collects every file the manifest points at, before transitive resolution. */
@@ -81,6 +114,16 @@ function htmlRefs(source) {
   for (const match of source.matchAll(HTML_REF)) {
     const ref = match[1].trim();
     if (!ref || EXTERNAL_REF.test(ref)) continue;
+    refs.push(ref.split(/[?#]/)[0]);
+  }
+  return refs.filter(Boolean);
+}
+
+function cssRefs(source) {
+  const refs = [];
+  for (const match of source.matchAll(CSS_URL)) {
+    const ref = match[1].trim();
+    if (!ref || EXTERNAL_REF.test(ref) || ref.startsWith("data:")) continue;
     refs.push(ref.split(/[?#]/)[0]);
   }
   return refs.filter(Boolean);
@@ -129,12 +172,14 @@ export async function resolveRuntimeFiles(root = process.cwd()) {
     files.add(relative);
 
     const extension = path.extname(relative).toLowerCase();
-    if (![".js", ".mjs", ".html"].includes(extension)) continue;
+    if (![".js", ".mjs", ".html", ".css"].includes(extension)) continue;
 
     const source = await readFile(absolute, "utf8");
     const refs = extension === ".html"
       ? htmlRefs(source)
-      : [...jsRefs(source), ...assetRefs(source)];
+      : extension === ".css"
+        ? cssRefs(source)
+        : [...jsRefs(source), ...assetRefs(source)];
 
     if (extension !== ".html") {
       for (const match of source.matchAll(JS_FROM)) {
@@ -144,8 +189,17 @@ export async function resolveRuntimeFiles(root = process.cwd()) {
     }
 
     for (const ref of refs) {
-      const resolved = toPosix(path.join(path.dirname(relative), ref));
+      const resolved = resolveRef(path.dirname(relative), ref);
       if (!seen.has(resolved)) queue.push(resolved);
+    }
+  }
+
+  for (const directory of LICENCE_DIRECTORIES) {
+    const absolute = path.join(root, directory);
+    if (!existsSync(absolute)) continue;
+    for (const name of await readdir(absolute)) {
+      if (!/^(?:OFL|LICEN[CS]E|COPYING)/i.test(name)) continue;
+      files.add(toPosix(path.join(directory, name)));
     }
   }
 

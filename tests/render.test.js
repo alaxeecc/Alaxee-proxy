@@ -12,6 +12,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { exportSettings, planImport } from "../src/backup.js";
+import { buildPacScript } from "../src/core.js";
 import {
   applyPastedAddress,
   clearRestorePlan,
@@ -101,7 +102,14 @@ const element = () => ({
     contains(name) { return this.values.has(name); }
   },
   setAttribute(name, value) { this.attributes[name] = value; },
-  append() {}, replaceChildren() {}
+  append() {}, replaceChildren() {},
+  // renderCurrentPage swaps the header icon's src. The stub returns a stand-in so
+  // the test can assert which file was chosen; real DOM elements behave the same.
+  querySelector(selector) {
+    if (!this.children) this.children = {};
+    if (!this.children[selector]) this.children[selector] = { src: "", attributes: {}, dataset: {} };
+    return this.children[selector];
+  }
 });
 const panel = () => ({ ...element(), open: false, classList: element().classList });
 
@@ -135,6 +143,13 @@ function fakeUi() {
     append(child) {
       // A DocumentFragment contributes its own children when appended.
       (this.children ??= []).push(...(child?.tagName === "#fragment" ? child.children : [child]));
+    },
+    // renderCurrentPage swaps the header icon's src. Kept in its own map so it does
+    // not collide with the child list above.
+    querySelector(selector) {
+      (this.matches ??= {});
+      this.matches[selector] ??= { src: "", attributes: {}, dataset: {} };
+      return this.matches[selector];
     }
   });
   return {
@@ -287,6 +302,53 @@ test("the brand mark carries the resolved route for styling", () => {
   assert.equal(ui.brandMark.dataset.route, "direct");
   assert.match(ui.brandMark.attributes["aria-label"], /浏览器直连/);
 });
+
+test("a blacklisted page is marked forced while the explanation stays a proxy route", () => {
+  // The mark is allowed to say something finer-grained than the route: "this page is
+  // proxied because you blacklisted it" is more useful than another generic proxy
+  // icon. The route itself must not change - the PAC decides routing, not the UI -
+  // so the returned value and the description both stay "proxy".
+  const ui = fakeUi();
+  const settings = { ...BASE, blacklist: [{ host: "blocked.example", includeSubdomains: true }] };
+  const route = renderCurrentPage(ui, {
+    currentTabUrl: "https://blocked.example/page",
+    currentHostname: "blocked.example",
+    settings,
+    proxyState: ownedPacState(settings)
+  });
+
+  assert.equal(route, "proxy", "the routing outcome must stay proxy");
+  assert.equal(ui.brandMark.dataset.route, "forced");
+  assert.match(ui.brandMark.attributes["aria-label"], /黑名单强制/);
+  assert.match(ui.routePill.className, /route-forced/);
+  assert.match(ui.currentRoute.textContent, /黑名单/);
+});
+
+test("a proxied page that is not blacklisted keeps the plain proxy state", () => {
+  const ui = fakeUi();
+  renderCurrentPage(ui, {
+    currentTabUrl: "https://ordinary.example/",
+    currentHostname: "ordinary.example",
+    settings: { ...BASE, blacklist: [{ host: "blocked.example" }] },
+    proxyState: ownedPacState({ ...BASE, blacklist: [{ host: "blocked.example" }] })
+  });
+  assert.equal(ui.brandMark.dataset.route, "proxy");
+  assert.match(ui.brandMark.attributes["aria-label"], /交给代理/);
+});
+
+/**
+ * A proxy state that this extension owns, in PAC mode.
+ *
+ * resolveTabRoute only trusts a PAC script whose fingerprint matches settings, so a
+ * bare `{ mode: "pac_script" }` is correctly reported as unknown. Tests that need a
+ * real proxy route have to supply the generated script.
+ */
+function ownedPacState(settings) {
+  return {
+    levelOfControl: "controlled_by_this_extension",
+    value: { mode: "pac_script", pacScript: { data: buildPacScript(settings) } }
+  };
+}
 
 /* -------------------------------------------------------------------------- */
 /* Rule list                                                                  */

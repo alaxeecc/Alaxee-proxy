@@ -17,6 +17,7 @@ import {
   COMMON_PROXY_PORTS,
   ENDPOINT_TROUBLESHOOTING,
   describeProxyEndpoint,
+  iconStateFor,
   isConfigured,
   isHostBlacklisted,
   isHostWhitelisted,
@@ -25,15 +26,47 @@ import {
   resolveTabRoute
 } from "./core.js";
 
+/**
+ * Labels for the four toolbar states.
+ *
+ * "forced" is not a fourth route - a blacklist hit resolves to proxy - it is the
+ * proxy result with its reason attached. The header mark colours it differently so
+ * the popup and the toolbar agree, and the label says why rather than just repeating
+ * "proxy". renderCurrentPage() maps the route through iconStateFor() for the mark
+ * while keeping the route itself unchanged for everything else.
+ */
 export const ROUTE_LABELS = Object.freeze({
   proxy: "交给代理",
   direct: "浏览器直连",
+  forced: "黑名单强制",
   unknown: "状态未知"
+});
+
+/**
+ * The kit icon shown for each state.
+ *
+ * These are the brand kit's own files, copied verbatim into src/brand/icons/. The
+ * kit labels them by time of day, so this mapping is a product decision: day and
+ * night are the two that stay distinguishable at 16px, and they carry the two states
+ * a user checks most (proxied, direct). Noon is the brightest and reads as "held on
+ * the route by a rule"; morning is the palest, for "not determined".
+ *
+ * Paths are absolute from the extension root rather than relative to popup.html.
+ * These are assigned to img.src in script, and a relative value resolves against the
+ * document URL - which is /src/popup.html in the extension but a bare / in the
+ * preview harness, where "brand/icons/..." would become /brand/icons/... and 404.
+ */
+const ROUTE_ICONS = Object.freeze({
+  proxy: "/src/brand/icons/icon-day-small.svg",
+  direct: "/src/brand/icons/icon-night-sleep-small.svg",
+  forced: "/src/brand/icons/icon-noon-small.svg",
+  unknown: "/src/brand/icons/icon-morning-small.svg"
 });
 
 const ROUTE_CLASSES = Object.freeze({
   proxy: "route-proxy",
   direct: "route-good",
+  forced: "route-forced",
   unknown: "route-unknown"
 });
 
@@ -209,10 +242,16 @@ export function renderCurrentPage(ui, { currentTabUrl, currentHostname, settings
   const whitelistExact = Boolean(currentHostname && settings.whitelist.some((entry) => entry.host === currentHostname));
   const blacklistExact = Boolean(currentHostname && settings.blacklist.some((entry) => entry.host === currentHostname));
 
-  ui.brandMark.dataset.route = route;
-  ui.brandMark.setAttribute("aria-label", `当前页面状态：${ROUTE_LABELS[route]}`);
-  ui.routePill.textContent = ROUTE_LABELS[route];
-  ui.routePill.className = `route-pill ${ROUTE_CLASSES[route]}`;
+  // The mark and pill show the refined state ("I blacklisted this site") while the
+  // route keeps driving the explanation, so copying a host into the blacklist
+  // changes what the icon says without changing what the popup claims will happen.
+  const markState = iconStateFor(route, currentHostname, settings);
+  ui.brandMark.dataset.route = markState;
+  ui.brandMark.setAttribute("aria-label", `当前页面状态：${ROUTE_LABELS[markState]}`);
+  const icon = ui.brandMark.querySelector(".brand-icon");
+  if (icon) icon.src = ROUTE_ICONS[markState];
+  ui.routePill.textContent = ROUTE_LABELS[markState];
+  ui.routePill.className = `route-pill ${ROUTE_CLASSES[markState]}`;
 
   if (!currentHostname) {
     ui.currentHost.textContent = "当前页面不可用";
