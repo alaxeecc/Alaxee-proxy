@@ -1,0 +1,481 @@
+/*!
+ * Alaxee UI · 曦  v1.1（Alaxee 曦 · 品牌与界面套件的一部分：图标、logo、字体在 ../brand、../fonts）
+ * 一套不依赖任何框架的界面模板：复制这个文件夹，在页面里引入 alaxee-ui.css（和可选的 alaxee-ui.js）就能用。
+ * 来源：ALAXEE V11 规范（强呼吸动效、曦光渐变）+ 远黛的粉色和质感打磨。
+ * 主题：<html data-ax-theme="xi | dusk | glass | alaxee | auto">
+ *   xi     曦·晨粉（浅色，默认）    dusk   暮·梅子（深色）
+ *   glass  深色磨砂玻璃（盖在图片/场景上）    alaxee  V11 原版夜空蓝紫
+ *   auto   守夜时段（19–5 点）用 dusk，其余用 xi（需要 alaxee-ui.js；和图标的时段一致）
+ * 所有动效在系统“减少动态效果”时自动停下。
+ */
+
+/* ------------------------------------------------------------------ 1. 设计变量 */
+:root {
+  /* 品牌色（四个主题共用） */
+  --ax-sakura: #E880BE; --ax-rose: #D9659C; --ax-peach: #FFA894; --ax-gold: #FFD9A8;
+  --ax-violet: #6E5CD2; --ax-night: #181C5E; --ax-moon: #F6F4FF; --ax-plum: #4A3340;
+  --ax-success: #3FB8A0; --ax-warning: #E8955A; --ax-danger: #E0577A; --ax-info: #6E8FE8;
+
+  /* 字体：中文标题和“她说的话”用宋体，正文用系统字体 */
+  --ax-font: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --ax-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --ax-mono: "JetBrains Mono", "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  /* 字号（1.2 倍阶梯） */
+  --ax-t-xs: 12px; --ax-t-sm: 13px; --ax-t-md: 15px; --ax-t-lg: 18px; --ax-t-xl: 22px; --ax-t-2xl: 28px; --ax-t-3xl: 40px;
+
+  /* 形状与间距（8 点网格） */
+  --ax-r-sm: 8px; --ax-r-md: 12px; --ax-r-lg: 20px; --ax-r-xl: 28px; --ax-r-pill: 999px; --ax-r-icon: 22.86%;
+  --ax-s1: 4px; --ax-s2: 8px; --ax-s3: 12px; --ax-s4: 16px; --ax-s5: 24px; --ax-s6: 32px; --ax-s7: 48px; --ax-s8: 64px;
+
+  /* 动效：V11 强呼吸（scale .84→1.26 · 3.6s）、界面 200ms、换页 360ms、流光 3.4s */
+  --ax-breath: 3.6s; --ax-breath-ease: cubic-bezier(.4, 0, .6, 1);
+  --ax-ui: 200ms; --ax-ui-ease: cubic-bezier(.2, .8, .2, 1);
+  --ax-page: 360ms; --ax-sheen: 3.4s; --ax-orbit: 5.6s;
+  --ax-spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  /* 四角星（“曦”）：用作遮罩，颜色跟着 background 走 */
+  --ax-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0C12.9 7.6 16.4 11.1 24 12 16.4 12.9 12.9 16.4 12 24 11.1 16.4 7.6 12.9 0 12 7.6 11.1 11.1 7.6 12 0Z'/%3E%3C/svg%3E");
+}
+
+/* 曦·晨粉（浅色，默认） */
+:root, [data-ax-theme="xi"] {
+  color-scheme: light;
+  --ax-bg: #FAF6F4; --ax-bg-2: #F3EAE8; --ax-surface: #FFFFFF; --ax-surface-2: #FBF7F6; --ax-sunken: rgba(84, 44, 64, .045);
+  --ax-ink: #33232C; --ax-muted: #85707B; --ax-faint: #B8A6AF;
+  --ax-line: rgba(84, 44, 64, .10); --ax-line-strong: rgba(84, 44, 64, .18);
+  --ax-accent: #C8548B; --ax-accent-hover: #B5457A; --ax-accent-soft: rgba(200, 84, 139, .09); --ax-on-accent: #FFFFFF;
+  --ax-focus: rgba(200, 84, 139, .28);
+  --ax-glow: rgba(255, 196, 150, .55);
+  --ax-grad-dawn: linear-gradient(135deg, #D9659C 0%, #EE8FB0 48%, #FFC9A4 100%);
+  --ax-grad-bar: linear-gradient(90deg, #D9659C, #F29BB8 55%, #FFD2A6);
+  --ax-grad-cta: linear-gradient(135deg, #CC5690 0%, #E27A9F 55%, #F29A8A 100%);
+  --ax-grad-sky: linear-gradient(180deg, #F7D9E4 0%, #FBE3E2 46%, #FFEBD8 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(60, 30, 45, .06), 0 1px 1px rgba(60, 30, 45, .04);
+  --ax-shadow-md: 0 1px 2px rgba(60, 30, 45, .05), 0 6px 18px -6px rgba(60, 30, 45, .14);
+  --ax-shadow-lg: 0 2px 6px rgba(60, 30, 45, .05), 0 24px 56px -16px rgba(60, 30, 45, .26);
+  --ax-panel-blur: none;
+  --ax-btn-bg: var(--ax-accent); --ax-btn-ink: var(--ax-on-accent); --ax-btn-hover: var(--ax-accent-hover);
+}
+
+/* 暮·梅子（深色） */
+[data-ax-theme="dusk"] {
+  color-scheme: dark;
+  --ax-bg: #141013; --ax-bg-2: #1B1418; --ax-surface: #1F171C; --ax-surface-2: #271D23; --ax-sunken: rgba(255, 236, 244, .045);
+  --ax-ink: #F3E8EE; --ax-muted: #AD97A3; --ax-faint: #6E5B66;
+  --ax-line: rgba(255, 222, 236, .08); --ax-line-strong: rgba(255, 222, 236, .16);
+  --ax-accent: #EE8AB6; --ax-accent-hover: #F6A2C6; --ax-accent-soft: rgba(238, 138, 182, .12); --ax-on-accent: #2A1622;
+  --ax-focus: rgba(238, 138, 182, .32);
+  --ax-glow: rgba(255, 190, 210, .45);
+  --ax-grad-dawn: linear-gradient(135deg, #C9608F 0%, #EE8AB6 50%, #FFC9A4 100%);
+  --ax-grad-bar: linear-gradient(90deg, #C9608F, #EE8AB6 55%, #FFD2A6);
+  --ax-grad-cta: linear-gradient(135deg, #C9568C 0%, #E27BA4 55%, #EF9B8C 100%);
+  --ax-grad-sky: linear-gradient(180deg, #1E0E1A 0%, #381B2E 55%, #6E3556 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --ax-shadow-md: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -8px rgba(0, 0, 0, .5);
+  --ax-shadow-lg: 0 2px 8px rgba(0, 0, 0, .35), 0 28px 64px -16px rgba(0, 0, 0, .65);
+  --ax-panel-blur: none;
+  --ax-btn-bg: var(--ax-accent); --ax-btn-ink: var(--ax-on-accent); --ax-btn-hover: var(--ax-accent-hover);
+}
+
+/* 深色磨砂玻璃：给 body 或容器设 --ax-backdrop（图片）就能透出来 */
+[data-ax-theme="glass"] {
+  color-scheme: dark;
+  --ax-bg: #151012; --ax-bg-2: #1A1416; --ax-surface: rgba(24, 18, 21, .62); --ax-surface-2: rgba(255, 255, 255, .05); --ax-sunken: rgba(255, 255, 255, .045);
+  --ax-ink: #F3EDE7; --ax-muted: rgba(243, 237, 231, .68); --ax-faint: rgba(243, 237, 231, .42);
+  --ax-line: rgba(255, 255, 255, .10); --ax-line-strong: rgba(255, 255, 255, .20);
+  --ax-accent: #E2A8B2; --ax-accent-hover: #EDBCC4; --ax-accent-soft: rgba(226, 168, 178, .14); --ax-on-accent: #1A1416;
+  --ax-focus: rgba(243, 237, 231, .3);
+  --ax-glow: rgba(255, 220, 200, .4);
+  --ax-grad-dawn: linear-gradient(135deg, #E9B3BE 0%, #F3D3C4 55%, #FBE6CC 100%);
+  --ax-grad-bar: linear-gradient(90deg, #E2A8B2, #F3D3C4 60%, #FBE6CC);
+  --ax-grad-cta: linear-gradient(135deg, #D98E9E 0%, #E6AFA8 55%, #EBC2A0 100%);
+  --ax-grad-sky: linear-gradient(180deg, #1C1418 0%, #2A1E24 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --ax-shadow-md: 0 8px 24px -8px rgba(0, 0, 0, .45);
+  --ax-shadow-lg: 0 30px 70px -20px rgba(0, 0, 0, .7);
+  --ax-panel-blur: blur(22px) saturate(1.25);
+  --ax-btn-bg: #F3EDE7; --ax-btn-ink: #1A1416; --ax-btn-hover: #FFFFFF;
+}
+
+/* V11 原版：夜空蓝紫 */
+[data-ax-theme="alaxee"] {
+  color-scheme: dark;
+  --ax-bg: #0C1024; --ax-bg-2: #0F1430; --ax-surface: #141A40; --ax-surface-2: #1A2150; --ax-sunken: rgba(220, 224, 255, .05);
+  --ax-ink: #F6F4FF; --ax-muted: #9A9ED4; --ax-faint: #5E64A0;
+  --ax-line: rgba(160, 170, 255, .12); --ax-line-strong: rgba(160, 170, 255, .22);
+  --ax-accent: #E880BE; --ax-accent-hover: #F29BCD; --ax-accent-soft: rgba(232, 128, 190, .14); --ax-on-accent: #1A1030;
+  --ax-focus: rgba(255, 217, 168, .45);
+  --ax-glow: rgba(255, 201, 140, .45);
+  --ax-grad-dawn: linear-gradient(135deg, #7B6AE8 0%, #F092C2 52%, #FFD09E 100%);
+  --ax-grad-bar: linear-gradient(90deg, #7B6AE8, #F092C2, #FFD9A8);
+  --ax-grad-cta: linear-gradient(135deg, #7B6AE8 0%, #F092C2 52%, #FFD09E 100%);
+  --ax-grad-sky: linear-gradient(180deg, #181C5E 0%, #3A3E9E 22%, #6E5CD2 44%, #AB74D8 62%, #E880BE 74%, #FFA894 86%, #FFD8A8 94%, #FFF4CC 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(4, 4, 14, .4);
+  --ax-shadow-md: 0 8px 32px -8px rgba(4, 4, 14, .55);
+  --ax-shadow-lg: 0 30px 70px -20px rgba(4, 4, 14, .8);
+  --ax-panel-blur: none;
+  --ax-btn-bg: var(--ax-grad-dawn); --ax-btn-ink: #1A1030; --ax-btn-hover: var(--ax-grad-dawn);
+}
+
+/* ------------------------------------------------------------------ 2. 基础 */
+.ax, .ax-root { font-family: var(--ax-font); font-size: var(--ax-t-md); line-height: 1.6; color: var(--ax-ink); background: var(--ax-bg);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.ax-root { min-height: 100vh; background: var(--ax-backdrop, none) center / cover fixed, var(--ax-bg); }
+.ax *, .ax *::before, .ax *::after { box-sizing: border-box; }
+.ax ::selection { background: var(--ax-accent-soft); color: var(--ax-ink); }
+.ax a { color: var(--ax-accent); text-decoration: none; }
+.ax a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ax :focus-visible { outline: 2px solid var(--ax-focus); outline-offset: 2px; }
+
+.ax-h1, .ax-h2, .ax-h3 { font-family: var(--ax-serif); font-weight: 600; letter-spacing: .02em; line-height: 1.3; margin: 0; color: var(--ax-ink); }
+.ax-h1 { font-size: var(--ax-t-3xl); letter-spacing: .06em; }
+.ax-h2 { font-size: var(--ax-t-2xl); }
+.ax-h3 { font-size: var(--ax-t-lg); }
+.ax-eyebrow { font-size: var(--ax-t-xs); letter-spacing: .18em; text-transform: uppercase; color: var(--ax-muted); }
+.ax-serif { font-family: var(--ax-serif); }
+.ax-muted { color: var(--ax-muted); }
+.ax-faint { color: var(--ax-faint); }
+.ax-small { font-size: var(--ax-t-sm); }
+.ax-code, .ax kbd { font-family: var(--ax-mono); font-size: .88em; padding: 1px 6px; border-radius: 6px; background: var(--ax-sunken); border: 1px solid var(--ax-line); }
+.ax-text-dawn { background: var(--ax-grad-dawn); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.ax-stack { display: flex; flex-direction: column; gap: var(--ax-gap, var(--ax-s4)); }
+.ax-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ax-gap, var(--ax-s3)); }
+.ax-grid { display: grid; gap: var(--ax-gap, var(--ax-s4)); grid-template-columns: repeat(auto-fit, minmax(min(var(--ax-min, 240px), 100%), 1fr)); }
+.ax-spacer { flex: 1; }
+.ax-divider { height: 1px; border: 0; margin: var(--ax-s4) 0; background: var(--ax-line); }
+
+/* ------------------------------------------------------------------ 3. 按钮 */
+.ax-btn {
+  --h: 40px;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--h); padding: 0 18px;
+  border: 1px solid transparent; border-radius: var(--ax-r-pill); font: inherit; font-size: 14px; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
+  color: var(--ax-btn-ink); background: var(--ax-btn-bg); cursor: pointer; isolation: isolate; overflow: hidden; user-select: none;
+  box-shadow: var(--ax-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, .18);
+  transition: background var(--ax-ui) var(--ax-ui-ease), color var(--ax-ui), border-color var(--ax-ui), box-shadow var(--ax-ui), transform var(--ax-ui) var(--ax-ui-ease);
+}
+.ax-btn:hover { background: var(--ax-btn-hover); box-shadow: var(--ax-shadow-md), inset 0 1px 0 rgba(255, 255, 255, .22); }
+.ax-btn:active { transform: scale(.97); }
+.ax-btn:disabled, .ax-btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.ax-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.ax-btn--sm { --h: 32px; padding: 0 14px; font-size: 13px; }
+.ax-btn--lg { --h: 48px; padding: 0 26px; font-size: 15px; }
+.ax-btn--block { width: 100%; }
+/* 曦光主按钮：渐变 + 悬停时一道流光扫过 */
+.ax-btn--dawn { background: var(--ax-grad-cta, var(--ax-grad-dawn)); color: #fff; text-shadow: 0 1px 2px rgba(120, 40, 70, .25); box-shadow: 0 6px 20px -6px rgba(217, 101, 156, .55), inset 0 1px 0 rgba(255, 255, 255, .3); }
+[data-ax-theme="alaxee"] .ax-btn--dawn { color: #1A1030; text-shadow: none; }
+.ax-btn--dawn:hover { background: var(--ax-grad-cta, var(--ax-grad-dawn)); filter: brightness(1.05) saturate(1.05); box-shadow: 0 10px 28px -8px rgba(217, 101, 156, .6), inset 0 1px 0 rgba(255, 255, 255, .35); }
+.ax-btn--dawn::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .45) 50%, transparent 70%);
+  transform: translateX(-120%); }
+.ax-btn--dawn:hover::after { animation: ax-sweep 900ms var(--ax-ui-ease); }
+/* 浅色按钮：放在彩色背景（首屏、横幅）上 */
+.ax-btn--light { background: rgba(255, 255, 255, .94); color: var(--ax-rose); box-shadow: 0 6px 20px -6px rgba(90, 30, 60, .35); }
+.ax-btn--light:hover { background: #fff; box-shadow: 0 10px 26px -8px rgba(90, 30, 60, .4); }
+.ax-btn--light .ax-spark { background: var(--ax-gold); }
+.ax-btn--secondary { background: transparent; color: var(--ax-ink); border-color: var(--ax-line-strong); box-shadow: none; }
+.ax-btn--secondary:hover { background: var(--ax-sunken); border-color: var(--ax-line-strong); box-shadow: none; }
+.ax-btn--ghost { background: transparent; color: var(--ax-muted); box-shadow: none; }
+.ax-btn--ghost:hover { background: var(--ax-sunken); color: var(--ax-ink); box-shadow: none; }
+.ax-btn--danger { background: var(--ax-danger); color: #fff; }
+.ax-btn--danger:hover { background: var(--ax-danger); filter: brightness(1.06); }
+/* 圆形图标按钮（磨砂） */
+.ax-btn--icon { --h: 40px; width: var(--h); padding: 0; color: var(--ax-ink); background: var(--ax-surface-2); border-color: var(--ax-line);
+  box-shadow: var(--ax-shadow-sm); backdrop-filter: var(--ax-panel-blur); -webkit-backdrop-filter: var(--ax-panel-blur); }
+.ax-btn--icon:hover { background: var(--ax-surface); color: var(--ax-accent); }
+.ax-btn--icon.ax-btn--lg { --h: 52px; }
+.ax-btn--icon.ax-btn--lg svg { width: 20px; height: 20px; }
+/* 加载中：星星在转 */
+.ax-btn.is-loading { color: transparent !important; text-shadow: none; pointer-events: none; }
+.ax-btn.is-loading::before { content: ""; position: absolute; width: 18px; height: 18px; inset: 0; margin: auto; background: var(--ax-btn-ink);
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat; animation: ax-spin 1.1s var(--ax-breath-ease) infinite; }
+.ax-btn--dawn.is-loading::before { background: #fff; }
+.ax-btn--secondary.is-loading::before, .ax-btn--ghost.is-loading::before { background: var(--ax-accent); }
+/* 点按时迸出的小星星（alaxee-ui.js 加的） */
+.ax-spark { position: absolute; width: 10px; height: 10px; pointer-events: none; z-index: 2; background: #fff; opacity: .95;
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat;
+  animation: ax-spark 620ms var(--ax-ui-ease) forwards; }
+.ax-btn--secondary .ax-spark, .ax-btn--ghost .ax-spark, .ax-btn--icon .ax-spark { background: var(--ax-accent); }
+
+/* ------------------------------------------------------------------ 4. 表单 */
+.ax-field { display: flex; flex-direction: column; gap: 6px; }
+.ax-label { font-size: var(--ax-t-sm); font-weight: 600; color: var(--ax-ink); }
+.ax-help { font-size: var(--ax-t-xs); color: var(--ax-muted); }
+.ax-error { font-size: var(--ax-t-xs); color: var(--ax-danger); }
+.ax-input, .ax-textarea, .ax-select {
+  width: 100%; height: 42px; padding: 0 14px; border-radius: var(--ax-r-md); font: inherit; font-size: 14px; color: var(--ax-ink);
+  background: var(--ax-surface); border: 1px solid var(--ax-line-strong); outline: none; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .03);
+  transition: border-color var(--ax-ui), box-shadow var(--ax-ui), background var(--ax-ui);
+}
+.ax-textarea { height: auto; min-height: 96px; padding: 11px 14px; resize: vertical; line-height: 1.6; }
+.ax-input::placeholder, .ax-textarea::placeholder { color: var(--ax-faint); }
+.ax-input:hover, .ax-textarea:hover, .ax-select:hover { border-color: var(--ax-muted); }
+.ax-input:focus, .ax-textarea:focus, .ax-select:focus { border-color: var(--ax-accent); box-shadow: 0 0 0 4px var(--ax-focus); }
+.ax-input.is-invalid { border-color: var(--ax-danger); box-shadow: 0 0 0 4px rgba(224, 87, 122, .14); }
+[data-ax-theme="glass"] .ax-input, [data-ax-theme="glass"] .ax-textarea, [data-ax-theme="glass"] .ax-select { background: rgba(255, 255, 255, .05); }
+.ax-select { appearance: none; padding-right: 38px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ax-muted) 50%), linear-gradient(135deg, var(--ax-muted) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 52%, calc(100% - 14px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+.ax-input-group { position: relative; display: flex; align-items: center; }
+.ax-input-group > svg { position: absolute; left: 13px; width: 16px; height: 16px; color: var(--ax-faint); pointer-events: none; }
+.ax-input-group > .ax-input { padding-left: 38px; }
+
+/* 拨动开关 */
+.ax-switch { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; user-select: none; }
+.ax-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.ax-switch i { position: relative; width: 40px; height: 24px; border-radius: 999px; background: var(--ax-line-strong); transition: background var(--ax-ui); flex-shrink: 0; }
+.ax-switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform var(--ax-page) var(--ax-spring); }
+.ax-switch input:checked + i { background: var(--ax-accent); }
+.ax-switch input:checked + i::after { transform: translateX(16px); }
+.ax-switch input:focus-visible + i { box-shadow: 0 0 0 4px var(--ax-focus); }
+
+/* 勾选 / 单选 */
+.ax-check { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; font-size: 14px; user-select: none; }
+.ax-check input { appearance: none; margin: 0; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--ax-line-strong); background: var(--ax-surface);
+  display: grid; place-items: center; transition: background var(--ax-ui), border-color var(--ax-ui); cursor: pointer; }
+.ax-check input[type="radio"] { border-radius: 50%; }
+.ax-check input::after { content: ""; width: 10px; height: 10px; background: var(--ax-on-accent); transform: scale(0); transition: transform var(--ax-ui) var(--ax-spring);
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat; }
+.ax-check input:checked { background: var(--ax-accent); border-color: var(--ax-accent); }
+.ax-check input:checked::after { transform: scale(1); }
+.ax-check input:focus-visible { box-shadow: 0 0 0 4px var(--ax-focus); }
+
+/* 滑块 */
+.ax-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; outline: none; cursor: pointer;
+  background: linear-gradient(var(--ax-accent), var(--ax-accent)) 0 / var(--v, 50%) 100% no-repeat, var(--ax-line-strong); }
+.ax-range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25), 0 0 0 4px var(--ax-accent-soft); transition: box-shadow var(--ax-ui); }
+.ax-range::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.ax-range:hover::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0, 0, 0, .25), 0 0 0 7px var(--ax-accent-soft); }
+
+/* 分段选择（两三个选项二选一） */
+.ax-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: var(--ax-r-pill); background: var(--ax-sunken); border: 1px solid var(--ax-line); }
+.ax-seg > button, .ax-seg > label { position: relative; height: 32px; padding: 0 16px; border: 0; border-radius: var(--ax-r-pill); font: inherit; font-size: 13px; font-weight: 500;
+  color: var(--ax-muted); background: transparent; cursor: pointer; display: inline-flex; align-items: center; transition: color var(--ax-ui), background var(--ax-ui), box-shadow var(--ax-ui); }
+.ax-seg > label input { position: absolute; opacity: 0; pointer-events: none; }
+.ax-seg > button:hover, .ax-seg > label:hover { color: var(--ax-ink); }
+.ax-seg > .is-active, .ax-seg > button[aria-pressed="true"], .ax-seg > label:has(input:checked) { color: var(--ax-ink); background: var(--ax-surface); box-shadow: var(--ax-shadow-sm); font-weight: 600; }
+[data-ax-theme="glass"] .ax-seg > .is-active, [data-ax-theme="glass"] .ax-seg > label:has(input:checked) { background: rgba(255, 255, 255, .14); }
+
+/* 标签页：下划线是一颗会滑过去的光 */
+.ax-tabs { position: relative; display: flex; gap: var(--ax-s5); border-bottom: 1px solid var(--ax-line); }
+.ax-tabs > button { position: relative; padding: 10px 2px 12px; border: 0; background: none; font: inherit; font-size: 14px; color: var(--ax-muted); cursor: pointer; transition: color var(--ax-ui); }
+.ax-tabs > button:hover { color: var(--ax-ink); }
+.ax-tabs > button.is-active, .ax-tabs > button[aria-selected="true"] { color: var(--ax-ink); font-weight: 600; }
+.ax-tabs > button::after { content: ""; position: absolute; left: 50%; right: 50%; bottom: -1px; height: 2px; border-radius: 2px; background: var(--ax-grad-bar);
+  transition: left var(--ax-page) var(--ax-ui-ease), right var(--ax-page) var(--ax-ui-ease); }
+.ax-tabs > button.is-active::after, .ax-tabs > button[aria-selected="true"]::after { left: 0; right: 0; }
+
+/* ------------------------------------------------------------------ 5. 容器 */
+.ax-card { position: relative; padding: var(--ax-s5); border-radius: var(--ax-r-lg); background: var(--ax-surface); border: 1px solid var(--ax-line);
+  box-shadow: var(--ax-shadow-sm); backdrop-filter: var(--ax-panel-blur); -webkit-backdrop-filter: var(--ax-panel-blur); }
+.ax-card--hover { transition: transform var(--ax-page) var(--ax-ui-ease), box-shadow var(--ax-page) var(--ax-ui-ease), border-color var(--ax-ui); cursor: pointer; }
+.ax-card--hover:hover { transform: translateY(-2px); box-shadow: var(--ax-shadow-md); border-color: var(--ax-line-strong); }
+.ax-card--flat { box-shadow: none; background: var(--ax-surface-2); }
+.ax-card__title { display: flex; align-items: center; gap: 10px; margin: 0 0 var(--ax-s2); font-size: var(--ax-t-md); font-weight: 600; }
+/* 曦光描边卡片：边框是一圈缓慢流动的晨光 */
+.ax-card--glow { border-color: transparent; background: linear-gradient(var(--ax-surface), var(--ax-surface)) padding-box,
+  conic-gradient(from var(--ax-angle, 0deg), var(--ax-line) 0deg, var(--ax-sakura) 60deg, var(--ax-gold) 110deg, var(--ax-line) 170deg, var(--ax-line) 360deg) border-box;
+  animation: ax-orbit-border 8s linear infinite; }
+[data-ax-theme="glass"] .ax-card--glow { background: linear-gradient(rgba(30, 22, 26, .9), rgba(30, 22, 26, .9)) padding-box,
+  conic-gradient(from var(--ax-angle, 0deg), var(--ax-line) 0deg, #E9B3BE 60deg, #FBE6CC 110deg, var(--ax-line) 170deg, var(--ax-line) 360deg) border-box; }
+@property --ax-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+
+/* 磨砂面板（弹窗、侧板、场景上的浮层） */
+.ax-panel { border-radius: var(--ax-r-xl); background: var(--ax-surface); border: 1px solid var(--ax-line); box-shadow: var(--ax-shadow-lg);
+  backdrop-filter: var(--ax-panel-blur); -webkit-backdrop-filter: var(--ax-panel-blur); }
+
+/* 列表 */
+.ax-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ax-list > li, .ax-list > a, .ax-list > button { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 14px; border-radius: var(--ax-r-md);
+  color: var(--ax-ink); background: none; border: 0; font: inherit; text-align: left; cursor: default; transition: background var(--ax-ui); }
+.ax-list > a, .ax-list > button { cursor: pointer; text-decoration: none !important; }
+.ax-list > a:hover, .ax-list > button:hover { background: var(--ax-sunken); }
+.ax-list > .is-active { background: var(--ax-accent-soft); }
+.ax-list--lined > li + li { border-top: 1px solid var(--ax-line); border-radius: 0; }
+.ax-list__meta { margin-left: auto; font-size: var(--ax-t-xs); color: var(--ax-faint); white-space: nowrap; }
+
+/* 小标签 / 徽标 */
+.ax-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: var(--ax-r-pill); font-size: 12px; font-weight: 500;
+  color: var(--ax-muted); background: var(--ax-sunken); border: 1px solid var(--ax-line); white-space: nowrap; }
+.ax-chip--accent { color: var(--ax-accent); background: var(--ax-accent-soft); border-color: transparent; }
+.ax-chip--success { color: var(--ax-success); background: color-mix(in srgb, var(--ax-success) 12%, transparent); border-color: transparent; }
+.ax-chip--warning { color: var(--ax-warning); background: color-mix(in srgb, var(--ax-warning) 13%, transparent); border-color: transparent; }
+.ax-chip--danger { color: var(--ax-danger); background: color-mix(in srgb, var(--ax-danger) 12%, transparent); border-color: transparent; }
+.ax-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.ax-dot--live::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: currentColor; animation: ax-ping 1.8s var(--ax-ui-ease) infinite; }
+.ax-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  color: #fff; background: var(--ax-danger); box-shadow: 0 0 0 2px var(--ax-bg); }
+
+/* 头像 / 应用图标 */
+.ax-avatar { width: var(--size, 40px); height: var(--size, 40px); border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--ax-grad-dawn); display: inline-grid; place-items: center;
+  color: #fff; font-weight: 600; box-shadow: 0 0 0 2px var(--ax-surface); }
+.ax-appicon { width: var(--size, 48px); height: var(--size, 48px); border-radius: var(--ax-r-icon); flex-shrink: 0; display: block; filter: drop-shadow(0 6px 14px rgba(200, 84, 139, .28)); }
+
+/* ------------------------------------------------------------------ 6. 进度与等待 */
+/* 进度条：曦光渐变 + 流光 + 末端一颗星 */
+.ax-progress { --v: 40%; position: relative; height: 8px; border-radius: 999px; background: var(--ax-sunken); overflow: visible; }
+.ax-progress > i { position: absolute; inset: 0 auto 0 0; width: var(--v); border-radius: inherit; background: var(--ax-grad-bar); overflow: hidden; transition: width var(--ax-page) var(--ax-ui-ease); }
+.ax-progress > i::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: translateX(-100%); animation: ax-sheen var(--ax-sheen) var(--ax-ui-ease) infinite; }
+.ax-progress::after { content: ""; position: absolute; left: var(--v); top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; background: #fff;
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat;
+  filter: drop-shadow(0 0 6px var(--ax-glow)); animation: ax-twinkle 1.8s var(--ax-breath-ease) infinite; transition: left var(--ax-page) var(--ax-ui-ease); }
+[data-ax-theme="xi"] .ax-progress::after, :root:not([data-ax-theme]) .ax-progress::after { background: #FFD7A6; filter: drop-shadow(0 0 4px rgba(217, 101, 156, .6)); }
+.ax-progress--thin { height: 4px; }
+.ax-progress--thin::after { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+.ax-progress--indeterminate { overflow: hidden; }
+.ax-progress--indeterminate > i { width: 35%; animation: ax-indeterminate 1.6s var(--ax-breath-ease) infinite; }
+.ax-progress--indeterminate::after { display: none; }
+
+/* 星形加载 */
+.ax-spinner { display: inline-block; width: var(--size, 22px); height: var(--size, 22px); background: var(--ax-grad-dawn);
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat; animation: ax-spin 1.2s var(--ax-breath-ease) infinite; }
+
+/* 正在输入：三颗星依次亮起 */
+.ax-typing { display: inline-flex; gap: 5px; align-items: center; height: 18px; }
+.ax-typing i { width: 9px; height: 9px; background: var(--ax-accent); opacity: .3;
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat; animation: ax-typing 1.4s var(--ax-breath-ease) infinite; }
+.ax-typing i:nth-child(2) { animation-delay: .18s; }
+.ax-typing i:nth-child(3) { animation-delay: .36s; }
+
+/* 骨架屏 */
+.ax-skeleton { position: relative; overflow: hidden; border-radius: var(--ax-r-sm); background: var(--ax-sunken); min-height: 12px; }
+.ax-skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--ax-accent-soft), transparent);
+  transform: translateX(-100%); animation: ax-sheen 1.6s var(--ax-ui-ease) infinite; }
+
+/* ------------------------------------------------------------------ 7. “她在”：呼吸光球 */
+/* <span class="ax-orb" data-state="idle | think | talk | listen | sleep"><i></i></span> */
+.ax-orb { --size: 14px; --c: var(--ax-accent); position: relative; display: inline-grid; place-items: center; width: var(--size); height: var(--size); flex-shrink: 0; }
+.ax-orb::before { content: ""; position: absolute; inset: -60%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, transparent) 0%, transparent 68%);
+  animation: ax-halo var(--ax-breath) var(--ax-breath-ease) infinite; }
+.ax-orb > i { position: relative; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0%, #FFE6EF 35%, var(--c) 100%);
+  box-shadow: 0 0 calc(var(--size) * .8) color-mix(in srgb, var(--c) 70%, transparent); animation: ax-breathe var(--ax-breath) var(--ax-breath-ease) infinite; }
+.ax-orb[data-state="think"] > i { animation-duration: 1.4s; }
+.ax-orb[data-state="think"]::before { animation-duration: 1.4s; }
+.ax-orb[data-state="talk"]::after, .ax-orb[data-state="listen"]::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--c);
+  animation: ax-ripple 1.6s var(--ax-ui-ease) infinite; }
+.ax-orb[data-state="listen"] { --c: #8FD4C4; }
+.ax-orb[data-state="sleep"] > i { animation-duration: 6s; filter: saturate(.5) brightness(.9); }
+.ax-orb[data-state="sleep"]::before { animation-duration: 6s; opacity: .5; }
+.ax-orb--lg { --size: 56px; }
+.ax-presence { display: inline-flex; align-items: center; gap: 10px; height: 36px; padding: 0 14px 0 12px; border-radius: var(--ax-r-pill);
+  background: var(--ax-surface); border: 1px solid var(--ax-line); box-shadow: var(--ax-shadow-sm); font-size: 13px; color: var(--ax-muted);
+  backdrop-filter: var(--ax-panel-blur); -webkit-backdrop-filter: var(--ax-panel-blur); }
+.ax-presence b { color: var(--ax-ink); font-weight: 600; }
+
+/* 四角星（装饰） */
+.ax-star { display: inline-block; width: var(--size, 14px); height: var(--size, 14px); background: var(--c, var(--ax-gold));
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat; filter: drop-shadow(0 0 4px var(--ax-glow)); }
+.ax-star--twinkle { animation: ax-twinkle 2.4s var(--ax-breath-ease) infinite; }
+
+/* ------------------------------------------------------------------ 8. 对话 */
+.ax-chat { display: flex; flex-direction: column; gap: var(--ax-s5); }
+.ax-msg { max-width: min(680px, 88%); line-height: 1.75; animation: ax-rise var(--ax-page) var(--ax-ui-ease) both; }
+.ax-msg--me { align-self: flex-end; padding: 10px 16px; border-radius: 18px 18px 6px 18px; background: var(--ax-accent-soft); color: var(--ax-ink); }
+[data-ax-theme="glass"] .ax-msg--me { background: rgba(255, 255, 255, .1); }
+.ax-msg--her { align-self: flex-start; font-family: var(--ax-serif); font-size: 16px; color: var(--ax-ink); }
+.ax-msg__who { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-family: var(--ax-font); font-size: var(--ax-t-xs); color: var(--ax-faint); letter-spacing: .06em; }
+.ax-composer { display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 18px; border-radius: 26px; background: var(--ax-surface); border: 1px solid var(--ax-line-strong);
+  box-shadow: var(--ax-shadow-md); backdrop-filter: var(--ax-panel-blur); -webkit-backdrop-filter: var(--ax-panel-blur); transition: border-color var(--ax-ui), box-shadow var(--ax-ui); }
+.ax-composer:focus-within { border-color: var(--ax-accent); box-shadow: var(--ax-shadow-md), 0 0 0 4px var(--ax-focus); }
+.ax-composer textarea { flex: 1; min-height: 24px; max-height: 160px; margin: 7px 0; padding: 0; border: 0; outline: 0; resize: none; background: none; font: inherit; color: var(--ax-ink); line-height: 1.6; }
+.ax-composer textarea::placeholder { color: var(--ax-faint); }
+
+/* ------------------------------------------------------------------ 9. 浮层 */
+/* 提示条：AX.toast('已保存') */
+.ax-toasts { position: fixed; z-index: 9999; left: 50%; bottom: 28px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.ax-toast { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 18px 10px 14px; border-radius: var(--ax-r-pill); font-size: 14px; pointer-events: auto;
+  color: var(--ax-ink); background: var(--ax-surface); border: 1px solid var(--ax-line); box-shadow: var(--ax-shadow-lg);
+  backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); animation: ax-toast-in var(--ax-page) var(--ax-spring) both; }
+.ax-toast.is-leaving { animation: ax-toast-out 240ms var(--ax-ui-ease) forwards; }
+.ax-toast .ax-star { --size: 14px; }
+.ax-toast--success .ax-star { --c: var(--ax-success); }
+.ax-toast--danger .ax-star { --c: var(--ax-danger); }
+
+/* 弹窗：用 <dialog class="ax-modal">，AX.open('#id') / AX.close('#id') 或 data-ax-open="#id" */
+.ax-modal { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 64px); padding: 0; color: var(--ax-ink); border: 1px solid var(--ax-line);
+  border-radius: var(--ax-r-xl); background: var(--ax-surface); box-shadow: var(--ax-shadow-lg); overflow: auto; }
+[data-ax-theme="glass"] .ax-modal { background: rgba(28, 21, 25, .82); backdrop-filter: var(--ax-panel-blur); -webkit-backdrop-filter: var(--ax-panel-blur); }
+.ax-modal[open] { animation: ax-modal-in var(--ax-page) var(--ax-spring); }
+.ax-modal::backdrop { background: rgba(20, 10, 16, .38); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: ax-fade var(--ax-page) var(--ax-ui-ease); }
+.ax-modal__head { display: flex; align-items: center; gap: 12px; padding: 22px 24px 6px; }
+.ax-modal__body { padding: 6px 24px 8px; color: var(--ax-muted); }
+.ax-modal__foot { display: flex; justify-content: flex-end; gap: 10px; padding: 18px 24px 22px; }
+
+/* 悬停提示：data-ax-tip="说明" */
+[data-ax-tip] { position: relative; }
+[data-ax-tip]::after { content: attr(data-ax-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translate(-50%, 4px); padding: 6px 10px; border-radius: 8px;
+  font-size: 12px; font-weight: 500; line-height: 1.4; white-space: nowrap; color: var(--ax-bg); background: var(--ax-ink); opacity: 0; pointer-events: none; z-index: 50;
+  transition: opacity var(--ax-ui), transform var(--ax-ui) var(--ax-ui-ease); }
+[data-ax-tip]:hover::after, [data-ax-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+
+/* 空状态 */
+.ax-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: var(--ax-s7) var(--ax-s5); text-align: center; color: var(--ax-muted); }
+.ax-empty img, .ax-empty .ax-mascot { width: 88px; height: 88px; animation: ax-float 4.4s var(--ax-breath-ease) infinite; }
+.ax-empty b { color: var(--ax-ink); font-family: var(--ax-serif); font-size: var(--ax-t-lg); font-weight: 600; }
+
+/* ------------------------------------------------------------------ 10. 背景：曦光天空 */
+/* <div class="ax-sky"><i class="ax-sky__stars"></i></div>：渐变天空 + 星点闪烁 + 一颗呼吸的晨星 */
+.ax-sky { position: relative; overflow: hidden; background: var(--ax-grad-sky); isolation: isolate; }
+.ax-sky__stars { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(1.4px 1.4px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 28% 8%, #fff 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 46% 22%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 64% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 82% 20%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 92% 36%, #fff 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 6% 42%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 38% 40%, #fff 50%, transparent 51%);
+  animation: ax-stars 4s var(--ax-breath-ease) infinite alternate; }
+.ax-sky__stars::after { content: ""; position: absolute; inset: 0; background-image: radial-gradient(1.2px 1.2px at 20% 30%, #fff 50%, transparent 51%),
+  radial-gradient(1px 1px at 56% 6%, #fff 50%, transparent 51%), radial-gradient(1.4px 1.4px at 74% 32%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 88% 8%, #fff 50%, transparent 51%);
+  animation: ax-stars 3.2s var(--ax-breath-ease) infinite alternate-reverse; }
+.ax-sky__star { position: absolute; z-index: -1; width: var(--size, 64px); height: var(--size, 64px); pointer-events: none; }
+.ax-sky__star::before { content: ""; position: absolute; inset: -120%; border-radius: 50%; background: radial-gradient(circle, rgba(255, 250, 232, .9) 0%, rgba(255, 208, 168, .4) 30%, rgba(242, 148, 196, .12) 55%, transparent 70%);
+  animation: ax-halo var(--ax-breath) var(--ax-breath-ease) infinite; }
+.ax-sky__star::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, #fff, #FFE4C0 60%, #FFC2D8);
+  -webkit-mask: var(--ax-star) center / contain no-repeat; mask: var(--ax-star) center / contain no-repeat; animation: ax-breathe var(--ax-breath) var(--ax-breath-ease) infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 220, 180, .9)); }
+.ax-meteor { position: absolute; z-index: -1; top: var(--y, 14%); left: var(--x, 8%); width: 90px; height: 1.5px; border-radius: 2px; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, #fff); transform: rotate(24deg); animation: ax-meteor var(--d, 7.2s) ease-in infinite; animation-delay: var(--delay, 1s); }
+
+/* ------------------------------------------------------------------ 11. 动效工具类 */
+.ax-breathe { animation: ax-breathe var(--ax-breath) var(--ax-breath-ease) infinite; }
+.ax-twinkle { animation: ax-twinkle 2.4s var(--ax-breath-ease) infinite; }
+.ax-float { animation: ax-float 4.4s var(--ax-breath-ease) infinite; }
+.ax-rise { animation: ax-rise var(--ax-page) var(--ax-ui-ease) both; }
+.ax-rise-stagger > * { animation: ax-rise 480ms var(--ax-ui-ease) both; }
+.ax-rise-stagger > :nth-child(2) { animation-delay: 60ms; } .ax-rise-stagger > :nth-child(3) { animation-delay: 120ms; }
+.ax-rise-stagger > :nth-child(4) { animation-delay: 180ms; } .ax-rise-stagger > :nth-child(5) { animation-delay: 240ms; }
+.ax-rise-stagger > :nth-child(6) { animation-delay: 300ms; } .ax-rise-stagger > :nth-child(n+7) { animation-delay: 360ms; }
+.ax-dawn-in { animation: ax-dawn-in 1.4s var(--ax-ui-ease) both; }
+
+@keyframes ax-breathe { 0%, 100% { transform: scale(.84); } 50% { transform: scale(1.26); } }
+@keyframes ax-halo { 0%, 100% { transform: scale(.8); opacity: .65; } 50% { transform: scale(1.3); opacity: 1; } }
+@keyframes ax-ripple { from { transform: scale(1); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
+@keyframes ax-ping { 0% { transform: scale(1); opacity: .7; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ax-twinkle { 0%, 100% { transform: scale(.55) rotate(0deg); opacity: .55; } 50% { transform: scale(1.15) rotate(45deg); opacity: 1; } }
+@keyframes ax-spin { 0% { transform: rotate(0deg) scale(.85); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(.85); } }
+@keyframes ax-sheen { to { transform: translateX(100%); } }
+@keyframes ax-sweep { to { transform: translateX(120%); } }
+@keyframes ax-indeterminate { 0% { left: -35%; } 100% { left: 100%; } }
+@keyframes ax-typing { 0%, 60%, 100% { opacity: .25; transform: scale(.7); } 30% { opacity: 1; transform: scale(1.15) rotate(45deg); } }
+@keyframes ax-float { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(4px); } }
+@keyframes ax-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes ax-fade { from { opacity: 0; } }
+@keyframes ax-dawn-in { from { opacity: 0; filter: brightness(.4) saturate(.6); transform: translateY(16px) scale(.98); } to { opacity: 1; filter: none; transform: none; } }
+@keyframes ax-toast-in { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+@keyframes ax-toast-out { to { opacity: 0; transform: translateY(8px) scale(.97); } }
+@keyframes ax-modal-in { from { opacity: 0; transform: translateY(18px) scale(.97); } }
+@keyframes ax-spark { 0% { transform: translate(0, 0) scale(.3) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(90deg); opacity: 0; } }
+@keyframes ax-stars { from { opacity: .35; } to { opacity: 1; } }
+@keyframes ax-meteor { 0%, 70% { opacity: 0; transform: rotate(24deg) translateX(0); } 74% { opacity: 1; } 86%, 100% { opacity: 0; transform: rotate(24deg) translateX(260px); } }
+@keyframes ax-orbit-border { to { --ax-angle: 360deg; } }
+
+/* 系统“减少动态效果”或 <html data-ax-motion="reduce">：全部停下 */
+@media (prefers-reduced-motion: reduce) {
+  .ax *, .ax *::before, .ax *::after, .ax-toast, .ax-modal, .ax-modal::backdrop { animation: none !important; transition-duration: 1ms !important; }
+}
+[data-ax-motion="reduce"] *, [data-ax-motion="reduce"] *::before, [data-ax-motion="reduce"] *::after { animation: none !important; transition-duration: 1ms !important; }
+
+/* 圆形按钮也可以是曦光的（发送键） */
+.ax-btn--icon.ax-btn--dawn { background: var(--ax-grad-cta, var(--ax-grad-dawn)); color: #fff; border-color: transparent; box-shadow: 0 6px 18px -6px rgba(217, 101, 156, .55), inset 0 1px 0 rgba(255, 255, 255, .3); }
+[data-ax-theme="alaxee"] .ax-btn--icon.ax-btn--dawn { color: #1A1030; }
