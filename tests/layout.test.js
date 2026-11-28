@@ -234,31 +234,15 @@ test("the entrance animation cannot change layout", () => {
   assert.ok(reduced, "the reduced-motion block must cover the animated panels");
 });
 
-test("the mark breathes only while the proxy is in use", () => {
-  // A mark that always moved would say nothing, and the point of the animation is
-  // to be the one still-panel signal that traffic is flowing. So it must be scoped
-  // to the proxy route and absent from the other three.
-  const breathing = [...css.matchAll(/([^{}]*)\{[^{}]*mark-breath[^{}]*\}/g)]
-    .map((m) => m[1].trim())
-    .filter((sel) => !sel.startsWith("@keyframes"));
-  assert.equal(breathing.length, 1, "exactly one rule should apply the breath");
-  assert.match(breathing[0], /data-route="proxy"/);
-  for (const other of ["direct", "forced", "unknown"]) {
-    assert.ok(!breathing[0].includes(other), `the breath must not apply to ${other}`);
+test("the mark does not animate", () => {
+  // The brand picture is not a place for app chrome. A previous version scaled the
+  // whole icon .80 -> 1.20 to signal activity; scaling a logo is not motion design,
+  // it is the logo being squeezed, and it was rejected on sight.
+  assert.ok(!/mark-breath/.test(css), "the mark must not carry a keyframe animation");
+  const rule = /\.brand-icon\s*\{([^}]*)\}/
+    .exec(css.replace(/\n\s*/g, " "));
+  if (rule) {
+    assert.ok(!/animation/.test(rule[1]), "the mark must not animate");
+    assert.ok(!/transform/.test(rule[1]), "the mark must not transform");
   }
-});
-
-test("the breath fits inside the mark slot instead of being clipped", () => {
-  // .brand-mark is 42px with overflow:hidden and holds a 34px icon. Scaling past
-  // 42/34 clips the peak of every breath, which reads as a rendering fault.
-  const slot = Number(/(?:^|\n)\.brand-mark\s*\{[^}]*?width:\s*(\d+)px/s.exec(css)[1]);
-  const icon = Number(/(?:^|\n)\.brand-icon\s*\{[^}]*?width:\s*(\d+)px/s.exec(css)[1]);
-  const keyframes = /@keyframes mark-breath\s*\{([\s\S]*?)\n\}/.exec(css)[1];
-  const scales = [...keyframes.matchAll(/scale\(([\d.]+)\)/g)].map((m) => Number(m[1]));
-  assert.ok(scales.length >= 2, "the breath should define both extremes");
-  const peak = Math.max(...scales) * icon;
-  assert.ok(peak <= slot, `peak scale ${peak.toFixed(2)}px exceeds the ${slot}px slot`);
-  // And the extremes must straddle 1.0, or the mark drifts smaller or larger over
-  // time instead of breathing in place.
-  assert.ok(Math.min(...scales) < 1 && Math.max(...scales) > 1);
 });
