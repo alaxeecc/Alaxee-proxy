@@ -152,6 +152,30 @@ test("every colour outside the brand mark comes from a variable", () => {
   assert.deepEqual(offenders, [], `hardcoded colours outside variables:\n  ${offenders.join("\n  ")}`);
 });
 
+test("the dark theme is the one that actually applies", () => {
+  // Two :root blocks can both exist and both look right while the second silently
+  // overrides the first - which is what happened when the brand palette was added
+  // alongside the previous dark theme instead of replacing it: every dark value was
+  // overwritten, so dark mode kept rendering in the old teal. Counting blocks does
+  // not catch that; resolving the cascade does.
+  const blocks = [...css.matchAll(/:root \{([\s\S]*?)\}/g)].map((match) => match[1]);
+  assert.equal(blocks.length, 2, "expected exactly one light and one dark :root");
+
+  const effective = {};
+  for (const block of blocks) {
+    for (const match of block.matchAll(/--([a-z-]+):\s*([^;]+);/g)) {
+      effective[match[1]] = match[2].trim();
+    }
+  }
+
+  // Values taken from the dark block. If an older block is ever re-added after it,
+  // these revert to the previous palette and this fails.
+  assert.equal(effective.bg, "#141013");
+  assert.equal(effective.accent, "#EE8AB6");
+  assert.equal(effective["route-direct"], "#5FC9B4");
+  assert.equal(effective["route-forced"], "#F0B56E");
+});
+
 test("both themes define the same colour variables", () => {
   // A variable added to one theme and not the other falls back to the light value,
   // which is how a dark theme ends up with a bright amber block in the middle.

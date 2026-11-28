@@ -133,29 +133,6 @@
 }
 
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #11191b;
-    --surface: #1a2426;
-    --surface-soft: #202d2f;
-    --ink: #eaf1ef;
-    --muted: #9aabaa;
-    --line: #2c3b3d;
-    --accent: #66c7b6;
-    --accent-strong: #83d8c9;
-    --accent-soft: #1d3936;
-    --accent-grad-start: #0a7568;
-    --accent-grad-end: #1f8a79;
-    --danger: #e28a8a;
-    --warn-ink: #e8c48a;
-    --warn-ink-soft: #e8c48a;
-    --warn-surface: color-mix(in srgb, #e8c48a 10%, var(--surface-soft));
-    --warn-surface-soft: color-mix(in srgb, #e8c48a 14%, var(--surface-soft));
-    --warn-line: rgba(204, 157, 89, .32);
-    --shadow: 0 12px 32px rgba(0, 0, 0, .24);
-  }
-}
-
 * { box-sizing: border-box; }
 html, body { width: 380px; height: 600px; max-height: 600px; margin: 0; overflow: hidden; }
 body { min-height: 0; background: var(--bg); color: var(--ink); }
@@ -614,10 +591,13 @@ h1, h2 { margin: 0; font-family: var(--font-serif); font-size: var(--text-xl); f
   color: var(--warn-ink-soft);
 }
 @media (prefers-color-scheme: dark) {
+  /* The dark theme already re-points --warn-* at lighter ambers, so these only need
+     to soften the wash; the hardcoded browns here predated those tokens and drifted
+     from them. */
   .rule-type-proxy, .force-proxy-button {
     color: var(--warn-ink);
-    background: rgba(166, 117, 48, .18);
-    border-color: rgba(204, 157, 89, .32);
+    background: color-mix(in srgb, var(--warn-ink) 16%, transparent);
+    border-color: var(--warn-line);
   }
 }
 
@@ -684,8 +664,6 @@ html.full-page .view-nav {
   overflow-wrap: anywhere;
 }
 .endpoint-line.is-unset { border-style: dashed; color: var(--warn-ink); background: var(--warn-surface); }
-@media (prefers-color-scheme: dark) {
-}
 .bypass-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
 .warning-text { color: var(--warn-ink); }
 .local-tag[data-state="unset"] { color: var(--warn-ink); }

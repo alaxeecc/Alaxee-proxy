@@ -109,3 +109,25 @@ test("the font licence travels in the package", () => {
   assert.match(output, /src\/brand\/fonts\/serif-sc-400\.woff2/, "the CJK subset must ship");
   assert.match(output, /src\/brand\/fonts\/serif-latin-400\.woff2/, "the Latin face must ship");
 });
+
+test("the settings hand-off page is dressed in the current palette", async () => {
+  // settings.html exists only to redirect to src/popup.html?full=1, which made it
+  // easy to forget: it kept the previous teal palette and an unrelated glyph for a
+  // long time after the rest of the UI was rebranded. The flash is brief but it is
+  // the first frame a user sees after clicking the settings button.
+  const css = await readFile(path.join(root, "settings.css"), "utf8");
+  const html = await readFile(path.join(root, "settings.html"), "utf8");
+
+  // The old palette, stated explicitly: these are the values that must not return.
+  for (const stale of ["#087f73", "#f4f7f7", "#40b49e", "#66c7b6", "#101819"]) {
+    assert.ok(!css.includes(stale), `settings.css still uses the previous palette (${stale})`);
+  }
+  assert.match(css, /--accent:#B5457A/, "settings.css must carry the brand accent");
+  assert.match(css, /--bg:#FAF6F4/, "settings.css must carry the brand page colour");
+
+  // And it must show the same mark as the popup rather than a stand-in character.
+  assert.ok(!html.includes("⌁"), "settings.html still uses the placeholder glyph");
+  assert.match(html, /class="bm-star"/, "settings.html needs the brand mark");
+  assert.match(html, /远黛/, "settings.html needs the brand wordmark");
+  assert.match(html, /Alaxee Proxy/, "the hand-off page must still name the product");
+});
