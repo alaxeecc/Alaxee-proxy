@@ -1,0 +1,6 @@
+/* 宋体标题：Noto Serif SC（思源宋体），SIL OFL 授权，可以商用。
+   引入这个文件以后，--ax-serif 里的 "Noto Serif SC" 就用这里的字体，不用联网。 */
+@font-face { font-family: "Noto Serif SC"; src: url("serif-latin-400.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: "Noto Serif SC"; src: url("serif-latin-600.woff2") format("woff2"); font-weight: 600; font-display: swap; unicode-range: U+0000-00FF, U+2000-206F; }
+@font-face { font-family: "Noto Serif SC"; src: url("serif-sc-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Noto Serif SC"; src: url("serif-sc-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN" data-ax-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alaxee 曦 · 品牌与界面套件</title>
+<link rel="icon" href="brand/icons/animated/icon-day-small.svg" type="image/svg+xml" data-ax-icon="brand/icons/animated/" data-ax-icon-size="small">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="ui/alaxee-ui.css">
+<style>
+  /* 只给这个总览页用的排版 */
+  body { margin: 0; }
+  .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: 12px clamp(16px, 4vw, 40px);
+    background: color-mix(in srgb, var(--ax-bg) 80%, transparent); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3); border-bottom: 1px solid var(--ax-line); }
+  .top .logo { height: 40px; display: block; }
+  main { max-width: 1160px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 40px) 96px; display: flex; flex-direction: column; gap: 64px; }
+  section > .ax-eyebrow { display: block; margin-bottom: 6px; }
+  section > .ax-h2 { margin-bottom: 8px; }
+  section > p.lead { margin: 0 0 22px; color: var(--ax-muted); max-width: 720px; }
+  .top .logo.only-light, .top .logo.only-dark { display: none; }
+  [data-ax-theme="xi"] .top .logo.only-light, [data-ax-theme="dusk"] .top .logo.only-dark, [data-ax-theme="glass"] .top .logo.only-dark, [data-ax-theme="alaxee"] .top .logo.only-dark { display: block; }
+
+  .now { display: grid; grid-template-columns: auto 1fr; gap: clamp(24px, 5vw, 56px); align-items: center; padding: clamp(24px, 4vw, 44px); border-radius: 32px; }
+  .now .ax-appicon { --size: clamp(150px, 22vw, 220px); }
+  .now h1 { font-size: clamp(30px, 4.4vw, 46px); }
+  .now .meta { color: var(--ax-muted); font-family: var(--ax-serif); font-size: 17px; margin: 6px 0 20px; }
+  @media (max-width: 680px) { .now { grid-template-columns: 1fr; justify-items: center; text-align: center; } .now .ax-row { justify-content: center; } }
+
+  .period { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .period .ax-appicon { --size: 100%; width: 100%; height: auto; aspect-ratio: 1; }
+  .period .smalls { display: flex; align-items: flex-end; gap: 12px; }
+  .period .smalls img { display: block; }
+  .period h3 { margin: 0; }
+  .period .t { font-size: var(--ax-t-sm); color: var(--ax-muted); }
+  .period.is-now { box-shadow: 0 0 0 2px var(--ax-accent), var(--ax-shadow-md); }
+
+  .states .ax-card { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+  .states .ax-appicon { --size: 132px; }
+
+  .logos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
+  .plate { border-radius: 24px; padding: 28px; display: flex; align-items: center; justify-content: center; min-height: 200px; border: 1px solid var(--ax-line); }
+  .plate.light { background: #FAF6F4; } .plate.dark { background: #141013; }
+  .plate img { max-width: 100%; max-height: 220px; }
+  .plate figcaption { display: none; }
+  .cap { font-size: var(--ax-t-xs); color: var(--ax-muted); font-family: var(--ax-mono); margin-top: 8px; }
+
+  .swatch { height: 84px; border-radius: 16px; display: flex; align-items: flex-end; padding: 10px 12px; font-size: 12px; font-family: var(--ax-mono); color: #fff; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); }
+  .swatch.ink { color: rgba(0, 0, 0, .6); }
+  .type-sample { font-family: var(--ax-serif); font-size: clamp(26px, 4vw, 40px); font-weight: 600; letter-spacing: .06em; margin: 0; }
+
+  .ui-peek { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .ui-peek { grid-template-columns: 1fr; } }
+  .ui-peek .ax-card { padding: 22px; }
+
+  pre { margin: 0; padding: 16px 18px; border-radius: 16px; background: var(--ax-sunken); border: 1px solid var(--ax-line); overflow: auto; font: 13px/1.6 var(--ax-mono); color: var(--ax-ink); }
+  table { width: 100%; border-collapse: collapse; font-size: var(--ax-t-sm); }
+  td, th { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--ax-line); vertical-align: top; }
+  th { color: var(--ax-muted); font-weight: 500; }
+  td code { font-family: var(--ax-mono); font-size: 12.5px; }
+</style>
+</head>
+<body class="ax ax-root">
+
+<header class="top">
+  <img class="logo only-light" src="brand/logo/logo-h-light.svg" alt="远黛">
+  <img class="logo only-dark" src="brand/logo/logo-h-dark.svg" alt="远黛">
+  <span class="ax-chip ax-chip--accent">Alaxee 曦 · 套件 v1.1</span>
+  <span class="ax-spacer"></span>
+  <div class="ax-seg" id="theme-seg" role="group" aria-label="主题">
+    <button data-value="auto">跟随时间</button><button data-value="xi">曦·晨粉</button><button data-value="dusk">暮·梅子</button>
+    <button data-value="glass">磨砂玻璃</button><button data-value="alaxee">V11 夜空</button>
+  </div>
+  <a class="ax-btn ax-btn--secondary ax-btn--sm ax-btn--quiet" href="ui/index.html">全部组件 →</a>
+</header>
+
+<main>
+  <!-- 现在 -->
+  <section class="now ax-card ax-card--glow ax-dawn-in">
+    <img class="ax-appicon" id="now-icon" data-ax-icon="brand/icons/animated/" data-ax-icon-static="brand/icons/static/" src="brand/icons/animated/icon-day.svg" alt="">
+    <div>
+      <span class="ax-eyebrow">Alaxee 曦 · 品牌与界面套件</span>
+      <h1 class="ax-h1" id="now-title">图标跟着一天走</h1>
+      <p class="meta" id="now-meta"></p>
+      <div class="ax-seg" id="state-seg" role="group" aria-label="状态">
+        <button data-value="" class="is-active">平常</button><button data-value="think">在想事情</button><button data-value="sleep">睡着了</button>
+      </div>
+      <div class="ax-row" style="margin-top: 14px">
+        <button class="ax-btn ax-btn--dawn" onclick="replayRise()">再看一遍破晓开场</button>
+        <span class="ax-presence"><span class="ax-orb" data-ax-follow data-state="idle"><i></i></span><b>呼吸光球</b>也跟着状态</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 一天四时 -->
+  <section>
+    <span class="ax-eyebrow">Icons</span>
+    <h2 class="ax-h2">一天四时</h2>
+    <p class="lead">同一颗晨星，一天里换四次天色。每个时段都有完整版（大图标、启动画面）和小图标版（16–64 像素：网页标签、托盘、列表）——小图标不是简化的符号，是同一幅画放大主角、加粗线条，也在动。</p>
+    <div class="ax-grid" style="--ax-min: 230px" id="periods"></div>
+  </section>
+
+  <!-- 状态 -->
+  <section class="states">
+    <span class="ax-eyebrow">States</span>
+    <h2 class="ax-h2">状态</h2>
+    <p class="lead">图标会跟着“她”的状态变：在想事情时晨星呼吸快一倍多；睡着时换成守夜里打盹的星；天亮或醒来时放一遍破晓开场。用 <code class="ax-code">AX.state('think')</code> 切换，或者直接用对应的文件。</p>
+    <div class="ax-grid" style="--ax-min: 200px">
+      <div class="ax-card"><img class="ax-appicon" src="brand/icons/animated/icon-day.svg" alt=""><b>平常</b><span class="cap">icon-{时段}.svg</span></div>
+      <div class="ax-card"><img class="ax-appicon" src="brand/icons/animated/icon-day-think.svg" alt=""><b>在想事情</b><span class="cap">icon-{时段}-think.svg</span></div>
+      <div class="ax-card"><img class="ax-appicon" src="brand/icons/animated/icon-night-sleep.svg" alt=""><b>睡着了</b><span class="cap">icon-night-sleep.svg</span></div>
+      <div class="ax-card"><img class="ax-appicon" id="rise-demo" src="brand/icons/animated/icon-day-rise.svg" alt="" style="cursor: pointer" title="点一下再放一遍" onclick="this.src = this.src.split('?')[0] + '?' + Date.now()"><b>破晓开场</b><span class="cap">icon-day-rise.svg · 点一下再放</span></div>
+    </div>
+  </section>
+
+  <!-- Logo -->
+  <section>
+    <span class="ax-eyebrow">Logo</span>
+    <h2 class="ax-h2">Logo</h2>
+    <p class="lead">横版、竖版、只有字，各有浅色底（light）和深色底（dark）两版；每个都有静止的 SVG / PNG 和会动的 SVG（图标呼吸，名字一个字一个字浮现）。字已经转成路径，用的地方不用装字体。换成别的名字：<code class="ax-code">python tools/make_logo.py --name 你的名字 --sub PINYIN</code>。</p>
+    <div class="ax-row" style="margin-bottom: 14px">
+      <div class="ax-seg" id="logo-seg" role="group" aria-label="logo"><button data-value="" class="is-active">静止</button><button data-value="-animated">会动</button></div>
+    </div>
+    <div class="logos" id="logos"></div>
+  </section>
+
+  <!-- 颜色和字 -->
+  <section>
+    <span class="ax-eyebrow">Color &amp; Type</span>
+    <h2 class="ax-h2">颜色和字</h2>
+    <p class="lead">主色是玫瑰粉，渐变从玫瑰到蜜桃再到晨金（曦光）。界面有四个主题，颜色都是 CSS 变量（<code class="ax-code">--ax-*</code>），也导出成了 <code class="ax-code">tokens/tokens.json</code> 和 Tailwind 预设。标题和“她说的话”用思源宋体（Noto Serif SC，已带在 <code class="ax-code">fonts/</code> 里，可商用），正文用系统字体。</p>
+    <div class="ax-grid" style="--ax-min: 130px; margin-bottom: 16px">
+      <div class="swatch" style="background:#D9659C">rose #D9659C</div>
+      <div class="swatch" style="background:#E880BE">sakura #E880BE</div>
+      <div class="swatch ink" style="background:#FFA894">peach #FFA894</div>
+      <div class="swatch ink" style="background:#FFD9A8">gold #FFD9A8</div>
+      <div class="swatch" style="background:#4A3340">plum #4A3340</div>
+      <div class="swatch" style="background:#6E5CD2">violet #6E5CD2</div>
+      <div class="swatch" style="background:#181C5E">night #181C5E</div>
+      <div class="swatch" style="background:var(--ax-grad-dawn)">--ax-grad-dawn</div>
+    </div>
+    <div class="ax-grid" style="--ax-min: 300px">
+      <div class="ax-card" style="padding: 24px"><p class="type-sample">远黛 · 曦光初现</p><p class="ax-muted ax-small" style="margin: 8px 0 0">Noto Serif SC 600 · 标题、logo、她说的话</p></div>
+      <div class="ax-card" style="padding: 24px"><p style="margin: 0; font-size: 17px">正文用系统字体：苹方、鸿蒙、微软雅黑。The quick brown fox jumps over the lazy dog.</p><p class="ax-muted ax-small" style="margin: 8px 0 0">--ax-font · 15px / 1.6</p></div>
+    </div>
+  </section>
+
+  <!-- 界面 -->
+  <section>
+    <span class="ax-eyebrow">UI</span>
+    <h2 class="ax-h2">界面</h2>
+    <p class="lead">按钮、表单、卡片、标签页、进度、对话、提示条、弹窗、呼吸光球、曦光天空……纯 CSS，任何框架都能用。这里放几样，全部在 <a href="ui/index.html">组件页</a>。</p>
+    <div class="ui-peek">
+      <div class="ax-card ax-stack" style="--ax-gap: 16px">
+        <div class="ax-row"><button class="ax-btn ax-btn--dawn">曦光按钮</button><button class="ax-btn">主要按钮</button><button class="ax-btn ax-btn--secondary">次要</button><button class="ax-btn ax-btn--ghost">文字按钮</button></div>
+        <label class="ax-field"><span class="ax-label">名字</span><input class="ax-input" placeholder="怎么称呼你"></label>
+        <div class="ax-row"><label class="ax-switch"><input type="checkbox" checked><i></i>早上主动打招呼</label><span class="ax-spacer"></span><span class="ax-chip ax-chip--accent">记忆</span><span class="ax-badge">3</span></div>
+        <div class="ax-progress" style="--v: 64%"><i></i></div>
+      </div>
+      <div class="ax-card">
+        <div class="ax-chat">
+          <div class="ax-msg ax-msg--me">今天有点累</div>
+          <div class="ax-msg ax-msg--her"><div class="ax-msg__who"><span class="ax-orb" style="--size: 8px"><i></i></span>远黛</div>那就先歇一会儿，我在这儿。晚上想吃点热的吗？</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 怎么用 -->
+  <section>
+    <span class="ax-eyebrow">Use</span>
+    <h2 class="ax-h2">用到别的项目里</h2>
+    <p class="lead">把整个 <code class="ax-code">alaxee-kit/</code> 复制过去（或者只拿需要的子文件夹）。网页项目这样引入：</p>
+<pre>&lt;html data-ax-theme="auto"&gt;                         &lt;!-- auto | xi | dusk | glass | alaxee --&gt;
+&lt;link rel="stylesheet" href="alaxee-kit/fonts/fonts.css"&gt;   &lt;!-- 宋体，可选 --&gt;
+&lt;link rel="stylesheet" href="alaxee-kit/ui/alaxee-ui.css"&gt;
+&lt;link rel="icon" data-ax-icon="alaxee-kit/brand/icons/animated/" data-ax-icon-size="small"&gt;
+
+&lt;body class="ax ax-root"&gt;
+  &lt;img class="ax-appicon" data-ax-icon="alaxee-kit/brand/icons/animated/" alt=""&gt;   &lt;!-- 跟着时段、状态换 --&gt;
+  &lt;button class="ax-btn ax-btn--dawn"&gt;开始&lt;/button&gt;
+  &lt;script src="alaxee-kit/ui/alaxee-ui.js"&gt;&lt;/script&gt;      &lt;!-- AX.theme() AX.state() AX.toast() … --&gt;
+&lt;/body&gt;</pre>
+    <p class="lead" style="margin-top: 18px">桌面程序：Windows 图标用 <code class="ax-code">brand/icons/ico/</code>，托盘用 <code class="ax-code">brand/tray/</code>（平常一张、想事情时 12 帧呼吸）。React / Vue / Tailwind、App 图标、logo 换名字等，见 <code class="ax-code">README.md</code>。</p>
+  </section>
+
+  <!-- 文件 -->
+  <section>
+    <span class="ax-eyebrow">Files</span>
+    <h2 class="ax-h2">里面有什么</h2>
+    <table>
+      <tr><th style="width: 30%">文件夹</th><th>是什么</th></tr>
+      <tr><td><code>brand/icons/animated/</code></td><td>会动的图标 SVG：四个时段 × 完整版 / 小图标 / 想事情，加睡着、破晓开场</td></tr>
+      <tr><td><code>brand/icons/static/</code></td><td>静止的图标 SVG（印刷、设计稿、不想要动效的地方）</td></tr>
+      <tr><td><code>brand/icons/png/</code>、<code>ico/</code></td><td>PNG 16–1024 像素（≤48 用小图标那一版）、Windows 多尺寸 .ico</td></tr>
+      <tr><td><code>brand/logo/</code></td><td>横版 / 竖版 / 只有字 × 浅色 / 深色 × 静止 SVG、PNG、会动的 SVG</td></tr>
+      <tr><td><code>brand/web/</code></td><td>网页和 PWA：favicon.ico、favicon.svg、apple-touch-icon、192 / 512 / 可遮罩图标、site.webmanifest、贴进 &lt;head&gt; 的几行</td></tr>
+      <tr><td><code>brand/tray/</code></td><td>桌面托盘：四个时段各一张，想事情时的 12 帧呼吸，睡着的那张</td></tr>
+      <tr><td><code>brand/xi/</code></td><td>小曦（吉祥物）白天 / 晚上</td></tr>
+      <tr><td><code>brand/preview/</code></td><td>动效预览 GIF（发给别人看）</td></tr>
+      <tr><td><code>ui/</code></td><td>界面模板：alaxee-ui.css、alaxee-ui.js、组件页</td></tr>
+      <tr><td><code>tokens/</code></td><td>设计变量：tokens.css（只有变量）、tokens.json、tailwind.preset.js</td></tr>
+      <tr><td><code>fonts/</code></td><td>思源宋体（Noto Serif SC）woff2 和 fonts.css，SIL OFL 可商用</td></tr>
+      <tr><td><code>tools/make_logo.py</code></td><td>换成你的名字生成整套 logo</td></tr>
+    </table>
+  </section>
+</main>
+
+<script src="ui/alaxee-ui.js"></script>
+<script>
+  const P = {
+    night: ["守夜", "19:00–5:00", "夜里星最亮：月亮退后当背景，晨星是全天最大的那颗"],
+    day: ["破晓", "5:00–7:00 · 17:00–19:00", "晨星从云海后升起，曦光从玫瑰到蜜桃"],
+    morning: ["晨曦", "7:00–10:00", "太阳从云海升起，晨星还挂着，鸟飞过"],
+    noon: ["白昼", "10:00–17:00", "太阳就是那颗星：彩虹日晕、旋转的光冠、海面碎光"],
+  };
+  const S = { "": "平常", think: "在想事情", sleep: "睡着了" };
+  const I = "brand/icons/animated/";
+  document.getElementById("periods").innerHTML = Object.entries(P).map(([k, [n, t, d]]) => `
+    <div class="ax-card period" data-p="${k}">
+      <img class="ax-appicon" src="${I}icon-${k}.svg" alt="">
+      <div class="smalls"><img src="${I}icon-${k}-small.svg" width="64" height="64" alt=""><img src="${I}icon-${k}-small.svg" width="32" height="32" alt=""><img src="${I}icon-${k}-small.svg" width="16" height="16" alt=""></div>
+      <div><h3 class="ax-h3">${n}</h3><div class="t">${t}</div></div>
+      <div class="ax-small ax-muted">${d}</div>
+    </div>`).join("");
+  const L = "brand/logo/";
+  function logos(suffix) {
+    const items = [["logo-h-light", "light"], ["logo-h-dark", "dark"], ["logo-v-light", "light"], ["logo-v-dark", "dark"], ["wordmark-light", "light"], ["wordmark-dark", "dark"]];
+    document.getElementById("logos").innerHTML = items.map(([f, tone]) => {
+      const file = f.startsWith("wordmark") ? f + ".svg" : f + suffix + ".svg";
+      return `<div><figure class="plate ${tone}" style="margin:0"><img src="${L}${file}?${Date.now()}" alt=""></figure><div class="cap">${file}</div></div>`;
+    }).join("");
+  }
+  logos("");
+  document.getElementById("logo-seg").addEventListener("ax:change", (e) => logos(e.detail.value));
+
+  function paintNow() {
+    const p = AX.period(), [n, t] = P[p], st = AX.state();
+    document.getElementById("now-title").textContent = st === "sleep" ? "睡着了" : n;
+    document.getElementById("now-meta").textContent = `现在 ${new Date().toTimeString().slice(0, 5)} · ${n}（${t}）· ${S[st]}`;
+    document.querySelectorAll(".period").forEach((c) => c.classList.toggle("is-now", c.dataset.p === p));
+  }
+  document.getElementById("state-seg").addEventListener("ax:change", (e) => { AX.state(e.detail.value); paintNow(); });
+  function replayRise() {
+    const img = document.getElementById("now-icon");
+    img.src = I + "icon-day-rise.svg?" + Date.now();
+    setTimeout(() => { img.removeAttribute("src"); AX.icons(); }, 3650);
+  }
+  const seg = document.getElementById("theme-seg");
+  const mark = () => seg.querySelectorAll("button").forEach((b) => b.classList.toggle("is-active", b.dataset.value === AX.theme()));
+  seg.addEventListener("ax:change", (e) => AX.theme(e.detail.value));
+  document.addEventListener("ax:theme", () => { mark(); paintNow(); });
+  if (!localStorage.getItem("ax-theme")) AX.theme("auto");
+  mark(); paintNow(); setInterval(paintNow, 30000);
+</script>
+</body>
+</html>

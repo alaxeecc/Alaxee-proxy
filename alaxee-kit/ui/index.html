@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-CN" data-ax-theme="xi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alaxee UI · 曦</title>
+<link rel="icon" href="../brand/icons/animated/icon-day-small.svg" type="image/svg+xml" data-ax-icon="../brand/icons/animated/" data-ax-icon-size="small">
+<link rel="stylesheet" href="alaxee-ui.css">
+<style>
+  /* 只给这个展示页用的排版 */
+  body { margin: 0; }
+  .demo-top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; padding: 12px clamp(16px, 4vw, 40px);
+    background: color-mix(in srgb, var(--ax-bg) 78%, transparent); backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border-bottom: 1px solid var(--ax-line); }
+  .demo-top .ax-appicon { --size: 36px; }
+  .demo-top b { font-family: var(--ax-serif); font-size: 18px; letter-spacing: .08em; }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 40px) 96px; display: flex; flex-direction: column; gap: 56px; }
+  section > .ax-eyebrow { display: block; margin-bottom: 6px; }
+  section > .ax-h2 { margin-bottom: 20px; }
+  .hero { min-height: 360px; border-radius: 32px; padding: clamp(28px, 6vw, 64px); display: flex; flex-direction: column; justify-content: flex-end; gap: 18px; box-shadow: var(--ax-shadow-lg); }
+  .hero .ax-h1 { color: #fff; text-shadow: 0 2px 18px rgba(120, 40, 80, .35); font-size: clamp(32px, 5vw, 52px); }
+  .hero p { margin: 0; max-width: 520px; color: rgba(255, 255, 255, .88); font-family: var(--ax-serif); font-size: 17px; text-shadow: 0 1px 10px rgba(120, 40, 80, .35); }
+  [data-ax-theme="xi"] .hero .ax-btn--secondary { color: #fff; border-color: rgba(255, 255, 255, .6); }
+  .hero .ax-btn--secondary { color: #fff; border-color: rgba(255, 255, 255, .45); }
+  .hero .ax-btn--secondary:hover { background: rgba(255, 255, 255, .14); }
+  [data-ax-theme="xi"] .hero { background: linear-gradient(160deg, #D9709F 0%, #EF96B3 40%, #FBB3B3 70%, #FFD8B0 100%); }
+  .swatch { height: 76px; border-radius: 16px; display: flex; align-items: flex-end; padding: 10px 12px; font-size: 12px; font-family: var(--ax-mono); color: rgba(0, 0, 0, .55); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); }
+  .swatch.dark { color: rgba(255, 255, 255, .75); }
+  .shell { display: grid; grid-template-columns: 220px 1fr; height: 460px; overflow: hidden; border-radius: 24px; border: 1px solid var(--ax-line); background: var(--ax-bg-2); box-shadow: var(--ax-shadow-lg); }
+  .shell aside { padding: 18px 12px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid var(--ax-line); background: var(--ax-surface-2); }
+  .shell .brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; font-family: var(--ax-serif); font-weight: 600; letter-spacing: .1em; }
+  .shell .brand .ax-appicon { --size: 30px; }
+  .shell .main { display: flex; flex-direction: column; min-width: 0; }
+  .shell .bar { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--ax-line); }
+  .shell .chat { flex: 1; overflow: auto; padding: 22px 28px; }
+  .shell .foot { padding: 0 20px 18px; }
+  [data-ax-theme="glass"] body, body.glass-bg { }
+  [data-ax-theme="glass"] .ax-root { --ax-backdrop: radial-gradient(60% 50% at 18% 20%, rgba(233, 140, 170, .55), transparent 70%),
+      radial-gradient(50% 45% at 85% 30%, rgba(255, 196, 150, .45), transparent 70%), radial-gradient(70% 60% at 60% 95%, rgba(110, 70, 120, .7), transparent 70%),
+      linear-gradient(180deg, #2A1A24, #1A1216); }
+  [data-ax-theme="glass"] .shell { background: rgba(20, 14, 18, .35); }
+  [data-ax-theme="glass"] .shell aside { background: rgba(255, 255, 255, .03); }
+  @media (max-width: 760px) { .shell { grid-template-columns: 1fr; } .shell aside { display: none; } }
+</style>
+</head>
+<body class="ax ax-root">
+
+<header class="demo-top">
+  <img class="ax-appicon" src="../brand/icons/animated/icon-day.svg" data-ax-icon="../brand/icons/animated/" alt="">
+  <b>Alaxee UI</b><span class="ax-chip ax-chip--accent">曦 v1.1</span><a class="ax-btn ax-btn--ghost ax-btn--sm ax-btn--quiet" href="../index.html">← 套件总览</a>
+  <span class="ax-spacer"></span>
+  <div class="ax-seg" id="theme-seg" role="group" aria-label="主题">
+    <button data-value="xi">曦·晨粉</button><button data-value="dusk">暮·梅子</button><button data-value="glass">磨砂玻璃</button>
+    <button data-value="alaxee">V11 夜空</button><button data-value="auto">跟随时间</button>
+  </div>
+</header>
+
+<main>
+  <!-- 首屏 -->
+  <section class="hero ax-sky ax-dawn-in">
+    <i class="ax-sky__stars"></i>
+    <span class="ax-sky__star" style="--size: 72px; right: 14%; top: 22%"></span>
+    <span class="ax-meteor" style="--x: 10%; --y: 12%"></span>
+    <span class="ax-meteor" style="--x: 46%; --y: 4%; --d: 9s; --delay: 4s"></span>
+    <span class="ax-eyebrow" style="color: rgba(255,255,255,.8)">Alaxee · 阿拉曦</span>
+    <h1 class="ax-h1">曦光初现</h1>
+    <p>一套带呼吸感的界面模板：晨星的呼吸、曦光的渐变、慢慢流动的光。复制一个文件夹就能用在任何项目里。</p>
+    <div class="ax-row">
+      <button class="ax-btn ax-btn--light ax-btn--lg" onclick="AX.toast('欢迎，晨光已经到了')">开始使用</button>
+      <button class="ax-btn ax-btn--secondary ax-btn--lg" data-ax-open="#demo-modal">看看弹窗</button>
+    </div>
+  </section>
+
+  <!-- 颜色 -->
+  <section>
+    <span class="ax-eyebrow">Color</span>
+    <h2 class="ax-h2">颜色</h2>
+    <div class="ax-grid" style="--ax-min: 120px">
+      <div class="swatch" style="background:#D9659C;color:#fff">rose #D9659C</div>
+      <div class="swatch" style="background:#E880BE;color:#fff">sakura #E880BE</div>
+      <div class="swatch" style="background:#FFA894">peach #FFA894</div>
+      <div class="swatch" style="background:#FFD9A8">gold #FFD9A8</div>
+      <div class="swatch" style="background:#6E5CD2;color:#fff">violet #6E5CD2</div>
+      <div class="swatch dark" style="background:#4A3340">plum #4A3340</div>
+      <div class="swatch dark" style="background:#181C5E">night #181C5E</div>
+      <div class="swatch" style="background:var(--ax-grad-dawn);color:#fff;font-family:var(--ax-font)">曦光渐变</div>
+    </div>
+  </section>
+
+  <!-- 按钮 -->
+  <section>
+    <span class="ax-eyebrow">Buttons</span>
+    <h2 class="ax-h2">按钮</h2>
+    <div class="ax-stack">
+      <div class="ax-row">
+        <button class="ax-btn ax-btn--dawn">曦光按钮</button>
+        <button class="ax-btn">主要按钮</button>
+        <button class="ax-btn ax-btn--secondary">次要按钮</button>
+        <button class="ax-btn ax-btn--ghost">文字按钮</button>
+        <button class="ax-btn ax-btn--danger">删除</button>
+        <button class="ax-btn" disabled>不能点</button>
+      </div>
+      <div class="ax-row">
+        <button class="ax-btn ax-btn--sm">小号</button>
+        <button class="ax-btn ax-btn--lg">大号</button>
+        <button class="ax-btn ax-btn--dawn is-loading" id="loading-btn">保存</button>
+        <button class="ax-btn ax-btn--secondary is-loading">加载</button>
+        <button class="ax-btn ax-btn--icon" data-ax-tip="对话"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg></button>
+        <button class="ax-btn ax-btn--icon" data-ax-tip="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+        <button class="ax-btn ax-btn--icon ax-btn--lg" data-ax-tip="她记得的"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3c.6 4.6 2.8 6.8 7.4 7.4-4.6.6-6.8 2.8-7.4 7.4-.6-4.6-2.8-6.8-7.4-7.4C9.2 9.8 11.4 7.6 12 3Z"/></svg></button>
+      </div>
+      <p class="ax-small ax-muted" style="margin:0">点一下按钮会迸出小星星；曦光按钮悬停时有一道流光扫过。</p>
+    </div>
+  </section>
+
+  <!-- 表单 -->
+  <section>
+    <span class="ax-eyebrow">Forms</span>
+    <h2 class="ax-h2">表单</h2>
+    <div class="ax-grid" style="--ax-min: 300px; --ax-gap: 24px">
+      <div class="ax-card ax-stack">
+        <label class="ax-field"><span class="ax-label">名字</span><input class="ax-input" placeholder="怎么称呼你"></label>
+        <label class="ax-field"><span class="ax-label">搜索</span>
+          <span class="ax-input-group"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input class="ax-input" placeholder="搜点什么"></span></label>
+        <label class="ax-field"><span class="ax-label">模型</span><select class="ax-select"><option>DeepSeek</option><option>智谱 GLM</option><option>本地模型</option></select></label>
+        <label class="ax-field"><span class="ax-label">邮箱</span><input class="ax-input is-invalid" value="alaxee@"><span class="ax-error">邮箱好像少了后半段</span></label>
+      </div>
+      <div class="ax-card ax-stack">
+        <label class="ax-field"><span class="ax-label">想对她说</span><textarea class="ax-textarea" placeholder="写点什么……"></textarea><span class="ax-help">按 Ctrl + Enter 发送</span></label>
+        <label class="ax-switch"><input type="checkbox" checked><i></i>早上主动打招呼</label>
+        <label class="ax-switch"><input type="checkbox"><i></i>少一点动效</label>
+        <div class="ax-row" style="--ax-gap: 20px">
+          <label class="ax-check"><input type="checkbox" checked>记住我</label>
+          <label class="ax-check"><input type="radio" name="r" checked>白天</label>
+          <label class="ax-check"><input type="radio" name="r">晚上</label>
+        </div>
+        <label class="ax-field"><span class="ax-label">音量</span><input class="ax-range" type="range" value="64"></label>
+      </div>
+    </div>
+    <div class="ax-row" style="margin-top: 24px; --ax-gap: 24px">
+      <div class="ax-seg"><button class="is-active">聊天</button><button>陪伴</button></div>
+      <div class="ax-tabs" style="flex: 1; min-width: 280px"><button class="is-active">全部</button><button>喜好</button><button>关于他</button><button>约定</button></div>
+    </div>
+  </section>
+
+  <!-- 卡片与列表 -->
+  <section>
+    <span class="ax-eyebrow">Surfaces</span>
+    <h2 class="ax-h2">卡片与列表</h2>
+    <div class="ax-grid" style="--ax-min: 240px">
+      <div class="ax-card ax-card--hover">
+        <h3 class="ax-card__title"><span class="ax-star ax-star--twinkle"></span>悬停会浮起</h3>
+        <p class="ax-muted ax-small" style="margin:0">发丝线边框 + 分层的柔和阴影，卡片本身不抢颜色。</p>
+      </div>
+      <div class="ax-card ax-card--glow">
+        <h3 class="ax-card__title"><span class="ax-orb"><i></i></span>曦光描边</h3>
+        <p class="ax-muted ax-small" style="margin:0">一圈晨光沿着边框慢慢转，用来标出“正在进行”的那一张。</p>
+      </div>
+      <div class="ax-card ax-card--flat">
+        <h3 class="ax-card__title">平面卡片</h3>
+        <div class="ax-row" style="--ax-gap: 6px"><span class="ax-chip">普通</span><span class="ax-chip ax-chip--accent">重要</span><span class="ax-chip ax-chip--success"><i class="ax-dot"></i>完成</span>
+          <span class="ax-chip ax-chip--warning">等待</span><span class="ax-chip ax-chip--danger"><i class="ax-dot ax-dot--live"></i>出错</span></div>
+      </div>
+    </div>
+    <div class="ax-card" style="margin-top: 16px; padding: 8px">
+      <ul class="ax-list ax-list--lined">
+        <li><span class="ax-avatar" style="--size:32px">曦</span><div><b>每天早上 8 点提醒喝水</b><div class="ax-small ax-muted">提醒 · 每天</div></div><span class="ax-list__meta">08:00</span></li>
+        <li><span class="ax-avatar" style="--size:32px;background:linear-gradient(135deg,#6E5CD2,#E880BE)">记</span><div><b>他不吃香菜</b><div class="ax-small ax-muted">喜好 · 常记着</div></div><span class="ax-list__meta">3 天前</span></li>
+        <li><span class="ax-avatar" style="--size:32px;background:linear-gradient(135deg,#FFA894,#FFD9A8)">做</span><div><b>整理本周的照片</b><div class="ax-small ax-muted">任务 · 进行中</div></div><span class="ax-list__meta"><span class="ax-badge">2</span></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 进度与等待 -->
+  <section>
+    <span class="ax-eyebrow">Progress</span>
+    <h2 class="ax-h2">进度与等待</h2>
+    <div class="ax-card ax-stack" style="--ax-gap: 22px">
+      <div class="ax-row"><span style="width: 90px" class="ax-small ax-muted">进度</span><div class="ax-progress" id="demo-progress" style="flex:1; --v: 62%"><i></i></div></div>
+      <div class="ax-row"><span style="width: 90px" class="ax-small ax-muted">细一点</span><div class="ax-progress ax-progress--thin" style="flex:1; --v: 35%"><i></i></div></div>
+      <div class="ax-row"><span style="width: 90px" class="ax-small ax-muted">不知道多久</span><div class="ax-progress ax-progress--indeterminate" style="flex:1"><i></i></div></div>
+      <div class="ax-row" style="--ax-gap: 28px">
+        <span class="ax-row"><span class="ax-spinner"></span><span class="ax-small ax-muted">加载中</span></span>
+        <span class="ax-row"><span class="ax-typing"><i></i><i></i><i></i></span><span class="ax-small ax-muted">她在输入</span></span>
+        <div class="ax-stack" style="flex: 1; min-width: 200px; --ax-gap: 8px"><div class="ax-skeleton" style="width: 60%"></div><div class="ax-skeleton" style="width: 90%"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 她在 -->
+  <section>
+    <span class="ax-eyebrow">Presence</span>
+    <h2 class="ax-h2">“她在”：呼吸光球</h2>
+    <div class="ax-row" style="--ax-gap: 14px">
+      <span class="ax-presence"><span class="ax-orb" data-state="idle"><i></i></span><b>在客厅</b>看书</span>
+      <span class="ax-presence"><span class="ax-orb" data-state="think"><i></i></span><b>在想</b>怎么回你</span>
+      <span class="ax-presence"><span class="ax-orb" data-state="talk"><i></i></span><b>在说话</b></span>
+      <span class="ax-presence"><span class="ax-orb" data-state="listen"><i></i></span><b>在听</b></span>
+      <span class="ax-presence"><span class="ax-orb" data-state="sleep"><i></i></span><b>睡着了</b></span>
+    </div>
+    <div class="ax-row" style="margin-top: 28px; --ax-gap: 48px; padding-left: 20px">
+      <span class="ax-orb ax-orb--lg"><i></i></span>
+      <span class="ax-orb ax-orb--lg" data-state="talk"><i></i></span>
+      <img src="../brand/icons/animated/icon-day.svg" class="ax-appicon" style="--size: 96px" alt="">
+      <img src="../brand/icons/animated/icon-night.svg" class="ax-appicon" style="--size: 96px" alt="">
+      <img src="../brand/icons/animated/icon-day-rise.svg" class="ax-appicon" style="--size: 96px; cursor: pointer" alt="" title="点一下再看一遍破晓" onclick="this.src=this.src.split('?')[0]+'?'+Date.now()">
+    </div>
+  </section>
+
+  <!-- 对话 -->
+  <section>
+    <span class="ax-eyebrow">Chat</span>
+    <h2 class="ax-h2">对话</h2>
+    <div class="ax-card ax-stack" style="--ax-gap: 24px; padding: 28px">
+      <div class="ax-chat ax-rise-stagger" id="chat">
+        <div class="ax-msg ax-msg--her"><div class="ax-msg__who"><span class="ax-orb" style="--size:8px"><i></i></span>远黛</div>早呀。昨晚睡得好吗？今天外面有点凉，出门记得带件外套。</div>
+        <div class="ax-msg ax-msg--me">还行，就是有点困。今天要做什么来着？</div>
+        <div class="ax-msg ax-msg--her"><div class="ax-msg__who"><span class="ax-orb" style="--size:8px"><i></i></span>远黛</div>上午十点和小林开会，下午把周报交了。别的我帮你记着。</div>
+      </div>
+      <form class="ax-composer" onsubmit="event.preventDefault(); send(this)">
+        <textarea rows="1" placeholder="和她说点什么……" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send(this.form)}"></textarea>
+        <button class="ax-btn ax-btn--icon ax-btn--dawn" style="color:#fff" aria-label="发送"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 浮层 -->
+  <section>
+    <span class="ax-eyebrow">Overlays</span>
+    <h2 class="ax-h2">提示、弹窗、空状态</h2>
+    <div class="ax-grid" style="--ax-min: 300px">
+      <div class="ax-card ax-stack">
+        <div class="ax-row">
+          <button class="ax-btn ax-btn--secondary" onclick="AX.toast('已保存')">提示</button>
+          <button class="ax-btn ax-btn--secondary" onclick="AX.toast('发送成功', {type: 'success'})">成功</button>
+          <button class="ax-btn ax-btn--secondary" onclick="AX.toast('网络断了，等会儿再试', {type: 'danger'})">出错</button>
+          <button class="ax-btn" data-ax-open="#demo-modal">弹窗</button>
+        </div>
+        <p class="ax-small ax-muted" style="margin:0">把鼠标放在上面的圆形按钮上能看到悬停提示。</p>
+      </div>
+      <div class="ax-card">
+        <div class="ax-empty" style="padding: 20px">
+          <img src="../brand/xi/xi-day.svg" alt="">
+          <b>这里还空着</b>
+          <span class="ax-small">小曦在等第一件事</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 应用外壳示例 -->
+  <section>
+    <span class="ax-eyebrow">Layout</span>
+    <h2 class="ax-h2">应用外壳示例</h2>
+    <div class="shell">
+      <aside>
+        <div class="brand"><img class="ax-appicon" src="../brand/icons/animated/icon-day.svg" data-ax-icon="../brand/icons/animated/" alt="">远黛</div>
+        <button class="ax-btn ax-btn--dawn ax-btn--sm ax-btn--block">＋ 新对话</button>
+        <nav class="ax-list">
+          <a class="is-active">对话</a><a>她记得的</a><a>她在做的事 <span class="ax-list__meta"><span class="ax-badge">2</span></span></a><a>设置</a>
+        </nav>
+        <span class="ax-spacer"></span>
+        <div class="ax-small ax-muted" style="padding: 0 10px">今天 ¥0.42 · 本月 ¥8.30</div>
+      </aside>
+      <div class="main">
+        <div class="bar"><span class="ax-presence"><span class="ax-orb"><i></i></span><b>在客厅</b>听歌</span><span class="ax-spacer"></span><span class="ax-chip">deepseek-v4</span></div>
+        <div class="chat ax-chat">
+          <div class="ax-msg ax-msg--her">晚上好。今天的事都做完了，要不要早点休息？</div>
+          <div class="ax-msg ax-msg--me">再待一会儿</div>
+          <div class="ax-msg ax-msg--her"><span class="ax-typing"><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="foot"><div class="ax-composer"><textarea rows="1" placeholder="和她说点什么……"></textarea><button class="ax-btn ax-btn--icon" aria-label="发送"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog class="ax-modal" id="demo-modal">
+  <div class="ax-modal__head"><img class="ax-appicon" style="--size: 40px" src="../brand/icons/animated/icon-day-small.svg" alt=""><h3 class="ax-h3">要清空这次对话吗？</h3></div>
+  <div class="ax-modal__body">清空以后她还记得重要的事，只是这次的聊天记录就看不到了。</div>
+  <div class="ax-modal__foot"><button class="ax-btn ax-btn--ghost" data-ax-close>再想想</button><button class="ax-btn ax-btn--danger" data-ax-close onclick="AX.toast('已清空')">清空</button></div>
+</dialog>
+
+<script src="alaxee-ui.js"></script>
+<script>
+  // 主题切换
+  const seg = document.getElementById('theme-seg');
+  const mark = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b.dataset.value === AX.theme()));
+  seg.addEventListener('ax:change', e => AX.theme(e.detail.value));
+  document.addEventListener('ax:theme', mark);
+  mark();
+  // 对话示例
+  function send(form) {
+    const ta = form.querySelector('textarea'); const text = ta.value.trim(); if (!text) return;
+    const chat = document.getElementById('chat');
+    const me = document.createElement('div'); me.className = 'ax-msg ax-msg--me'; me.textContent = text; chat.appendChild(me);
+    ta.value = ''; ta.style.height = '';
+    const her = document.createElement('div'); her.className = 'ax-msg ax-msg--her';
+    her.innerHTML = '<div class="ax-msg__who"><span class="ax-orb" data-state="think" style="--size:8px"><i></i></span>远黛</div><span class="ax-typing"><i></i><i></i><i></i></span>';
+    chat.appendChild(her);
+    setTimeout(() => { her.querySelector('.ax-orb').dataset.state = 'idle'; her.lastChild.replaceWith(document.createTextNode('嗯，我记下了。')); }, 1400);
+  }
+  // 进度条演示
+  let v = 62; setInterval(() => { v = v >= 96 ? 18 : v + 7; document.getElementById('demo-progress').style.setProperty('--v', v + '%'); }, 1600);
+</script>
+</body>
+</html>

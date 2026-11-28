@@ -1,0 +1,109 @@
+/* Alaxee 曦 · 设计变量（从 ui/alaxee-ui.css 第 1 节抽出来的，只要颜色、字号、圆角、动效时用它） */
+:root {
+  /* 品牌色（四个主题共用） */
+  --ax-sakura: #E880BE; --ax-rose: #D9659C; --ax-peach: #FFA894; --ax-gold: #FFD9A8;
+  --ax-violet: #6E5CD2; --ax-night: #181C5E; --ax-moon: #F6F4FF; --ax-plum: #4A3340;
+  --ax-success: #3FB8A0; --ax-warning: #E8955A; --ax-danger: #E0577A; --ax-info: #6E8FE8;
+
+  /* 字体：中文标题和“她说的话”用宋体，正文用系统字体 */
+  --ax-font: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --ax-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --ax-mono: "JetBrains Mono", "Cascadia Code", "SF Mono", Consolas, monospace;
+
+  /* 字号（1.2 倍阶梯） */
+  --ax-t-xs: 12px; --ax-t-sm: 13px; --ax-t-md: 15px; --ax-t-lg: 18px; --ax-t-xl: 22px; --ax-t-2xl: 28px; --ax-t-3xl: 40px;
+
+  /* 形状与间距（8 点网格） */
+  --ax-r-sm: 8px; --ax-r-md: 12px; --ax-r-lg: 20px; --ax-r-xl: 28px; --ax-r-pill: 999px; --ax-r-icon: 22.86%;
+  --ax-s1: 4px; --ax-s2: 8px; --ax-s3: 12px; --ax-s4: 16px; --ax-s5: 24px; --ax-s6: 32px; --ax-s7: 48px; --ax-s8: 64px;
+
+  /* 动效：V11 强呼吸（scale .84→1.26 · 3.6s）、界面 200ms、换页 360ms、流光 3.4s */
+  --ax-breath: 3.6s; --ax-breath-ease: cubic-bezier(.4, 0, .6, 1);
+  --ax-ui: 200ms; --ax-ui-ease: cubic-bezier(.2, .8, .2, 1);
+  --ax-page: 360ms; --ax-sheen: 3.4s; --ax-orbit: 5.6s;
+  --ax-spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  /* 四角星（“曦”）：用作遮罩，颜色跟着 background 走 */
+  --ax-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0C12.9 7.6 16.4 11.1 24 12 16.4 12.9 12.9 16.4 12 24 11.1 16.4 7.6 12.9 0 12 7.6 11.1 11.1 7.6 12 0Z'/%3E%3C/svg%3E");
+}
+
+/* 曦·晨粉（浅色，默认） */
+:root, [data-ax-theme="xi"] {
+  color-scheme: light;
+  --ax-bg: #FAF6F4; --ax-bg-2: #F3EAE8; --ax-surface: #FFFFFF; --ax-surface-2: #FBF7F6; --ax-sunken: rgba(84, 44, 64, .045);
+  --ax-ink: #33232C; --ax-muted: #85707B; --ax-faint: #B8A6AF;
+  --ax-line: rgba(84, 44, 64, .10); --ax-line-strong: rgba(84, 44, 64, .18);
+  --ax-accent: #C8548B; --ax-accent-hover: #B5457A; --ax-accent-soft: rgba(200, 84, 139, .09); --ax-on-accent: #FFFFFF;
+  --ax-focus: rgba(200, 84, 139, .28);
+  --ax-glow: rgba(255, 196, 150, .55);
+  --ax-grad-dawn: linear-gradient(135deg, #D9659C 0%, #EE8FB0 48%, #FFC9A4 100%);
+  --ax-grad-bar: linear-gradient(90deg, #D9659C, #F29BB8 55%, #FFD2A6);
+  --ax-grad-cta: linear-gradient(135deg, #CC5690 0%, #E27A9F 55%, #F29A8A 100%);
+  --ax-grad-sky: linear-gradient(180deg, #F7D9E4 0%, #FBE3E2 46%, #FFEBD8 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(60, 30, 45, .06), 0 1px 1px rgba(60, 30, 45, .04);
+  --ax-shadow-md: 0 1px 2px rgba(60, 30, 45, .05), 0 6px 18px -6px rgba(60, 30, 45, .14);
+  --ax-shadow-lg: 0 2px 6px rgba(60, 30, 45, .05), 0 24px 56px -16px rgba(60, 30, 45, .26);
+  --ax-panel-blur: none;
+  --ax-btn-bg: var(--ax-accent); --ax-btn-ink: var(--ax-on-accent); --ax-btn-hover: var(--ax-accent-hover);
+}
+
+/* 暮·梅子（深色） */
+[data-ax-theme="dusk"] {
+  color-scheme: dark;
+  --ax-bg: #141013; --ax-bg-2: #1B1418; --ax-surface: #1F171C; --ax-surface-2: #271D23; --ax-sunken: rgba(255, 236, 244, .045);
+  --ax-ink: #F3E8EE; --ax-muted: #AD97A3; --ax-faint: #6E5B66;
+  --ax-line: rgba(255, 222, 236, .08); --ax-line-strong: rgba(255, 222, 236, .16);
+  --ax-accent: #EE8AB6; --ax-accent-hover: #F6A2C6; --ax-accent-soft: rgba(238, 138, 182, .12); --ax-on-accent: #2A1622;
+  --ax-focus: rgba(238, 138, 182, .32);
+  --ax-glow: rgba(255, 190, 210, .45);
+  --ax-grad-dawn: linear-gradient(135deg, #C9608F 0%, #EE8AB6 50%, #FFC9A4 100%);
+  --ax-grad-bar: linear-gradient(90deg, #C9608F, #EE8AB6 55%, #FFD2A6);
+  --ax-grad-cta: linear-gradient(135deg, #C9568C 0%, #E27BA4 55%, #EF9B8C 100%);
+  --ax-grad-sky: linear-gradient(180deg, #1E0E1A 0%, #381B2E 55%, #6E3556 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --ax-shadow-md: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -8px rgba(0, 0, 0, .5);
+  --ax-shadow-lg: 0 2px 8px rgba(0, 0, 0, .35), 0 28px 64px -16px rgba(0, 0, 0, .65);
+  --ax-panel-blur: none;
+  --ax-btn-bg: var(--ax-accent); --ax-btn-ink: var(--ax-on-accent); --ax-btn-hover: var(--ax-accent-hover);
+}
+
+/* 深色磨砂玻璃：给 body 或容器设 --ax-backdrop（图片）就能透出来 */
+[data-ax-theme="glass"] {
+  color-scheme: dark;
+  --ax-bg: #151012; --ax-bg-2: #1A1416; --ax-surface: rgba(24, 18, 21, .62); --ax-surface-2: rgba(255, 255, 255, .05); --ax-sunken: rgba(255, 255, 255, .045);
+  --ax-ink: #F3EDE7; --ax-muted: rgba(243, 237, 231, .68); --ax-faint: rgba(243, 237, 231, .42);
+  --ax-line: rgba(255, 255, 255, .10); --ax-line-strong: rgba(255, 255, 255, .20);
+  --ax-accent: #E2A8B2; --ax-accent-hover: #EDBCC4; --ax-accent-soft: rgba(226, 168, 178, .14); --ax-on-accent: #1A1416;
+  --ax-focus: rgba(243, 237, 231, .3);
+  --ax-glow: rgba(255, 220, 200, .4);
+  --ax-grad-dawn: linear-gradient(135deg, #E9B3BE 0%, #F3D3C4 55%, #FBE6CC 100%);
+  --ax-grad-bar: linear-gradient(90deg, #E2A8B2, #F3D3C4 60%, #FBE6CC);
+  --ax-grad-cta: linear-gradient(135deg, #D98E9E 0%, #E6AFA8 55%, #EBC2A0 100%);
+  --ax-grad-sky: linear-gradient(180deg, #1C1418 0%, #2A1E24 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --ax-shadow-md: 0 8px 24px -8px rgba(0, 0, 0, .45);
+  --ax-shadow-lg: 0 30px 70px -20px rgba(0, 0, 0, .7);
+  --ax-panel-blur: blur(22px) saturate(1.25);
+  --ax-btn-bg: #F3EDE7; --ax-btn-ink: #1A1416; --ax-btn-hover: #FFFFFF;
+}
+
+/* V11 原版：夜空蓝紫 */
+[data-ax-theme="alaxee"] {
+  color-scheme: dark;
+  --ax-bg: #0C1024; --ax-bg-2: #0F1430; --ax-surface: #141A40; --ax-surface-2: #1A2150; --ax-sunken: rgba(220, 224, 255, .05);
+  --ax-ink: #F6F4FF; --ax-muted: #9A9ED4; --ax-faint: #5E64A0;
+  --ax-line: rgba(160, 170, 255, .12); --ax-line-strong: rgba(160, 170, 255, .22);
+  --ax-accent: #E880BE; --ax-accent-hover: #F29BCD; --ax-accent-soft: rgba(232, 128, 190, .14); --ax-on-accent: #1A1030;
+  --ax-focus: rgba(255, 217, 168, .45);
+  --ax-glow: rgba(255, 201, 140, .45);
+  --ax-grad-dawn: linear-gradient(135deg, #7B6AE8 0%, #F092C2 52%, #FFD09E 100%);
+  --ax-grad-bar: linear-gradient(90deg, #7B6AE8, #F092C2, #FFD9A8);
+  --ax-grad-cta: linear-gradient(135deg, #7B6AE8 0%, #F092C2 52%, #FFD09E 100%);
+  --ax-grad-sky: linear-gradient(180deg, #181C5E 0%, #3A3E9E 22%, #6E5CD2 44%, #AB74D8 62%, #E880BE 74%, #FFA894 86%, #FFD8A8 94%, #FFF4CC 100%);
+  --ax-shadow-sm: 0 1px 2px rgba(4, 4, 14, .4);
+  --ax-shadow-md: 0 8px 32px -8px rgba(4, 4, 14, .55);
+  --ax-shadow-lg: 0 30px 70px -20px rgba(4, 4, 14, .8);
+  --ax-panel-blur: none;
+  --ax-btn-bg: var(--ax-grad-dawn); --ax-btn-ink: #1A1030; --ax-btn-hover: var(--ax-grad-dawn);
+}
+

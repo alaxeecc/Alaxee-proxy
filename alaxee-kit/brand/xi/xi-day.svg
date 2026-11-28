@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" width="120" height="120">
+<defs>
+<path id="sp" d="M0 -1 C.05 -.18 .18 -.05 1 0 C.18 .05 .05 .18 0 1 C-.05 .18 -.18 .05 -1 0 C-.18 -.05 -.05 -.18 0 -1Z"/>
+<path id="fat" d="M0 -1 C.3 -.45 .45 -.3 1 0 C.45 .3 .3 .45 0 1 C-.3 .45 -.45 .3 -1 0 C-.45 -.3 -.3 -.45 0 -1Z"/>
+<radialGradient id="aura"><stop offset="0" stop-color="#FFFBE8" stop-opacity=".95"/><stop offset=".35" stop-color="#FFD0A8" stop-opacity=".45"/><stop offset=".68" stop-color="#F294C4" stop-opacity=".16"/><stop offset="1" stop-color="#F294C4" stop-opacity="0"/></radialGradient>
+<radialGradient id="mascotG" cx=".42" cy=".36" r=".7"><stop offset="0" stop-color="#FFFDF4"/><stop offset=".5" stop-color="#FFE2B8"/><stop offset="1" stop-color="#FF9CB8"/></radialGradient>
+<g id="xi"><circle r="46" fill="url(#aura)" opacity=".7"/><use href="#fat" transform="scale(36)" fill="url(#mascotG)"/>
+    <ellipse cx="-8" cy="-13" rx="5" ry="2.6" fill="#FFF" opacity=".85" transform="rotate(-35 -8 -13)"/>
+    <circle cx="-13" cy="6" r="3.6" fill="#FF8CB0" opacity=".5"/><circle cx="13" cy="6" r="3.6" fill="#FF8CB0" opacity=".5"/></g>
+<g id="xiDawn"><g><use href="#xi"/>
+    <g stroke="#5A2E45" stroke-width="1.8" stroke-linecap="round"><line x1="-10" y1="-2" x2="-4" y2="-2"/><line x1="4" y1="-2" x2="10" y2="-2"/></g>
+    <ellipse cx="0" cy="7" rx="3" ry="3.5" fill="#5A2E45"><animate attributeName="ry" values="1.5;4.5;1.5" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></ellipse>
+    <animateTransform attributeName="transform" type="scale" values="1 1;.96 1.08;1 1" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+    <g transform="translate(34 -30)"><g><use href="#sp" transform="scale(5)" fill="#FFE4B0"/><animateTransform attributeName="transform" type="scale" values="0;1.2;0" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g></g>
+</defs>
+<use href="#xiDawn" transform="scale(1.0)"/>
+</svg>
