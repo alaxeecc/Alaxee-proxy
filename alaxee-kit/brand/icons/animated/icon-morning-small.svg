@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140">
+<defs>
+<path id="sp" d="M0 -1 C.05 -.18 .18 -.05 1 0 C.18 .05 .05 .18 0 1 C-.05 .18 -.18 .05 -1 0 C-.18 -.05 -.05 -.18 0 -1Z"/>
+<linearGradient id="skyMorn" x1=".1" y1="0" x2=".6" y2=".9"><stop offset="0" stop-color="#C25F96"/><stop offset=".3" stop-color="#E384AE"/><stop offset=".55" stop-color="#F6A6BA"/><stop offset=".78" stop-color="#FFBFA0"/><stop offset="1" stop-color="#FFF0CE"/></linearGradient>
+<linearGradient id="seaMorn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE2BE"/><stop offset=".25" stop-color="#F6A2BE"/><stop offset=".6" stop-color="#C97BA6"/><stop offset="1" stop-color="#8C4C7A"/></linearGradient>
+<linearGradient id="ray" x1=".5" y1="1" x2=".5" y2="0"><stop offset="0" stop-color="#FFF4D0" stop-opacity=".72"/><stop offset=".55" stop-color="#FFB8DC" stop-opacity=".16"/><stop offset="1" stop-color="#FFB8DC" stop-opacity="0"/></linearGradient>
+<linearGradient id="horizon" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF" stop-opacity="0"/><stop offset=".25" stop-color="#FFE4C4" stop-opacity=".7"/><stop offset=".55" stop-color="#FFF"/><stop offset=".85" stop-color="#FFE4C4" stop-opacity=".7"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+<radialGradient id="moonG" cx=".78" cy=".32" r=".82"><stop offset="0" stop-color="#FFFEFA"/><stop offset=".28" stop-color="#FFF1F5"/><stop offset=".6" stop-color="#F9D2E2"/><stop offset=".85" stop-color="#E6A6C3"/><stop offset="1" stop-color="#EEADC9"/></radialGradient>
+<linearGradient id="fHot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF"/><stop offset="1" stop-color="#FFF0C6"/></linearGradient>
+<linearGradient id="fWarm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE4A8"/><stop offset="1" stop-color="#FF9680"/></linearGradient>
+<linearGradient id="fRose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD2AE"/><stop offset="1" stop-color="#DC70B4"/></linearGradient>
+<linearGradient id="fCold" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#F2A0C4"/><stop offset="1" stop-color="#FFE2EE"/></linearGradient>
+<radialGradient id="aura"><stop offset="0" stop-color="#FFFBE8" stop-opacity=".95"/><stop offset=".35" stop-color="#FFD0A8" stop-opacity=".45"/><stop offset=".68" stop-color="#F294C4" stop-opacity=".16"/><stop offset="1" stop-color="#F294C4" stop-opacity="0"/></radialGradient>
+<radialGradient id="sunG"><stop offset="0" stop-color="#FFFFF4"/><stop offset=".5" stop-color="#FFE7A8"/><stop offset="1" stop-color="#FFB27A"/></radialGradient>
+<radialGradient id="sunGlow"><stop offset="0" stop-color="#FFF2C8" stop-opacity=".9"/><stop offset=".4" stop-color="#FFC898" stop-opacity=".35"/><stop offset="1" stop-color="#FFC898" stop-opacity="0"/></radialGradient>
+<linearGradient id="cloudMorn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4EA" stop-opacity=".92"/><stop offset=".55" stop-color="#FFC4D8" stop-opacity=".8"/><stop offset="1" stop-color="#C97BA6" stop-opacity=".6"/></linearGradient>
+<linearGradient id="refl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF8E0" stop-opacity=".8"/><stop offset="1" stop-color="#FFD8A8" stop-opacity="0"/></linearGradient>
+<linearGradient id="dome" x1=".2" y1="0" x2=".8" y2=".55"><stop offset="0" stop-color="#FFF" stop-opacity=".38"/><stop offset=".45" stop-color="#FFF" stop-opacity=".06"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+<linearGradient id="rimTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF" stop-opacity=".7"/><stop offset=".35" stop-color="#FFF" stop-opacity=".06"/><stop offset="1" stop-color="#FFE4B8" stop-opacity=".48"/></linearGradient>
+<filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.4"/></filter>
+<filter id="moonDrop" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="-2" dy="5" stdDeviation="4.5" flood-color="#8A3A60" flood-opacity=".55"/></filter>
+<filter id="starDrop" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#FF94B8" flood-opacity=".6"/></filter>
+<g id="prism"><g transform="rotate(45)">
+    <path d="M0 0 L-5.8 -5.8 Q-2 -17 0 -41 Z" fill="url(#fHot)"/><path d="M0 0 L0 -41 Q2 -17 5.8 -5.8 Z" fill="url(#fWarm)"/>
+    <path d="M0 0 L5.8 -5.8 Q12 -1.6 27 0 Z" fill="url(#fHot)"/><path d="M0 0 L27 0 Q12 1.6 5.8 5.8 Z" fill="url(#fRose)"/>
+    <path d="M0 0 L5.8 5.8 Q2 17 0 41 Z" fill="url(#fRose)"/><path d="M0 0 L0 41 Q-2 17 -5.8 5.8 Z" fill="url(#fCold)"/>
+    <path d="M0 0 L-5.8 5.8 Q-12 1.6 -27 0 Z" fill="url(#fCold)"/><path d="M0 0 L-27 0 Q-12 -1.6 -5.8 -5.8 Z" fill="url(#fHot)"/>
+    <line x1="0" y1="-39" x2="0" y2="39" stroke="#FFF" stroke-width=".9" opacity=".88"/><line x1="-25" y1="0" x2="25" y2="0" stroke="#FFF" stroke-width=".75" opacity=".8"/>
+    <polygon points="0,-6.2 4.6,0 0,6.2 -4.6,0" fill="#FFF"/></g></g>
+<g id="glass"><ellipse cx="52" cy="14" rx="68" ry="26" fill="url(#dome)"/><rect x="1.5" y="1.5" width="137" height="137" rx="30.5" fill="none" stroke="url(#rimTop)" stroke-width="2.4"/></g>
+</defs>
+<defs>
+  <mask id="mm" maskUnits="userSpaceOnUse" x="-20" y="-20" width="180" height="180"><rect x="-20" y="-20" width="180" height="180" fill="#fff"/><circle cx="80" cy="54" r="39" fill="#000"/></mask>
+  <clipPath id="mo"><circle cx="54" cy="70" r="50"/></clipPath>
+  <clipPath id="mc"><rect width="140" height="140" rx="32"/></clipPath>
+</defs>
+<g clip-path="url(#mc)">
+<rect width="140" height="140" fill="url(#skyMorn)"/>
+<g transform="translate(90 106)"><g>
+  <polygon points="0,0 -74,-98 -46,-108" fill="url(#ray)"/><polygon points="0,0 -18,-112 14,-112" fill="url(#ray)"/>
+  <polygon points="0,0 30,-110 64,-92" fill="url(#ray)"/><polygon points="0,0 70,-66 84,-40" fill="url(#ray)"/>
+  <polygon points="0,0 -84,-50 -74,-28" fill="url(#ray)" opacity=".7"/>
+  <animateTransform attributeName="transform" type="rotate" values="-5;5;-5" dur="7.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/><animate attributeName="opacity" values=".6;1;.6" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g>
+<circle cx="90" cy="106" r="52" fill="url(#sunGlow)"><animate attributeName="r" values="44;60;44" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+<circle cx="90" cy="104" r="26" fill="url(#sunG)"><animate attributeName="cy" values="112;98;112" dur="9s" calcMode="spline" keyTimes="0;.5;1" keySplines=".4 0 .6 1;.4 0 .6 1" repeatCount="indefinite"/></circle>
+<g opacity=".78"><circle cx="54" cy="70" r="51.5" fill="none" stroke="#7E3462" stroke-opacity=".38" stroke-width="3" mask="url(#mm)"/><circle cx="54" cy="70" r="50" fill="url(#moonG)" mask="url(#mm)" filter="url(#moonDrop)"/><path d="M37.6 24.9 A48 48 0 0 0 8.9 86.4" fill="none" stroke="#FFF" stroke-width="3.2" stroke-linecap="round" opacity=".85"/><animateTransform attributeName="transform" type="translate" values="0,-3;0,3;0,-3" dur="7.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+<g opacity=".6"><path d="M-10 66 Q14 54 34 61 Q56 50 78 59 Q104 50 150 61 L150 74 L-10 74 Z" fill="url(#cloudMorn)"/><animateTransform attributeName="transform" type="translate" values="-8,0;8,0;-8,0" dur="12s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+<rect y="104" width="140" height="36" fill="url(#seaMorn)"/>
+<rect y="102.6" width="140" height="3" fill="url(#horizon)"/>
+<rect x="76" y="106" width="28" height="32" fill="url(#refl)"><animate attributeName="opacity" values=".6;1;.6" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></rect>
+<line x1="68" y1="113" x2="112" y2="113" stroke="#FFF4D2" stroke-width="4" stroke-linecap="round"><animate attributeName="opacity" values=".45;1;.45" dur="2.4s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></line>
+<line x1="76" y1="122" x2="104" y2="122" stroke="#FFE4C0" stroke-width="3" stroke-linecap="round"><animate attributeName="opacity" values="1;.35;1" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></line>
+<g><path d="M-8 106 L-8 96 Q10 85 26 92 Q42 81 60 89 Q74 81 90 91 Q108 83 126 91 Q142 85 152 96 L152 106 Z" fill="url(#cloudMorn)"/>
+  <path d="M-6 96 Q10 85 26 92 Q42 81 60 89 Q74 81 90 91 Q108 83 126 91 Q142 85 150 96" fill="none" stroke="#FFF6DC" stroke-width="2.6" opacity=".85"/>
+  <animateTransform attributeName="transform" type="translate" values="-6,0;6,0;-6,0" dur="8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+<!--hero--><g transform="translate(94 40)">
+  <circle r="40" fill="url(#aura)"><animate attributeName="r" values="28;48;28" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/><animate attributeName="opacity" values=".7;1;.7" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+  <circle r="12" fill="none" stroke="#FFF4D4" stroke-width="3"><animate attributeName="r" values="10;58" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".2 .6 .35 1"/><animate attributeName="opacity" values=".9;0" dur="3.6s" repeatCount="indefinite"/></circle>
+  <g><use href="#sp" transform="scale(47.6 3.2)" fill="#FFF"/><use href="#sp" transform="scale(3.2 37.7)" fill="#FFF"/><animate attributeName="opacity" values=".4;1;.4" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+  <g opacity=".45"><use href="#sp" transform="rotate(22.5) scale(24.6)" fill="#FFE4B8"/><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="28.8s" repeatCount="indefinite"/></g>
+  <g filter="url(#starDrop)"><use href="#prism" transform="scale(1.08)"/><circle r="6" fill="#FFF" filter="url(#soft)"><animate attributeName="r" values="4.5;8;4.5" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+    <animateTransform attributeName="transform" type="scale" values=".84;1.26;.84" dur="3.6s" calcMode="spline" keyTimes="0;.5;1" keySplines=".4 0 .6 1;.4 0 .6 1" repeatCount="indefinite"/></g>
+</g><!--/hero-->
+<g fill="none" stroke="#A0587E" stroke-width="2.6" stroke-linecap="round"><g><path d="M0 0 q4.5 -4.5 9 0 q4.5 -4.5 9 0"/><path d="M18 9 q3.5 -3.5 7 0 q3.5 -3.5 7 0"/><animateTransform attributeName="transform" type="translate" values="-40,40;150,20" dur="13s" repeatCount="indefinite"/></g></g>
+<g transform="translate(22 20)"><g><use href="#sp" transform="rotate(45) scale(3.6 5.4)" fill="#FFF6E8"/><animateTransform attributeName="transform" type="scale" values=".35;1.25;.35" dur="2.4s" begin="0s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g></g>
+<use href="#glass"/>
+</g>
+<rect x="1" y="1" width="138" height="138" rx="31" fill="none" stroke="#FFF" stroke-opacity=".35" stroke-width="2"/>
+</svg>

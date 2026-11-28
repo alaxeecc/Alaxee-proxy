@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140">
+<defs>
+<path id="sp" d="M0 -1 C.05 -.18 .18 -.05 1 0 C.18 .05 .05 .18 0 1 C-.05 .18 -.18 .05 -1 0 C-.18 -.05 -.05 -.18 0 -1Z"/>
+<linearGradient id="skyMorn" x1=".1" y1="0" x2=".6" y2=".9"><stop offset="0" stop-color="#C25F96"/><stop offset=".3" stop-color="#E384AE"/><stop offset=".55" stop-color="#F6A6BA"/><stop offset=".78" stop-color="#FFBFA0"/><stop offset="1" stop-color="#FFF0CE"/></linearGradient>
+<linearGradient id="seaMorn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE2BE"/><stop offset=".25" stop-color="#F6A2BE"/><stop offset=".6" stop-color="#C97BA6"/><stop offset="1" stop-color="#8C4C7A"/></linearGradient>
+<linearGradient id="ray" x1=".5" y1="1" x2=".5" y2="0"><stop offset="0" stop-color="#FFF4D0" stop-opacity=".72"/><stop offset=".55" stop-color="#FFB8DC" stop-opacity=".16"/><stop offset="1" stop-color="#FFB8DC" stop-opacity="0"/></linearGradient>
+<linearGradient id="atm" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFE8B8" stop-opacity=".7"/><stop offset="1" stop-color="#FFB0C0" stop-opacity="0"/></linearGradient>
+<linearGradient id="horizon" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF" stop-opacity="0"/><stop offset=".25" stop-color="#FFE4C4" stop-opacity=".7"/><stop offset=".55" stop-color="#FFF"/><stop offset=".85" stop-color="#FFE4C4" stop-opacity=".7"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+<radialGradient id="moonG" cx=".78" cy=".32" r=".82"><stop offset="0" stop-color="#FFFEFA"/><stop offset=".28" stop-color="#FFF1F5"/><stop offset=".6" stop-color="#F9D2E2"/><stop offset=".85" stop-color="#E6A6C3"/><stop offset="1" stop-color="#EEADC9"/></radialGradient>
+<linearGradient id="fHot" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF"/><stop offset="1" stop-color="#FFF0C6"/></linearGradient>
+<linearGradient id="fWarm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE4A8"/><stop offset="1" stop-color="#FF9680"/></linearGradient>
+<linearGradient id="fRose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD2AE"/><stop offset="1" stop-color="#DC70B4"/></linearGradient>
+<linearGradient id="fCold" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#F2A0C4"/><stop offset="1" stop-color="#FFE2EE"/></linearGradient>
+<radialGradient id="aura"><stop offset="0" stop-color="#FFFBE8" stop-opacity=".95"/><stop offset=".35" stop-color="#FFD0A8" stop-opacity=".45"/><stop offset=".68" stop-color="#F294C4" stop-opacity=".16"/><stop offset="1" stop-color="#F294C4" stop-opacity="0"/></radialGradient>
+<radialGradient id="sunG"><stop offset="0" stop-color="#FFFFF4"/><stop offset=".5" stop-color="#FFE7A8"/><stop offset="1" stop-color="#FFB27A"/></radialGradient>
+<radialGradient id="sunGlow"><stop offset="0" stop-color="#FFF2C8" stop-opacity=".9"/><stop offset=".4" stop-color="#FFC898" stop-opacity=".35"/><stop offset="1" stop-color="#FFC898" stop-opacity="0"/></radialGradient>
+<linearGradient id="cloudMorn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4EA" stop-opacity=".92"/><stop offset=".55" stop-color="#FFC4D8" stop-opacity=".8"/><stop offset="1" stop-color="#C97BA6" stop-opacity=".6"/></linearGradient>
+<linearGradient id="refl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF8E0" stop-opacity=".8"/><stop offset="1" stop-color="#FFD8A8" stop-opacity="0"/></linearGradient>
+<linearGradient id="dome" x1=".2" y1="0" x2=".8" y2=".55"><stop offset="0" stop-color="#FFF" stop-opacity=".38"/><stop offset=".45" stop-color="#FFF" stop-opacity=".06"/><stop offset="1" stop-color="#FFF" stop-opacity="0"/></linearGradient>
+<linearGradient id="rimTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF" stop-opacity=".7"/><stop offset=".35" stop-color="#FFF" stop-opacity=".06"/><stop offset="1" stop-color="#FFE4B8" stop-opacity=".48"/></linearGradient>
+<filter id="soft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.4"/></filter>
+<filter id="starDrop" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#FF94B8" flood-opacity=".6"/></filter>
+<clipPath id="ic"><rect width="140" height="140" rx="32"/></clipPath>
+<mask id="moonMask" maskUnits="userSpaceOnUse" x="-30" y="-30" width="200" height="200"><rect x="-30" y="-30" width="200" height="200" fill="#fff"/><circle cx="78" cy="54" r="42.5" fill="#000"/></mask>
+<g id="cres"><circle cx="56" cy="66" r="49" mask="url(#moonMask)"/></g>
+<g id="prism"><g transform="rotate(45)">
+    <path d="M0 0 L-5.8 -5.8 Q-2 -17 0 -41 Z" fill="url(#fHot)"/><path d="M0 0 L0 -41 Q2 -17 5.8 -5.8 Z" fill="url(#fWarm)"/>
+    <path d="M0 0 L5.8 -5.8 Q12 -1.6 27 0 Z" fill="url(#fHot)"/><path d="M0 0 L27 0 Q12 1.6 5.8 5.8 Z" fill="url(#fRose)"/>
+    <path d="M0 0 L5.8 5.8 Q2 17 0 41 Z" fill="url(#fRose)"/><path d="M0 0 L0 41 Q-2 17 -5.8 5.8 Z" fill="url(#fCold)"/>
+    <path d="M0 0 L-5.8 5.8 Q-12 1.6 -27 0 Z" fill="url(#fCold)"/><path d="M0 0 L-27 0 Q-12 -1.6 -5.8 -5.8 Z" fill="url(#fHot)"/>
+    <line x1="0" y1="-39" x2="0" y2="39" stroke="#FFF" stroke-width=".9" opacity=".88"/><line x1="-25" y1="0" x2="25" y2="0" stroke="#FFF" stroke-width=".75" opacity=".8"/>
+    <polygon points="0,-6.2 4.6,0 0,6.2 -4.6,0" fill="#FFF"/></g></g>
+<g id="glass"><ellipse cx="52" cy="14" rx="68" ry="26" fill="url(#dome)"/><rect x="1.5" y="1.5" width="137" height="137" rx="30.5" fill="none" stroke="url(#rimTop)" stroke-width="2.4"/></g>
+<g id="sMorn">
+    <rect width="140" height="140" fill="url(#skyMorn)"/>
+    <g transform="translate(88 104)"><g>
+      <polygon points="0,0 -72,-98 -42,-108" fill="url(#ray)"/><polygon points="0,0 -18,-112 14,-112" fill="url(#ray)"/>
+      <polygon points="0,0 28,-110 66,-92" fill="url(#ray)"/><polygon points="0,0 64,-70 82,-40" fill="url(#ray)"/>
+      <polygon points="0,0 -80,-50 -70,-30" fill="url(#ray)" opacity=".7"/><polygon points="0,0 80,-60 88,-28" fill="url(#ray)" opacity=".6"/>
+      <polygon points="0,0 -44,-108 -24,-110" fill="url(#ray)" opacity=".7"/><polygon points="0,0 48,-104 58,-100" fill="url(#ray)" opacity=".7"/>
+      <animateTransform attributeName="transform" type="rotate" values="-5;5;-5" dur="5.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/><animate attributeName="opacity" values=".65;1;.65" dur="3.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+    </g></g>
+    <!-- 镜头光斑链 -->
+    <g fill="#FFF"><circle cx="102" cy="66" r="3" opacity=".35"><animate attributeName="opacity" values=".15;.5;.15" dur="3.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+      <circle cx="112" cy="80" r="2" opacity=".25"><animate attributeName="opacity" values=".4;.1;.4" dur="3.2s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+      <circle cx="120" cy="92" r="1.4" opacity=".2"/></g>
+    <circle cx="88" cy="104" r="50" fill="url(#sunGlow)"><animate attributeName="r" values="42;58;42" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+    <circle cx="88" cy="106" r="22" fill="url(#sunG)"><animate attributeName="cy" values="114;98;114" dur="9s" calcMode="spline" keySplines=".4 0 .6 1;.4 0 .6 1" repeatCount="indefinite"/></circle>
+    <rect y="86" width="140" height="20" fill="url(#atm)"/>
+    <use href="#cres" fill="url(#moonG)"><animate attributeName="opacity" values=".3;.6;.3" dur="6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></use>
+    <path d="M56 17 A49 49 0 0 0 10 83" fill="none" stroke="#FFF" stroke-width="1.2" opacity=".5"/>
+    <!-- 远云 -->
+    <g opacity=".55"><path d="M-10 70 Q14 60 34 66 Q56 56 78 64 Q104 56 150 66 L150 76 L-10 76 Z" fill="url(#cloudMorn)"/><animateTransform attributeName="transform" type="translate" values="-8,0;8,0;-8,0" dur="12s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+    <!-- 中云被染亮 -->
+    <g><path d="M-8 104 L-8 94 Q10 84 26 91 Q42 80 60 88 Q74 80 90 90 Q108 82 126 90 Q142 84 152 94 L152 104 Z" fill="url(#cloudMorn)"/>
+      <path d="M-6 94 Q10 84 26 91 Q42 80 60 88 Q74 80 90 90 Q108 82 126 90 Q142 84 150 94" fill="none" stroke="#FFF6DC" stroke-width="1.2" opacity=".8"/>
+      <animateTransform attributeName="transform" type="translate" values="-6,0;6,0;-6,0" dur="8s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+    <!-- 最亮晨星强呼吸 -->
+    <g transform="translate(88 46)">
+      <circle r="40" fill="url(#aura)"><animate attributeName="r" values="32;50;32" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+      <circle r="12" fill="none" stroke="#FFF4D4" stroke-width="1.4"><animate attributeName="r" values="10;52" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines=".2 .6 .35 1"/><animate attributeName="opacity" values=".8;0" dur="3.6s" repeatCount="indefinite"/></circle>
+      <g><use href="#sp" transform="scale(72 2)" fill="#FFF"/><use href="#sp" transform="scale(2 56)" fill="#FFF"/><animate attributeName="opacity" values=".4;1;.4" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+      <g opacity=".5"><use href="#sp" transform="scale(42)" fill="#FFE8BE"/><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="18s" repeatCount="indefinite"/></g>
+      <g filter="url(#starDrop)"><use href="#prism" transform="scale(1.05)"/><circle r="5" fill="#FFF" filter="url(#soft)"><animate attributeName="r" values="3.6;6.6;3.6" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></circle>
+        <animateTransform attributeName="transform" type="scale" values=".86;1.24;.86" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></g>
+    </g>
+    <!-- 鸟群两队 -->
+    <g fill="none" stroke="#A0587E" stroke-width="1.2" stroke-linecap="round">
+      <g><path d="M0 0 q3 -3 6 0 q3 -3 6 0"/><path d="M14 6 q2.4 -2.4 4.8 0 q2.4 -2.4 4.8 0"/><path d="M6 12 q2 -2 4 0 q2 -2 4 0"/>
+        <animateTransform attributeName="transform" type="translate" values="-34,34;154,16" dur="13s" repeatCount="indefinite"/></g>
+      <g opacity=".6"><path d="M0 0 q2.4 -2.4 4.8 0 q2.4 -2.4 4.8 0"/>
+        <animateTransform attributeName="transform" type="translate" values="-20,54;150,40" dur="17s" repeatCount="indefinite"/></g>
+    </g>
+    <rect y="104" width="140" height="36" fill="url(#seaMorn)"/>
+    <rect y="103.3" width="140" height="1.8" fill="url(#horizon)"/>
+    <rect x="76" y="106" width="24" height="32" fill="url(#refl)"><animate attributeName="opacity" values=".6;1;.6" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></rect>
+    <line x1="68" y1="110" x2="108" y2="110" stroke="#FFF4D2" stroke-width="2.4" stroke-linecap="round"><animate attributeName="opacity" values=".45;1;.45" dur="2.4s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></line>
+    <line x1="73" y1="117" x2="103" y2="117" stroke="#FFE4C0" stroke-width="1.8" stroke-linecap="round"><animate attributeName="opacity" values="1;.35;1" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/></line>
+    <line x1="79" y1="124" x2="97" y2="124" stroke="#FFD0D8" stroke-width="1.3" stroke-linecap="round" opacity=".7"/>
+    <use href="#glass"/>
+  </g>
+<g id="eMorn"><g clip-path="url(#ic)"><use href="#sMorn"/></g><rect width="140" height="140" rx="32" fill="none" stroke="#FFF" stroke-opacity=".3"/></g>
+</defs>
+<use href="#eMorn"/><g clip-path="url(#ic)"><use href="#glass"/></g>
+</svg>
