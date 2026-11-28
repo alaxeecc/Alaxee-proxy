@@ -85,8 +85,22 @@
   // otherwise awkward to reach by hand (empty list, 40 rules, sync on, permission
   // granted), and that editing a stylesheet and reloading this page updates all of
   // them at once. Nothing here is packaged.
+  // Seeded settings for the routing scenes. The popup reads a real PAC built from
+  // these, so each pane lands on a genuinely different route rather than a label.
+  const ROUTING_BASE = {
+    mode: "proxy", host: "127.0.0.1", port: "7890", scheme: "socks5",
+    includeSubdomains: true, localBypass: true, whitelist: [], blacklist: [],
+  };
+  const withBlacklist = (settings) => JSON.stringify({ ...ROUTING_BASE, blacklist: settings });
+  const withWhitelist = (settings) => JSON.stringify({ ...ROUTING_BASE, whitelist: settings });
+
   const SCENES = [
     { label: "快捷面板 · 概览", cls: "popup", query: { tab: "https://github.com/alaxeecc/Alaxee-proxy" } },
+    // The four toolbar states, side by side. "forced" is the one with no other way to
+    // reach it: it needs a host that matches the blacklist on a proxied connection.
+    { label: "状态 · 交给代理", cls: "popup", query: { tab: "https://example.org/page", settings: withBlacklist([{ host: "blocked.example", includeSubdomains: true }]) } },
+    { label: "状态 · 黑名单强制", cls: "popup", query: { tab: "https://blocked.example/page", settings: withBlacklist([{ host: "blocked.example", includeSubdomains: true }]) } },
+    { label: "状态 · 浏览器直连", cls: "popup", query: { tab: "https://github.com/alaxeecc/Alaxee-proxy", settings: withWhitelist([{ host: "github.com", includeSubdomains: true }]) } },
     { label: "快捷面板 · 空规则", cls: "popup", query: { rules: "0" } },
     { label: "快捷面板 · 40 条规则", cls: "popup", query: { rules: "40" } },
     { label: "完整设置", cls: "full", query: { full: "1", rules: "12" } },
