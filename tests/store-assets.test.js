@@ -96,3 +96,13 @@ test("the screenshot fitter only offers the two sizes Microsoft accepts", () => 
   const containPath = body.slice(body.indexOf('if mode == "cover"') + body.slice(body.indexOf('if mode == "cover"')).indexOf("box ="));
   assert.ok(!containPath.includes("crop("), "contain mode must not crop the capture");
 });
+
+test("store images are never packaged into the extension", () => {
+  // store-uploads/ exists so the finished images are downloadable from GitHub.
+  // It sits in the repository root next to files that ARE packaged, so a change to
+  // the runtime-file resolver could sweep it in. Microsoft rejects a package
+  // containing unexplained PNGs, and the size would jump by 600 KB.
+  const runtime = readFileSync(path.join(root, "scripts", "runtime-files.mjs"), "utf8");
+  assert.ok(!/store-uploads/.test(runtime), "the packager must not reference store-uploads");
+  assert.ok(!/store-assets/.test(runtime), "the packager must not reference store-assets");
+});
