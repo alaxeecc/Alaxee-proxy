@@ -8,7 +8,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -55,6 +55,19 @@ test("generated images match their declared sizes", { skip: !existsSync(path.joi
   assert.deepEqual(pngSize(tile), { width: 440, height: 280 });
 });
 
+test("any fitted screenshot on disk is exactly 1280x800", { skip: !existsSync(path.join(root, "store-assets")) }, () => {
+  // Screenshots are produced by hand from a live browser and named by the author,
+  // so the only invariant worth enforcing is that whatever landed in store-assets
+  // is a size Partner Center accepts. A 1200x750 capture would otherwise sit there
+  // looking finished.
+  const dir = path.join(root, "store-assets");
+  const shots = readdirSync(dir).filter((f) => /^\d\d-.*\.png$/.test(f));
+  for (const name of shots) {
+    assert.deepEqual(pngSize(path.join(dir, name)), { width: 1280, height: 800 },
+      `${name} must be 1280x800`);
+  }
+});
+
 test("store assets stay out of Git", () => {
   // They are generated, and large. Committing them would put a second copy of the
   // brand artwork in the repository and let it drift from the kit.
@@ -66,11 +79,20 @@ test("the screenshot fitter only offers the two sizes Microsoft accepts", () => 
   // Offering a free-form size would let a 1200x900 capture through, and Partner
   // Center rejects that at upload with no useful error.
   const shot = readFileSync(path.join(root, "scripts", "store-shot.py"), "utf8");
-  assert.match(shot, /ACCEPTED\s*=\s*\{[^}]*"1280x800"\s*:\s*\(\s*1280\s*,\s*800\s*\)/);
-  assert.match(shot, /ACCEPTED\s*=\s*\{[^}]*"640x480"\s*:\s*\(\s*640\s*,\s*480\s*\)/);
+  assert.match(shot, /"1280x800"\s*:\s*\(\s*1280\s*,\s*800\s*\)/);
+  assert.match(shot, /"640x480"\s*:\s*\(\s*640\s*,\s*480\s*\)/);
+  // The CLI must not accept a size outside that dict.
+  assert.match(shot, /choices=sorted\(ACCEPTED\)/);
   // Same rule as the logo: scale the capture, never draw over it or stretch it.
   assert.match(shot, /min\(box\[0\] \/ src\.width, box\[1\] \/ src\.height\)/);
-  for (const prim of ["ImageDraw", "crop(", "transpose("]) {
-    assert.ok(!shot.includes(prim), `the fitter must not alter the capture: found "${prim}"`);
+  // No drawing. Cropping is permitted but only in cover mode, where it is the
+  // whole point; contain must never crop, or it would silently drop interface.
+  for (const prim of ["ImageDraw", "transpose(", "rotate("]) {
+    assert.ok(!shot.includes(prim), `the fitter must not draw or rotate: found "${prim}"`);
   }
+  // The padding path must never crop. Splitting the function at the cover branch
+  // lets the two halves be checked separately rather than by eyeballing.
+  const body = shot.slice(shot.indexOf("def fit"), shot.indexOf("def main"));
+  const containPath = body.slice(body.indexOf('if mode == "cover"') + body.slice(body.indexOf('if mode == "cover"')).indexOf("box ="));
+  assert.ok(!containPath.includes("crop("), "contain mode must not crop the capture");
 });
