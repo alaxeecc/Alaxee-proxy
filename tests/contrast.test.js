@@ -162,7 +162,7 @@ test("both themes define the same colour variables", () => {
   const names = (block) => new Set(
     [...block.matchAll(/--([a-z-]+):/g)].map((m) => m[1])
       .filter((n) => !n.startsWith("text-") && !n.startsWith("radius") && !n.startsWith("font")
-        && !["ease-ui", "ease-spring", "ui-duration", "breath"].includes(n))
+        && !["ease-ui", "ease-spring", "ease-breath", "ui-duration", "view-duration", "breath"].includes(n))
   );
   const [light, dark] = blocks.map(names);
   const missingInDark = [...light].filter((name) => !dark.has(name));

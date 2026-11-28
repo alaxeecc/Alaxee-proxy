@@ -200,10 +200,12 @@ test("the header wordmark is sized to fit the popup without compressing labels",
   const chinese = 2 * textXl * 1.02;
   // Seven Latin glyphs at --text-xs with .3em tracking.
   const latin = 7 * textXs * 0.62 + 6 * textXs * 0.3;
-  // "按域名分流": five glyphs at --text-xs.
+  // The caption is the product name; measure it as Latin rather than CJK glyphs.
+  // Whichever string sits there, it must fit the same budget as the rest of the lockup.
   const caption = html.slice(html.indexOf('class="brand-caption"'));
-  const captionLength = (/class="brand-caption">([^<]*)</.exec(caption)?.[1] ?? "").length;
-  const captionWidth = captionLength * textXs;
+  const captionText = /class="brand-caption">([^<]*)</.exec(caption)?.[1] ?? "";
+  const captionIsCjk = /[\u4e00-\u9fff]/.test(captionText);
+  const captionWidth = captionText.length * textXs * (captionIsCjk ? 1 : 0.58);
 
   for (const [label, width] of [["wordmark", chinese], ["Latin sub-line", latin], ["caption", captionWidth]]) {
     assert.ok(width <= available, `${label} needs ${Math.round(width)}px but only ${available}px is free`);
