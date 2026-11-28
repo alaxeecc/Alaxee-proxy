@@ -28,7 +28,7 @@ jobs:
       - name: Check JavaScript syntax
         run: npm run check
       - name: Validate manifest JSON
-        run: python -m json.tool manifest.json >/dev/null
+        run: python3 -m json.tool manifest.json >/dev/null
       - name: Build extension package
         run: npm run package:extension
 

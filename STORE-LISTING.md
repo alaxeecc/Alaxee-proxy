@@ -33,8 +33,19 @@ The extension does not read or change any proxy application's configuration. Web
 ## Privacy
 See `PRIVACY.md`. Publish a publicly accessible privacy policy URL before submitting the store listing if Partner Center requires it for the declared data practices.
 
-## Store visual assets still needed
+## Store visual assets
 
-- Store logo / icon asset in the required Partner Center dimensions.
-- Small promotional tile.
-- At least one accurate screenshot of the final Edge popup/settings UI.
+The store logo is covered by the brand kit: `icons/icon128.png` is the kit's
+`icon-day-128`, byte-identical, and Partner Center accepts it directly. A 1024px
+render exists at `alaxee-kit/brand/icons/png/icon-day-1024.png` if a larger source
+is asked for.
+
+Still to produce by hand, because neither can be generated without a live browser:
+
+- **Screenshots** - at least one, showing the popup and the settings view. The
+  sandbox this project was built in has no browser, so these come from a real Edge
+  window. Requirements and the exact steps are in `docs/EDGE-ADDONS-PUBLISHING.md`.
+  Save them under `store-assets/`, which is ignored by Git.
+- **Small promotional tile** - optional; Partner Center only uses it if promoted.
+
+Do not redraw the logo to fit a size. Scale the kit file proportionally.
