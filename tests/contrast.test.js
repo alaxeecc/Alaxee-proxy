@@ -15,10 +15,16 @@ import path from "node:path";
 
 const css = await readFile(path.join(process.cwd(), "src/popup.css"), "utf8");
 
-/** Pulls one custom property out of a :root block. */
+/**
+ * Pulls the custom properties out of a :root block.
+ *
+ * Colour tokens are kept in their raw form, including `var(--accent)` aliases, so
+ * that tests can decide how to resolve them; anything that is not a colour (radii,
+ * durations) is dropped, since the contrast pairs have no meaning for it.
+ */
 function readTheme(block) {
   const values = {};
-  for (const match of block.matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{3,8})/g)) {
+  for (const match of block.matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)|var\(--[a-z-]+\))/g)) {
     values[match[1]] = match[2];
   }
   return values;
@@ -37,9 +43,26 @@ const channel = (value) => {
   return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
 };
 
-function rgb(hex) {
-  const clean = hex.replace("#", "");
+function rgb(value) {
+  const clean = value.replace("#", "");
   return [0, 2, 4].map((offset) => parseInt(clean.slice(offset, offset + 2), 16));
+}
+
+/**
+ * Resolves a colour to opaque RGB.
+ *
+ * The brand tokens use rgba() for translucent surfaces (a rose wash at 9% over the
+ * page). Measuring such a value directly is meaningless - it has to be composited
+ * onto whatever it sits on first. Without this the contrast test would either ignore
+ * those tokens or report nonsense.
+ */
+function resolve(value, backdrop = "#FFFFFF") {
+  const match = value.match(/rgba?\(([^)]+)\)/);
+  if (!match) return value;
+  const [r, g, b, a = 1] = match[1].split(",").map((part) => parseFloat(part));
+  const [br, bg, bb] = rgb(backdrop);
+  const mix = (foreground, behind) => Math.round(foreground * a + behind * (1 - a));
+  return `#${[mix(r, br), mix(g, bg), mix(b, bb)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
 function luminance(hex) {
@@ -47,8 +70,14 @@ function luminance(hex) {
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
-function contrast(a, b) {
-  const [lighter, darker] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+let pageBackdrop = "#FAF6F4";
+
+function contrast(foreground, background) {
+  // Translucent backgrounds are resolved against the page colour first, which is what
+  // the eye sees. The backdrop is set per theme before the pairs are measured.
+  const solid = resolve(background, pageBackdrop);
+  const front = resolve(foreground, solid);
+  const [lighter, darker] = [luminance(front), luminance(solid)].sort((x, y) => y - x);
   return (lighter + 0.05) / (darker + 0.05);
 }
 
@@ -74,6 +103,7 @@ const PAIRS = [
 
 for (const [name, theme] of Object.entries(themeBlocks())) {
   test(`every text pair meets WCAG AA in the ${name} theme`, () => {
+    pageBackdrop = theme.bg;
     const missing = PAIRS.flat().filter((token) => !theme[token]);
     assert.deepEqual(missing, [], `theme is missing tokens: ${missing.join(", ")}`);
 
@@ -127,10 +157,106 @@ test("both themes define the same colour variables", () => {
   // which is how a dark theme ends up with a bright amber block in the middle.
   const blocks = css.match(/:root \{([\s\S]*?)\}/g) ?? [];
   assert.ok(blocks.length >= 2, "expected a light and a dark :root block");
-  const names = (block) => new Set([...block.matchAll(/--([a-z-]+):/g)].map((m) => m[1]).filter((n) => !n.startsWith("text-")));
+  // Only colour tokens are expected per theme. Radii, fonts and motion curves are
+  // theme-independent and live once in :root.
+  const names = (block) => new Set(
+    [...block.matchAll(/--([a-z-]+):/g)].map((m) => m[1])
+      .filter((n) => !n.startsWith("text-") && !n.startsWith("radius") && !n.startsWith("font")
+        && !["ease-ui", "ease-spring", "ui-duration", "breath"].includes(n))
+  );
   const [light, dark] = blocks.map(names);
   const missingInDark = [...light].filter((name) => !dark.has(name));
   const missingInLight = [...dark].filter((name) => !light.has(name));
   assert.deepEqual(missingInDark, [], `dark theme is missing: ${missingInDark.join(", ")}`);
   assert.deepEqual(missingInLight, [], `light theme is missing: ${missingInLight.join(", ")}`);
+});
+
+/**
+ * sRGB -> OKLab.
+ *
+ * Luminance contrast cannot answer "are these two colours distinguishable": a rose
+ * and a grey can share a relative luminance exactly (measured 1.00:1 here) while
+ * looking nothing alike. Perceptual distance in OKLab can.
+ */
+function toLinear(value) {
+  const v = value / 255;
+  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+}
+
+function oklab(hex) {
+  const [r, g, b] = rgb(hex).map(toLinear);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
+  ];
+}
+
+function deltaE(a, b) {
+  const [x, y] = [oklab(a), oklab(b)];
+  return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+}
+
+test("the four route colours are distinguishable from each other and from the page", () => {
+  // The states are told apart by colour alone, at 16px, so the colours have to be
+  // perceptually far apart - not merely different hex strings. Darker-than-0.05 is
+  // the threshold where a difference stops being a judgement call and becomes
+  // visible in one glance.
+  for (const [name, theme] of Object.entries(themeBlocks())) {
+    const page = resolve(theme.bg);
+    const routes = ["proxy", "direct", "forced", "unknown"].map((route) => {
+      const raw = theme[`route-${route}`];
+      assert.ok(raw, `${name}: --route-${route} is undefined`);
+      // Some route colours alias an existing token rather than restating a hex.
+      const alias = /^var\(--([a-z-]+)\)$/.exec(raw);
+      const value = alias ? theme[alias[1]] : raw;
+      assert.ok(value, `${name}: --route-${route} aliases an unknown token`);
+      return [route, resolve(value, page)];
+    });
+
+    for (const [route, colour] of routes) {
+      // 3:1 is the AA threshold for non-text graphics, and a toolbar icon is that.
+      assert.ok(contrast(colour, theme.surface) >= 3, `${name}: ${route} is under 3:1 on the surface`);
+    }
+
+    for (let i = 0; i < routes.length; i += 1) {
+      for (let j = i + 1; j < routes.length; j += 1) {
+        const distance = deltaE(routes[i][1], routes[j][1]);
+        assert.ok(
+          distance >= 0.05,
+          `${name}: ${routes[i][0]} and ${routes[j][0]} are too close (deltaE ${distance.toFixed(3)})`
+        );
+      }
+    }
+  }
+});
+
+test("pill text stays legible on its own tint", () => {
+  // The pill paints route-coloured text over an 9-11% tint of that same colour. It
+  // is the tightest pairing in the palette, and a test that only reads :root never
+  // sees it: the first draft of the teal and amber passed as bare values on white
+  // but measured 3.59:1 and 3.07:1 once tinted.
+  //
+  // The alphas below mirror .route-good / .route-proxy / .route-forced in popup.css.
+  const TINTS = { proxy: 0.09, direct: 0.09, forced: 0.11 };
+
+  for (const [name, theme] of Object.entries(themeBlocks())) {
+    pageBackdrop = theme.bg;
+    for (const [route, alpha] of Object.entries(TINTS)) {
+      const raw = theme[`route-${route}`];
+      const alias = /^var\(--([a-z-]+)\)$/.exec(raw);
+      const colour = resolve(alias ? theme[alias[1]] : raw, theme.bg);
+
+      const surface = rgb(theme.surface);
+      const tinted = `#${rgb(colour)
+        .map((value, index) => Math.round(value * alpha + surface[index] * (1 - alpha)).toString(16).padStart(2, "0"))
+        .join("")}`;
+
+      const value = contrast(colour, tinted);
+      assert.ok(value >= 4.5, `${name}: ${route} pill text is ${value.toFixed(2)}:1 (needs 4.5)`);
+    }
+  }
 });

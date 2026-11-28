@@ -157,12 +157,21 @@ test("popup keeps one bounded scroll container and respects reduced motion", asy
 });
 
 test("every toolbar state has a distinct visual treatment in the popup", async () => {
+  // The mark used to swap between three separate silhouettes. It is now one shape
+  // recoloured per state, so what has to stay true is not "three paths exist" but
+  // "every state the toolbar can show is styled, and no two share a colour".
   const html = await readFile(path.join(root, "src/popup.html"), "utf8");
   const css = await readFile(path.join(root, "src/popup.css"), "utf8");
   assert.match(html, /id="brandMark"/);
-  for (const route of ["proxy", "direct", "unknown"]) {
-    assert.ok(html.includes(`route-shape route-${route}`), `missing ${route} silhouette`);
-    assert.ok(css.includes(`data-route="${route}"`), `missing ${route} styling`);
+
+  const colours = new Map();
+  for (const route of ["proxy", "direct", "forced", "unknown"]) {
+    const rule = new RegExp(`\\.brand-mark\\[data-route="${route}"\\]\\s*\\{([^}]*)\\}`).exec(css);
+    assert.ok(rule, `missing ${route} styling`);
+    const colour = /color:\s*([^;]+);/.exec(rule[1])?.[1].trim();
+    assert.ok(colour, `${route} has no colour`);
+    assert.ok(!colours.has(colour), `${route} reuses the colour of ${colours.get(colour)}`);
+    colours.set(colour, route);
   }
 });
 

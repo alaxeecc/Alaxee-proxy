@@ -647,6 +647,19 @@ export function resolveTabRoute(url, proxyState, savedSettings) {
   return "unknown";
 }
 
+/**
+ * Refines a route into the toolbar state that best explains *why* the page is proxied.
+ *
+ * The routing model has three outcomes, so a blacklist hit is not a fourth route - it
+ * is the reason behind a "proxy" result. Showing it as its own icon answers the
+ * question the plain proxy icon invites: did I put this site on the list, or is
+ * everything being proxied? Every other route is returned unchanged.
+ */
+export function iconStateFor(route, hostname, settings) {
+  if (route !== "proxy" || !hostname) return route;
+  return isHostBlacklisted(hostname, settings?.blacklist) ? "forced" : route;
+}
+
 export function resolveGlobalRoute(proxyState, savedSettings) {
   if (!proxyState || typeof proxyState !== "object") return "unknown";
   const level = proxyState.levelOfControl;

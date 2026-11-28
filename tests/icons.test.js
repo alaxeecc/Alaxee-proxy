@@ -13,13 +13,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 const root = process.cwd();
 const manifest = JSON.parse(await readFile(path.join(root, "manifest.json"), "utf8"));
-const STATES = ["proxy", "direct", "unknown"];
+const STATES = ["proxy", "direct", "forced", "unknown"];
 const SIZES = [16, 32];
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -131,4 +132,31 @@ test("committed icons match the generator in scripts/render-icons.py", () => {
     encoding: "utf8"
   });
   assert.match(output, /match/);
+});
+
+test("the drawing script uses the same route colours as the stylesheet", () => {
+  // The toolbar PNGs and the popup header mark are two implementations of one palette:
+  // Python rasterises them at build time, CSS colours the SVG at runtime. Nothing
+  // structurally links the two, so they can drift apart without any test failing -
+  // the popup would show teal while the toolbar showed a different teal.
+  const script = readFileSync(path.join(root, "scripts/render-icons.py"), "utf8");
+  const cssText = readFileSync(path.join(root, "src/popup.css"), "utf8");
+
+  const cssColour = (token) => {
+    const match = new RegExp(`--route-${token}:\\s*#([0-9a-fA-F]{6})`).exec(cssText);
+    return match ? match[1].toUpperCase() : null;
+  };
+  // The script writes gradients; the last stop is the solid colour the shape reads as.
+  const scriptColour = (constant) => {
+    const line = new RegExp(`^${constant} = .*$`, "m").exec(script)?.[0] ?? "";
+    const stops = [...line.matchAll(/0x([0-9A-F]{2}), 0x([0-9A-F]{2}), 0x([0-9A-F]{2})/gi)];
+    const last = stops.at(-1);
+    return last ? `${last[1]}${last[2]}${last[3]}`.toUpperCase() : null;
+  };
+
+  for (const [token, constant] of [["direct", "STAR_TEAL"], ["forced", "STAR_AMBER"]]) {
+    const fromCss = cssColour(token);
+    assert.ok(fromCss, `--route-${token} is missing from the stylesheet`);
+    assert.equal(scriptColour(constant), fromCss, `${constant} and --route-${token} disagree`);
+  }
 });

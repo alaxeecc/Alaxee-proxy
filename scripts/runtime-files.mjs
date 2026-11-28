@@ -11,20 +11,33 @@
  * Resolution deliberately mirrors the browser rather than a bundler:
  *   - ES module `import ... from "./x.js"` resolves relative to the importer
  *   - HTML `src` / `href` resolve relative to the importing document
+ *   - CSS `url(...)` resolves relative to the stylesheet, so a @font-face or a
+ *     background image cannot be dropped from the package
  *   - the service worker, popup, options page and icons are entry points
  *
  * Unresolvable references are reported, never skipped.
+ *
+ * Licence files are added separately. The brand fonts are SIL OFL, which requires the
+ * licence to travel with the font, but nothing in the code references the text - an
+ * import walk cannot see a legal obligation.
  */
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
 export const MANIFEST_FILE = "manifest.json";
 
+/**
+ * Directories whose licence text must ship even though no code references it.
+ * Matching is by prefix, so every OFL-*.txt beside a bundled font is included.
+ */
+const LICENCE_DIRECTORIES = ["src/brand/fonts"];
+
 const HTML_REF = /(?:src|href)\s*=\s*"([^"]+)"/g;
 const JS_FROM = /\bfrom\s*["']([^"']+)["']/g;
 const JS_BARE = /\bimport\s*["']([^"']+)["']/g;
 const JS_DYNAMIC = /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g;
+const CSS_URL = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
 const EXTERNAL_REF = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;
 
 // Icon PNGs are not imported; background.js addresses them as string literals
@@ -86,6 +99,16 @@ function htmlRefs(source) {
   return refs.filter(Boolean);
 }
 
+function cssRefs(source) {
+  const refs = [];
+  for (const match of source.matchAll(CSS_URL)) {
+    const ref = match[1].trim();
+    if (!ref || EXTERNAL_REF.test(ref) || ref.startsWith("data:")) continue;
+    refs.push(ref.split(/[?#]/)[0]);
+  }
+  return refs.filter(Boolean);
+}
+
 function jsRefs(source) {
   const refs = new Set();
   for (const pattern of [JS_FROM, JS_BARE, JS_DYNAMIC]) {
@@ -129,12 +152,14 @@ export async function resolveRuntimeFiles(root = process.cwd()) {
     files.add(relative);
 
     const extension = path.extname(relative).toLowerCase();
-    if (![".js", ".mjs", ".html"].includes(extension)) continue;
+    if (![".js", ".mjs", ".html", ".css"].includes(extension)) continue;
 
     const source = await readFile(absolute, "utf8");
     const refs = extension === ".html"
       ? htmlRefs(source)
-      : [...jsRefs(source), ...assetRefs(source)];
+      : extension === ".css"
+        ? cssRefs(source)
+        : [...jsRefs(source), ...assetRefs(source)];
 
     if (extension !== ".html") {
       for (const match of source.matchAll(JS_FROM)) {
@@ -146,6 +171,15 @@ export async function resolveRuntimeFiles(root = process.cwd()) {
     for (const ref of refs) {
       const resolved = toPosix(path.join(path.dirname(relative), ref));
       if (!seen.has(resolved)) queue.push(resolved);
+    }
+  }
+
+  for (const directory of LICENCE_DIRECTORIES) {
+    const absolute = path.join(root, directory);
+    if (!existsSync(absolute)) continue;
+    for (const name of await readdir(absolute)) {
+      if (!/^(?:OFL|LICEN[CS]E|COPYING)/i.test(name)) continue;
+      files.add(toPosix(path.join(directory, name)));
     }
   }
 

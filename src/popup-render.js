@@ -17,6 +17,7 @@ import {
   COMMON_PROXY_PORTS,
   ENDPOINT_TROUBLESHOOTING,
   describeProxyEndpoint,
+  iconStateFor,
   isConfigured,
   isHostBlacklisted,
   isHostWhitelisted,
@@ -25,15 +26,26 @@ import {
   resolveTabRoute
 } from "./core.js";
 
+/**
+ * Labels for the four toolbar states.
+ *
+ * "forced" is not a fourth route - a blacklist hit resolves to proxy - it is the
+ * proxy result with its reason attached. The header mark colours it differently so
+ * the popup and the toolbar agree, and the label says why rather than just repeating
+ * "proxy". renderCurrentPage() maps the route through iconStateFor() for the mark
+ * while keeping the route itself unchanged for everything else.
+ */
 export const ROUTE_LABELS = Object.freeze({
   proxy: "交给代理",
   direct: "浏览器直连",
+  forced: "黑名单强制",
   unknown: "状态未知"
 });
 
 const ROUTE_CLASSES = Object.freeze({
   proxy: "route-proxy",
   direct: "route-good",
+  forced: "route-forced",
   unknown: "route-unknown"
 });
 
@@ -209,10 +221,14 @@ export function renderCurrentPage(ui, { currentTabUrl, currentHostname, settings
   const whitelistExact = Boolean(currentHostname && settings.whitelist.some((entry) => entry.host === currentHostname));
   const blacklistExact = Boolean(currentHostname && settings.blacklist.some((entry) => entry.host === currentHostname));
 
-  ui.brandMark.dataset.route = route;
-  ui.brandMark.setAttribute("aria-label", `当前页面状态：${ROUTE_LABELS[route]}`);
-  ui.routePill.textContent = ROUTE_LABELS[route];
-  ui.routePill.className = `route-pill ${ROUTE_CLASSES[route]}`;
+  // The mark and pill show the refined state ("I blacklisted this site") while the
+  // route keeps driving the explanation, so copying a host into the blacklist
+  // changes what the icon says without changing what the popup claims will happen.
+  const markState = iconStateFor(route, currentHostname, settings);
+  ui.brandMark.dataset.route = markState;
+  ui.brandMark.setAttribute("aria-label", `当前页面状态：${ROUTE_LABELS[markState]}`);
+  ui.routePill.textContent = ROUTE_LABELS[markState];
+  ui.routePill.className = `route-pill ${ROUTE_CLASSES[markState]}`;
 
   if (!currentHostname) {
     ui.currentHost.textContent = "当前页面不可用";

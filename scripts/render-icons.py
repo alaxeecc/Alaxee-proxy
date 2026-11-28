@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the four XEE toolbar state icons to PNG without any dependency.
+"""Render the four toolbar state icons to PNG without any dependency.
 
 Why this exists
 ---------------
@@ -10,11 +10,17 @@ had no source of truth to fall back on - and three of them were in fact corrupt
 (proxy16 had a bad palette CRC, and two 32px files were truncated).
 
 This script is the source of truth for the PNGs. It draws the same geometry as
-the popup SVG using only the Python standard library: no Pillow, no cairo, no
-npm dependency, consistent with the project's zero-dependency rule.
+the popup header mark using only the Python standard library: no Pillow, no
+cairo, no npm dependency, consistent with the project's zero-dependency rule.
 
-Geometry note: shapes are defined in the 48x48 coordinate space used by the
-popup SVG so both stay recognisably the same mark.
+Geometry note: shapes are defined in the 48x48 coordinate space used by the popup
+SVG so both stay recognisably the same mark. The two must be edited together: the
+artwork is a crescent opening toward a four-point star, and both files position
+those two figures in the same box.
+
+States: proxy / direct / forced / unknown. `forced` is not a routing outcome - a
+blacklist hit resolves to "proxy" - it is the same icon in amber, answering "why
+is this page proxied?" at a glance. src/core.js iconStateFor() makes that choice.
 
 Usage:
     python3 scripts/render-icons.py            # write icons/status/*.png
@@ -39,16 +45,34 @@ DESIGN = 48.0
 Rgb = tuple[int, int, int]
 Rgba = tuple[int, int, int, int]
 
-# Gradient stops shared with popup.css / popup.html so both surfaces agree.
-ORBIT_STOPS = ((0.0, (0x8D, 0x8C, 0xFF)), (0.55, (0xF2, 0xBC, 0x9B)), (1.0, (0x8A, 0xE8, 0xFF)))
-FLOW_STOPS = ((0.0, (0x8D, 0x8C, 0xFF)), (0.48, (0xD9, 0x9C, 0xFF)), (1.0, (0x69, 0xDD, 0xF2)))
-XEE_STOPS = ((0.0, (0xFF, 0xD8, 0x8A)), (0.48, (0xD9, 0x9C, 0xFF)), (1.0, (0x69, 0xDD, 0xF2)))
+# Brand palette from alaxee-kit (远黛 YUANDAI). Four toolbar states share one mark -
+# the crescent and the four-point star - and differ only in colour, because the kit's
+# time-of-day variants are three pinks that are indistinguishable at 16px:
+# measured average colours were #edb0c0 / #eaacbd / #f5c5cf for day/morning/noon.
+#
+#   proxy   晨粉 dusk rose   - traffic is being carried by a proxy
+#   direct  success teal     - the browser is going straight out
+#   block   warning amber    - forced through the proxy by the blacklist
+#   unknown faint grey       - state could not be determined
+STAR_PINK = ((0.0, (0xFF, 0xE3, 0xC8)), (0.45, (0xF6, 0xA8, 0xC4)), (1.0, (0xC8, 0x54, 0x8B)))
+STAR_TEAL = ((0.0, (0xCF, 0xEE, 0xE6)), (0.5, (0x54, 0xB3, 0x9F)), (1.0, (0x1F, 0x6B, 0x5F)))
+STAR_AMBER = ((0.0, (0xFB, 0xE4, 0xC2)), (0.5, (0xD9, 0x96, 0x4A)), (1.0, (0x8F, 0x57, 0x13)))
+STAR_GREY = ((0.0, (0xE8, 0xDF, 0xE4)), (0.5, (0xB8, 0xA6, 0xAF)), (1.0, (0x85, 0x70, 0x7B)))
 
-NODE_BLUE = (0xB9, 0xB2, 0xFF)
-NODE_PINK = (0xE8, 0xB6, 0xD9)
-NODE_CYAN = (0x8A, 0xE8, 0xFF)
-GLINT = (0xFF, 0xE5, 0xB6)
-WARN = (0xFF, 0xD1, 0x8C)
+MOON_PINK = ((0.0, (0xF7, 0xB8, 0xD0)), (1.0, (0xD9, 0x77, 0xA4)))
+MOON_TEAL = ((0.0, (0x9C, 0xDD, 0xCC)), (1.0, (0x4A, 0xA8, 0x95)))
+MOON_AMBER = ((0.0, (0xF5, 0xCE, 0x96)), (1.0, (0xD0, 0x94, 0x4E)))
+MOON_GREY = ((0.0, (0xD3, 0xC5, 0xCD)), (1.0, (0x9A, 0x88, 0x92)))
+
+# The routing model has three outcomes, not four: a blacklist hit resolves to "proxy".
+# The fourth icon here is that distinction made visible - same shape, amber ring - for
+# the toolbar. It is derived, not a new route.
+STATE = {
+    "proxy": (STAR_PINK, MOON_PINK),
+    "direct": (STAR_TEAL, MOON_TEAL),
+    "forced": (STAR_AMBER, MOON_AMBER),
+    "unknown": (STAR_GREY, MOON_GREY),
+}
 
 
 # --------------------------------------------------------------------------- #
@@ -217,69 +241,100 @@ def linear(stops, x0: float, y0: float, x1: float, y1: float, order: str = "x"):
 # The state silhouettes                                                   #
 # --------------------------------------------------------------------------- #
 def route_bounds(route: str) -> tuple[float, float, float, float]:
-    """Bounding box of the route silhouette, including half its stroke width.
+    """Bounding box of the drawn mark, including the pen width.
 
-    The central X is intentionally excluded: it is the constant part of the mark
-    and should keep its size relative to the silhouette that carries the meaning.
+    All four states share one silhouette now, so the box is the same for three of
+    them; the unknown state carries an outer ring that needs a little more room.
     """
-    if route == "proxy":
-        return (24 - 18.2 - 1.95, 24 - 18.2 - 1.95, 24 + 18.2 + 1.95, 24 + 18.2 + 1.95)
-    if route == "direct":
-        return (6.8 - 2.1, 7.0 - 2.1, 44.0 + 2.1, 40.0 + 2.1)
-    # unknown: broken orbit fragments plus the warning diamond.
-    return (7.0, 5.5, 42.0, 41.0)
+    # Crescent: centre (17, 27) radius 12.4 plus its 4.2 pen. Star: centre (30, 17.5)
+    # radius 12.6 plus its 5.3 pen. Union of the two.
+    left = min(17.0 - 12.4, 30.0 - 12.6) - 4.0
+    top = min(27.0 - 12.4, 17.5 - 12.6) - 4.0
+    right = max(17.0 + 12.4, 30.0 + 12.6) + 4.0
+    bottom = max(27.0 + 12.4, 17.5 + 12.6) + 4.0
+    if route == "unknown":
+        left = min(left, 24 - 21.0 - 0.8)
+        top = min(top, 24 - 21.0 - 0.8)
+        right = max(right, 24 + 21.0 + 0.8)
+        bottom = max(bottom, 24 + 21.0 + 0.8)
+    return (left, top, right, bottom)
 
 
-def draw_route(canvas: Canvas, route: str) -> None:
-    """Route silhouette. Mirrors the shapes in src/popup.html."""
-    orbit = linear(ORBIT_STOPS, canvas.to_device(7, 39)[0], 0, canvas.to_device(43, 13)[0], 0)
-    flow = linear(FLOW_STOPS, canvas.to_device(7, 39)[0], 0, canvas.to_device(44, 7)[0], 0)
+def four_point_star(canvas: "Canvas", cx: float, cy: float, radius: float, colour_at) -> None:
+    """The brand's four-point star, drawn from its own bezier definition.
 
-    if route == "proxy":
-        # Closed orbit: a ring that reaches close to the canvas edge, plus three
-        # route nodes sitting on the ring.
-        canvas.circle_outline(24, 24, 18.2, 3.9, orbit)
-        for x, y, r, colour in (
-            (7.6, 30.2, 3.6, NODE_BLUE),
-            (24.0, 40.6, 3.6, NODE_PINK),
-            (40.4, 17.8, 3.7, NODE_CYAN),
-        ):
-            canvas.fill_disc(x, y, r, colour)
-
-    elif route == "direct":
-        # One trajectory that leaves through an arrow head.
-        canvas.stroke(
-            [(6.8, 37.1), (16.0, 40.0), (25.8, 36.0), (31.1, 26.0), (36.0, 15.0), (43.0, 7.0)],
-            4.2,
-            flow,
-        )
-        canvas.fill_disc(7.3, 37.2, 1.65, NODE_BLUE)
-
-    elif route == "unknown":
-        # Broken orbit fragments plus a warning diamond.
-        canvas.stroke([(7.5, 29.5), (8.0, 22.0), (14.0, 12.5), (23.0, 8.8)], 3.1, orbit)
-        canvas.stroke([(31.3, 8.8), (38.0, 11.5), (41.6, 17.5), (41.5, 23.5)], 3.1, orbit)
-        canvas.stroke([(39.5, 30.2), (36.0, 37.0), (27.5, 42.0), (18.8, 40.3)], 3.1, orbit)
-        canvas.stroke([(11.3, 37.1), (9.0, 35.0), (7.6, 31.0)], 3.1, orbit)
-        # Solid warning diamond with a bright rim, kept fully inside the canvas:
-        # at the design position the apex was clipped by the 1.16 zoom.
-        canvas.fill_diamond(27.0, 12.4, 4.4, WARN)
-        canvas.stroke(
-            [(27.0, 8.0), (31.4, 12.4), (27.0, 16.8), (22.6, 12.4), (27.0, 8.0)],
-            1.1,
-            lambda _x, _y: (0xFF, 0xF0, 0xD5),
+    The kit defines it as  M0 -1 C.05 -.18 .18 -.05 1 0  C.18 .05 .05 .18 0 1
+    C-.05 .18 -.18 .05 -1 0  C-.18 -.05 -.05 -.18 0 -1 Z  in a unit square. Sampling
+    that curve rather than approximating with a diamond keeps the pinched waist that
+    makes it recognisably this mark instead of a generic sparkle.
+    """
+    def bezier(p0, p1, p2, p3, t):
+        mt = 1 - t
+        return (
+            mt**3 * p0[0] + 3 * mt**2 * t * p1[0] + 3 * mt * t**2 * p2[0] + t**3 * p3[0],
+            mt**3 * p0[1] + 3 * mt**2 * t * p1[1] + 3 * mt * t**2 * p2[1] + t**3 * p3[1],
         )
 
+    quadrants = (
+        ((0.0, -1.0), (0.05, -0.18), (0.18, -0.05), (1.0, 0.0)),
+        ((1.0, 0.0), (0.18, 0.05), (0.05, 0.18), (0.0, 1.0)),
+        ((0.0, 1.0), (-0.05, 0.18), (-0.18, 0.05), (-1.0, 0.0)),
+        ((-1.0, 0.0), (-0.18, -0.05), (-0.05, -0.18), (0.0, -1.0)),
+    )
+    outline: list[tuple[float, float]] = []
+    for p0, p1, p2, p3 in quadrants:
+        for step in range(13):
+            x, y = bezier(p0, p1, p2, p3, step / 12)
+            outline.append((cx + x * radius, cy + y * radius))
+    # Fill by stroking the closed outline with a heavy pen: at 16px the star is a few
+    # pixels across, and a real polygon fill would alias into mush.
+    canvas.stroke(outline + [outline[0]], radius * 0.42, colour_at)
 
-def draw_xee(canvas: Canvas) -> None:
-    """The central crossing mark, identical in every state."""
-    xee = linear(XEE_STOPS, canvas.to_device(9, 9)[0], 0, canvas.to_device(41, 40)[0], 0, "diag")
-    canvas.stroke([(13, 12.5), (35, 35.5)], 5.1, xee)
-    canvas.stroke([(35, 12.5), (13, 35.5)], 5.1, xee)
-    # Upper-right flare.
-    canvas.stroke([(37.2, 7.2), (37.2, 13.3)], 1.25, lambda _x, _y: GLINT)
-    canvas.stroke([(34.15, 10.25), (40.25, 10.25)], 1.25, lambda _x, _y: GLINT)
-    canvas.fill_disc(37.2, 10.25, 1.7, (0xFF, 0xF8, 0xE9))
+
+def draw_crescent(canvas: "Canvas", cx: float, cy: float, radius: float, colour_at) -> None:
+    """Crescent, drawn as the visible arc only.
+
+    The naive approach - a filled disc with a second disc punched out - cannot work
+    here: the rasteriser composites rather than subtracts, so painting the bite with an
+    opaque colour fills the moon black instead of removing it. Stroking just the outer
+    arc leaves the lune open toward the star, which is the same silhouette the brand
+    uses.
+    """
+    # The opening faces the upper right, where the star sits.
+    start = math.radians(125)
+    end = math.radians(-70)
+    points = []
+    steps = 64
+    for i in range(steps + 1):
+        angle = start + (end - start) * (i / steps)
+        points.append((cx + radius * math.cos(angle), cy + radius * math.sin(angle)))
+    canvas.stroke(points, radius * 0.42, colour_at)
+
+
+def draw_route(canvas: "Canvas", route: str) -> None:
+    """One mark for every state: a crescent behind a four-point star.
+
+    The original icons encoded state in geometry - an orbit, an arrow, a broken ring.
+    At 16px that read as three unrelated scribbles. The brand has a single recognisable
+    figure, so state now lives in colour and the figure stays constant, which is also
+    how the kit itself works (one star, four times of day).
+    """
+    star_stops, moon_stops = STATE[route]
+    star = linear(star_stops, canvas.to_device(12, 34)[0], 0, canvas.to_device(36, 12)[0], 0, "diag")
+    moon = linear(moon_stops, canvas.to_device(10, 10)[0], 0, canvas.to_device(30, 38)[0], 0, "diag")
+
+    # Crescent sits behind and to the left; the star overlaps its open side.
+    draw_crescent(canvas, 17.0, 27.0, 12.4, moon)
+    four_point_star(canvas, 30.0, 17.5, 12.6, star)
+
+    if route == "forced":
+        # Amber halo: resolved to the proxy because a blacklist rule matched.
+        canvas.circle_outline(24, 24, 21.0, 1.9, lambda _x, _y: (0xC2, 0x7C, 0x30))
+
+    if route == "unknown":
+        # A question rather than a shape: a faint ring around the mark reads as "not
+        # determined" without changing the silhouette.
+        canvas.circle_outline(24, 24, 21.0, 1.5, lambda _x, _y: (0xB8, 0xA6, 0xAF))
 
 
 # --------------------------------------------------------------------------- #
@@ -311,14 +366,19 @@ def write_png(path: Path, size: int, pixels: list[Rgba]) -> None:
 
 
 def render(route: str, size: int) -> list[Rgba]:
+    """Renders one state.
+
+    The old cross mark is gone: it was the previous identity's centrepiece, and the
+    brand mark is now the crescent-and-star itself. Keeping both produced a 16px icon
+    with three overlapping figures, which read as noise.
+    """
     canvas = Canvas(size)
     canvas.fit(route_bounds(route))
     draw_route(canvas, route)
-    draw_xee(canvas)
     return canvas.to_rgba()
 
 
-ROUTES = ("proxy", "direct", "unknown")
+ROUTES = ("proxy", "direct", "forced", "unknown")
 
 
 def main() -> int:

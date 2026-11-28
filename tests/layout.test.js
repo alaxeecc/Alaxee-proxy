@@ -170,3 +170,64 @@ test("the collapsed endpoint is short enough to fit its own summary", () => {
   assert.ok(short.length <= 22, "the summary value must stay short");
   assert.ok(full.length > short.length);
 });
+
+test("the header wordmark is sized to fit the popup without compressing labels", () => {
+  // The brand lockup is mark + stacked wordmark + caption, and it shares one 380px
+  // row with the settings button and the state pill. An earlier attempt put
+  // "远黛 YUANDAI" on a single line: 128px of text into the 101px the row can
+  // spare, which is the same squeezed-label failure the layout pass removed.
+  //
+  // The widths below are conservative estimates (CJK at 1em, Latin serif at 0.62em)
+  // deliberately rather than exact metrics: this is a guard against a regression of
+  // that order of magnitude, not a pixel-perfect proof.
+  const inner = 318; // 380px popup minus the shell's horizontal padding
+  const mark = 42;
+  const lockupGap = 10;
+  const actions = 68 + 80 + 7; // settings button + state pill + their gap
+  const topbarGap = 10;
+  const available = inner - mark - lockupGap - actions - topbarGap;
+
+  const size = (token) => Number(new RegExp(`--${token}:\\s*([\\d.]+)px`).exec(css)?.[1]);
+  const textXl = size("text-xl");
+  const textXs = size("text-xs");
+  assert.ok(textXl && textXs, "the type scale must define --text-xl and --text-xs");
+
+  const wordmark = html.slice(html.indexOf('class="brand-name"'), html.indexOf('class="brand-caption"'));
+  assert.ok(!/YUANDAI/.test(html.slice(html.indexOf('class="brand-name"'), html.indexOf('class="brand-sub"'))),
+    "the Latin wordmark must not share a line with the Chinese one");
+
+  // Two CJK glyphs at --text-xl, plus letter-spacing.
+  const chinese = 2 * textXl * 1.02;
+  // Seven Latin glyphs at --text-xs with .3em tracking.
+  const latin = 7 * textXs * 0.62 + 6 * textXs * 0.3;
+  // "按域名分流": five glyphs at --text-xs.
+  const caption = html.slice(html.indexOf('class="brand-caption"'));
+  const captionLength = (/class="brand-caption">([^<]*)</.exec(caption)?.[1] ?? "").length;
+  const captionWidth = captionLength * textXs;
+
+  for (const [label, width] of [["wordmark", chinese], ["Latin sub-line", latin], ["caption", captionWidth]]) {
+    assert.ok(width <= available, `${label} needs ${Math.round(width)}px but only ${available}px is free`);
+  }
+});
+
+test("the entrance animation cannot change layout", () => {
+  // Round 10's constraint was a short page. An entrance animation that animated
+  // height or margin would fight the panels' own sizing while the popup is still
+  // measuring itself; opacity and transform are compositor properties and take no
+  // space in the flow.
+  const keyframes = /@keyframes panel-enter \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+  assert.ok(keyframes, "the panel entrance animation is missing");
+
+  const properties = [...keyframes.matchAll(/([a-z-]+)\s*:/g)]
+    .map((match) => match[1])
+    .filter((property) => property !== "from" && property !== "to");
+  for (const property of new Set(properties)) {
+    assert.ok(["opacity", "transform"].includes(property),
+      `panel-enter animates ${property}, which triggers layout`);
+  }
+
+  // Every panel that shares the animation must also be switched off when the system
+  // asks for reduced motion. A panel left out would still slide for those users.
+  const reduced = /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.bypass-panel[^}]*animation: none/.test(css);
+  assert.ok(reduced, "the reduced-motion block must cover the animated panels");
+});
