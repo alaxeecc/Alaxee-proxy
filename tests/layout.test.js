@@ -10,6 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -244,5 +245,39 @@ test("the mark does not animate", () => {
   if (rule) {
     assert.ok(!/animation/.test(rule[1]), "the mark must not animate");
     assert.ok(!/transform/.test(rule[1]), "the mark must not transform");
+  }
+});
+
+test("the interface does not carry redundant English section labels", () => {
+  // Every card used to have an English eyebrow directly above an identical Chinese
+  // heading - ROUTING over 默认路由, PROXY SERVER over 代理服务器, and so on. The
+  // eyebrow was set in 10.5px with wide letter-spacing, which only works for Latin
+  // text; the Chinese heading underneath already said the same thing.
+  //
+  // What is allowed to remain: the brand name, and a label for a block that has no
+  // heading of its own.
+  const popup = readFileSync(path.join(root, "src", "popup.html"), "utf8");
+  const settings = readFileSync(path.join(root, "settings.html"), "utf8");
+  const labels = [...`${popup}${settings}`.matchAll(/class="eyebrow"[^>]*>([^<]+)</g)]
+    .map((m) => m[1].trim());
+  // The brand name is not a section label and is allowed to stay Latin.
+  const allowed = new Set(["ALAXEE PROXY"]);
+  for (const label of labels) {
+    if (allowed.has(label)) continue;
+    assert.ok(
+      !/^[A-Z][A-Z\s·&-]*$/.test(label),
+      `"${label}" is an all-caps English eyebrow; use the Chinese heading instead`,
+    );
+  }
+});
+
+test("every panel still has a heading of its own", () => {
+  // Removing eight eyebrows must not leave a card untitled. Checked by count: the
+  // popup has a heading per panel, and the regex approach that split on class names
+  // matched nested elements and proved unreliable.
+  const popup = readFileSync(path.join(root, "src", "popup.html"), "utf8");
+  const headings = [...popup.matchAll(/<h[12][^>]*id="(\w+Title|modeTitle)"/g)].map((m) => m[1]);
+  for (const id of ["modeTitle", "configTitle", "siteTitle", "bypassTitle", "rulesTitle", "syncTitle", "backupTitle"]) {
+    assert.ok(headings.includes(id), `missing heading #${id}`);
   }
 });

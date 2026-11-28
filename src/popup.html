@@ -32,7 +32,7 @@
     </header>
 
     <section id="fullPageIntro" class="full-page-intro" hidden aria-labelledby="fullPageTitle">
-      <div class="eyebrow">ALAXEE PROXY · CONTROL CENTER</div>
+      <div class="eyebrow">ALAXEE PROXY</div>
       <h1 id="fullPageTitle">完整代理设置</h1>
       <p>在同一个页面管理代理模式、代理服务器地址、当前网站路由，以及直连白名单和强制代理黑名单。</p>
     </section>
@@ -45,7 +45,7 @@
     <div id="overviewView" class="popup-view">
       <section class="mode-panel" aria-labelledby="modeTitle">
         <div class="section-heading">
-          <div><div class="eyebrow">ROUTING</div><h1 id="modeTitle">默认路由</h1></div>
+          <div><h1 id="modeTitle">默认路由</h1></div>
           <span class="subtle-label">仅影响 Edge</span>
         </div>
         <div class="mode-grid" id="modeGrid" role="group" aria-label="默认路由">
@@ -65,7 +65,7 @@
 
       <details class="config-panel panel-collapsible" id="configPanel">
         <summary class="section-heading compact-heading panel-summary">
-          <div><div class="eyebrow">PROXY SERVER</div><h2 id="configTitle">代理服务器</h2></div>
+          <div><h2 id="configTitle">代理服务器</h2></div>
           <span class="summary-meta">
             <span class="local-tag"><span></span><span id="endpointTag">未配置</span></span>
             <span class="chevron" aria-hidden="true"></span>
@@ -103,7 +103,7 @@
 
       <section class="site-panel" aria-labelledby="siteTitle">
         <div class="section-heading compact-heading">
-          <div><div class="eyebrow">CURRENT WEBSITE</div><h2 id="siteTitle">当前网站</h2></div>
+          <div><h2 id="siteTitle">当前网站</h2></div>
           <span id="siteRoutePill" class="route-pill route-unknown">读取中</span>
         </div>
         <div class="current-site-card">
@@ -127,7 +127,7 @@
 
       <details class="bypass-panel panel-collapsible" id="bypassPanel">
         <summary class="section-heading compact-heading panel-summary">
-          <div><div class="eyebrow">LOCAL ADDRESSES</div><h2 id="bypassTitle">本机地址</h2></div>
+          <div><h2 id="bypassTitle">本机地址</h2></div>
           <span class="summary-meta">
             <span class="local-tag"><span></span><span id="bypassTag">直接连接</span></span>
             <span class="chevron" aria-hidden="true"></span>
@@ -147,7 +147,7 @@
     <div id="rulesView" class="popup-view" hidden>
       <section class="rules-panel" aria-labelledby="rulesTitle">
         <div class="section-heading compact-heading">
-          <div><div class="eyebrow">DOMAIN ROUTING</div><h2 id="rulesTitle">域名规则</h2></div>
+          <div><h2 id="rulesTitle">域名规则</h2></div>
           <span id="listCount" class="count-bubble">0</span>
         </div>
         <div class="rule-tabs" role="tablist" aria-label="域名规则类型">
@@ -206,7 +206,7 @@
 
       <section id="syncPanel" class="sync-panel" aria-labelledby="syncTitle">
         <div class="section-heading compact-heading">
-          <div><div class="eyebrow">SYNC</div><h2 id="syncTitle">跨设备同步</h2></div>
+          <div><h2 id="syncTitle">跨设备同步</h2></div>
           <span class="local-tag"><span></span><span id="syncTag">关闭</span></span>
         </div>
         <p class="microcopy">开启后，代理设置和域名规则会通过浏览器自带的同步存储，跟同一个账号的其他设备保持一致。不需要注册，也不用任何服务器。</p>
@@ -225,7 +225,7 @@
 
       <section class="status-permission-panel" aria-label="逐网页状态">
         <div class="status-permission-copy">
-          <span class="eyebrow">PER-TAB STATUS</span>
+          <span class="eyebrow">标签页状态</span>
           <strong>图标显示当前网页实际走哪条路由</strong>
           <small id="statusPermissionHint">区分交给代理服务器、白名单直连和黑名单强制走代理。</small>
         </div>
@@ -234,7 +234,7 @@
 
       <section class="backup-panel" aria-labelledby="backupTitle">
         <div class="section-heading compact-heading">
-          <div><div class="eyebrow">BACKUP</div><h2 id="backupTitle">备份与恢复</h2></div>
+          <div><h2 id="backupTitle">备份与恢复</h2></div>
           <span class="local-tag"><span></span>仅本地文件</span>
         </div>
         <p class="microcopy">设置和规则只存在这台电脑的这个浏览器配置里。导出一个 JSON 文件，可以在重装、换电脑或配置损坏时恢复。</p>

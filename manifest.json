@@ -3,7 +3,7 @@
   "name": "Alaxee Proxy",
   "short_name": "Alaxee Proxy",
   "version": "0.2.0",
-  "description": "A lightweight Edge proxy controller: point the browser at any HTTP or SOCKS5 server, with direct and force-proxy domain rules.",
+  "description": "轻量的 Edge 代理控制器：将浏览器指向你自己运行的 HTTP 或 SOCKS5 服务器，支持直连白名单与强制代理黑名单。",
   "permissions": [
     "proxy",
     "storage",
