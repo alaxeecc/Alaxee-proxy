@@ -123,40 +123,13 @@ test("the manifest toolbar icon pair exists at both densities", async () => {
   }
 });
 
-test("committed icons match the generator in scripts/render-icons.py", () => {
-  // Establishes the artwork's source of truth. Without this, the PNGs are opaque
-  // binaries that can only be fixed by finding the original asset - which is why
-  // the corrupt files survived.
-  const output = execFileSync("python3", [path.join(root, "scripts/render-icons.py"), "--check"], {
+test("the shipped toolbar icons are valid and correctly sized", () => {
+  // The icons are the brand kit's own files, copied in rather than generated, so
+  // what has to be guarded is not "the generator still agrees" but "the committed
+  // bytes are usable". Three of these were once corrupt and nothing noticed.
+  const output = execFileSync("python3", [path.join(root, "scripts", "render-icons.py"), "--check"], {
     cwd: root,
     encoding: "utf8"
   });
-  assert.match(output, /match/);
-});
-
-test("the drawing script uses the same route colours as the stylesheet", () => {
-  // The toolbar PNGs and the popup header mark are two implementations of one palette:
-  // Python rasterises them at build time, CSS colours the SVG at runtime. Nothing
-  // structurally links the two, so they can drift apart without any test failing -
-  // the popup would show teal while the toolbar showed a different teal.
-  const script = readFileSync(path.join(root, "scripts/render-icons.py"), "utf8");
-  const cssText = readFileSync(path.join(root, "src/popup.css"), "utf8");
-
-  const cssColour = (token) => {
-    const match = new RegExp(`--route-${token}:\\s*#([0-9a-fA-F]{6})`).exec(cssText);
-    return match ? match[1].toUpperCase() : null;
-  };
-  // The script writes gradients; the last stop is the solid colour the shape reads as.
-  const scriptColour = (constant) => {
-    const line = new RegExp(`^${constant} = .*$`, "m").exec(script)?.[0] ?? "";
-    const stops = [...line.matchAll(/0x([0-9A-F]{2}), 0x([0-9A-F]{2}), 0x([0-9A-F]{2})/gi)];
-    const last = stops.at(-1);
-    return last ? `${last[1]}${last[2]}${last[3]}`.toUpperCase() : null;
-  };
-
-  for (const [token, constant] of [["direct", "STAR_TEAL"], ["forced", "STAR_AMBER"]]) {
-    const fromCss = cssColour(token);
-    assert.ok(fromCss, `--route-${token} is missing from the stylesheet`);
-    assert.equal(scriptColour(constant), fromCss, `${constant} and --route-${token} disagree`);
-  }
+  assert.match(output, /toolbar icons present, valid and correctly sized/);
 });

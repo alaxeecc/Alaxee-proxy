@@ -13,16 +13,11 @@
     <header class="topbar">
       <div class="brand-lockup">
         <div class="brand-mark" id="brandMark" data-route="unknown" role="img" aria-label="当前页面状态：状态未知">
-          <!-- The mark is the kit's own geometry: a crescent that opens toward a
-               four-point star. Both are drawn once here and recoloured per state by
-               the rules under .brand-mark[data-route], so the popup and the toolbar
-               PNGs (scripts/render-icons.py) agree without duplicating artwork. -->
-          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-            <path class="bm-moon" d="M25.6 15.1A12.4 12.4 0 1 0 20.4 39.1"
-                  fill="none" stroke-linecap="round"/>
-            <path class="bm-star" d="M30.2 4.9C30.85 12.6 35.4 17.15 43.1 17.5 35.4 17.85 30.85 22.4 30.2 30.1 29.55 22.4 25 17.85 17.3 17.5 25 17.15 29.55 12.6 30.2 4.9Z"/>
-            <circle class="bm-ring" cx="24" cy="24" r="21"/>
-          </svg>
+          <!-- The kit's own artwork, one file per state, not a redrawn mark. The four
+               images are the brand's own pictures; swapping which one is shown is the
+               whole state indicator. -->
+          <img class="brand-icon" alt="" width="34" height="34"
+               src="brand/icons/icon-morning-small.svg" />
         </div>
         <div>
           <div class="brand-name">远黛</div>

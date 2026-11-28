@@ -146,51 +146,22 @@ input, select { transition: border-color var(--ui-duration) var(--ease-ui), box-
 .app-shell { width: 100%; height: 600px; max-height: 600px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 17px 17px 12px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 17px; }
 .brand-lockup { display: flex; align-items: center; gap: 10px; }
-/* The header mark: the kit's crescent-plus-star, recoloured per proxy state.
-   It replaces the previous identity's interlocking X, whose three overlapping
-   silhouettes could not survive the 44px slot - and could not be reused for the
-   toolbar at all. Colour is the only thing that changes between states, so the
-   shape stays recognisably the brand no matter which route is active. */
+/* The header mark is the kit's own icon, one file per routing state. Previously
+   this slot held an SVG I redrew to approximate the brand - which replaced a
+   silhouette users already knew with something merely similar to it. The kit ships
+   four pictures; state is which picture is shown. */
 .brand-mark {
   flex: 0 0 42px;
   width: 42px;
   height: 42px;
   display: grid;
   place-items: center;
-  overflow: visible;
+  overflow: hidden;
   border-radius: var(--radius);
-  background: linear-gradient(148deg, var(--accent-soft), transparent 72%);
+  background: var(--accent-soft);
   box-shadow: inset 0 0 0 1px var(--line);
 }
-.brand-mark svg { width: 34px; height: 34px; overflow: visible; }
-.brand-mark .bm-moon,
-.brand-mark .bm-ring { fill: none; stroke: currentColor; stroke-width: 4.2; }
-.brand-mark .bm-star { fill: currentColor; }
-.brand-mark .bm-ring { stroke-width: 1.5; opacity: 0; }
-
-/* One colour per state, matching the toolbar PNGs so the two never disagree. */
-.brand-mark[data-route="proxy"] { color: var(--route-proxy); }
-.brand-mark[data-route="direct"] { color: var(--route-direct); }
-.brand-mark[data-route="forced"] { color: var(--route-forced); }
-.brand-mark[data-route="unknown"] { color: var(--route-unknown); }
-.brand-mark[data-route="unknown"] .bm-ring { opacity: .55; }
-
-/* The star breathes and the moon holds still: one moving element is enough to read
-   as alive, and a pulsing outline at this size reads as a loading spinner. */
-.brand-mark .bm-star {
-  transform-origin: 30.2px 17.5px;
-  animation: brand-breathe var(--breath) var(--ease-breath) infinite;
-}
-/* The kit slows the night state and hurries the daylight one; "unknown" is the
-   state where nothing is happening, so it gets the slowest breath. */
-.brand-mark[data-route="unknown"] .bm-star { animation-duration: 5s; }
-@keyframes brand-breathe {
-  0%, 100% { transform: scale(.84); }
-  50% { transform: scale(1.26); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .brand-mark .bm-star { animation: none; }
-}
+.brand-icon { width: 34px; height: 34px; display: block; }
 
 /* The wordmark stacks rather than sitting on one line: "远黛 YUANDAI" side by side
    measured 128px against the 101px the 380px popup can spare once the mark and the
@@ -798,5 +769,4 @@ html.full-page #rulesList { max-height: none; }
   .rules-panel, .sync-panel, .backup-panel, .bypass-panel {
     animation: none;
   }
-  .brand-mark .bm-star { animation: none; }
 }

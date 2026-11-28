@@ -42,6 +42,27 @@ export const ROUTE_LABELS = Object.freeze({
   unknown: "状态未知"
 });
 
+/**
+ * The kit icon shown for each state.
+ *
+ * These are the brand kit's own files, copied verbatim into src/brand/icons/. The
+ * kit labels them by time of day, so this mapping is a product decision: day and
+ * night are the two that stay distinguishable at 16px, and they carry the two states
+ * a user checks most (proxied, direct). Noon is the brightest and reads as "held on
+ * the route by a rule"; morning is the palest, for "not determined".
+ *
+ * Paths are absolute from the extension root rather than relative to popup.html.
+ * These are assigned to img.src in script, and a relative value resolves against the
+ * document URL - which is /src/popup.html in the extension but a bare / in the
+ * preview harness, where "brand/icons/..." would become /brand/icons/... and 404.
+ */
+const ROUTE_ICONS = Object.freeze({
+  proxy: "/src/brand/icons/icon-day-small.svg",
+  direct: "/src/brand/icons/icon-night-sleep-small.svg",
+  forced: "/src/brand/icons/icon-noon-small.svg",
+  unknown: "/src/brand/icons/icon-morning-small.svg"
+});
+
 const ROUTE_CLASSES = Object.freeze({
   proxy: "route-proxy",
   direct: "route-good",
@@ -227,6 +248,8 @@ export function renderCurrentPage(ui, { currentTabUrl, currentHostname, settings
   const markState = iconStateFor(route, currentHostname, settings);
   ui.brandMark.dataset.route = markState;
   ui.brandMark.setAttribute("aria-label", `当前页面状态：${ROUTE_LABELS[markState]}`);
+  const icon = ui.brandMark.querySelector(".brand-icon");
+  if (icon) icon.src = ROUTE_ICONS[markState];
   ui.routePill.textContent = ROUTE_LABELS[markState];
   ui.routePill.className = `route-pill ${ROUTE_CLASSES[markState]}`;
 

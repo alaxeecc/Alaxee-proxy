@@ -17,12 +17,7 @@
   header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
            padding:14px 24px; background:var(--surface); border-bottom:1px solid var(--line); }
   h1 { margin:0; font-family:"Noto Serif SC",Georgia,serif; font-size:17px; font-weight:600; letter-spacing:.02em; }
-  .mark { width:26px; height:26px; display:grid; place-items:center; color:var(--accent); }
-  .mark svg { width:26px; height:26px; }
-  .mark .bm-moon { fill:none; stroke:currentColor; stroke-width:4.2; stroke-linecap:round; }
-  .mark .bm-star { fill:currentColor; transform-origin:30.2px 17.5px; animation:breath 3.6s cubic-bezier(.4,0,.6,1) infinite; }
-  @keyframes breath { 0%,100% { transform:scale(.84); } 50% { transform:scale(1.26); } }
-  @media (prefers-reduced-motion: reduce) { .mark .bm-star { animation:none; } }
+  .mark { width:26px; height:26px; display:block; }
   .tag { padding:2px 8px; border-radius:99px; background:color-mix(in srgb, var(--accent) 14%, transparent);
          color:var(--accent); font-size:11px; font-weight:700; }
   .controls { display:flex; gap:14px; align-items:center; margin-left:auto; flex-wrap:wrap; }
@@ -51,12 +46,7 @@
 </head>
 <body>
 <header>
-  <span class="mark" aria-hidden="true">
-    <svg viewBox="0 0 48 48" focusable="false">
-      <path class="bm-moon" d="M25.6 15.1A12.4 12.4 0 1 0 20.4 39.1"/>
-      <path class="bm-star" d="M30.2 4.9C30.85 12.6 35.4 17.15 43.1 17.5 35.4 17.85 30.85 22.4 30.2 30.1 29.55 22.4 25 17.85 17.3 17.5 25 17.15 29.55 12.6 30.2 4.9Z"/>
-    </svg>
-  </span>
+  <img class="mark" src="/src/brand/icons/icon-day-small.svg" alt="" width="26" height="26">
   <h1>Alaxee Proxy</h1>
   <span class="tag">开发工作台</span>
   <div class="controls">

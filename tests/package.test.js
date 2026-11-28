@@ -163,15 +163,18 @@ test("every toolbar state has a distinct visual treatment in the popup", async (
   const html = await readFile(path.join(root, "src/popup.html"), "utf8");
   const css = await readFile(path.join(root, "src/popup.css"), "utf8");
   assert.match(html, /id="brandMark"/);
+  assert.match(html, /class="brand-icon"/, "the header mark must be the kit's artwork");
 
-  const colours = new Map();
+  // The mark is now four distinct images rather than one shape recoloured, so the
+  // invariant is "every state points at its own file".
+  const renderer = await readFile(path.join(root, "src", "popup-render.js"), "utf8");
+  const icons = new Set();
   for (const route of ["proxy", "direct", "forced", "unknown"]) {
-    const rule = new RegExp(`\\.brand-mark\\[data-route="${route}"\\]\\s*\\{([^}]*)\\}`).exec(css);
-    assert.ok(rule, `missing ${route} styling`);
-    const colour = /color:\s*([^;]+);/.exec(rule[1])?.[1].trim();
-    assert.ok(colour, `${route} has no colour`);
-    assert.ok(!colours.has(colour), `${route} reuses the colour of ${colours.get(colour)}`);
-    colours.set(colour, route);
+    const rule = new RegExp(`\\b${route}:\\s*"(?:/)?(src/brand/icons/[^"]+)"`).exec(renderer);
+    assert.ok(rule, `${route} has no icon file`);
+    assert.ok(!icons.has(rule[1]), `${route} reuses ${rule[1]}`);
+    icons.add(rule[1]);
+    assert.ok(existsSync(path.join(root, rule[1])), `${rule[1]} does not exist`);
   }
 });
 

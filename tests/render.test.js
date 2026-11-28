@@ -102,7 +102,14 @@ const element = () => ({
     contains(name) { return this.values.has(name); }
   },
   setAttribute(name, value) { this.attributes[name] = value; },
-  append() {}, replaceChildren() {}
+  append() {}, replaceChildren() {},
+  // renderCurrentPage swaps the header icon's src. The stub returns a stand-in so
+  // the test can assert which file was chosen; real DOM elements behave the same.
+  querySelector(selector) {
+    if (!this.children) this.children = {};
+    if (!this.children[selector]) this.children[selector] = { src: "", attributes: {}, dataset: {} };
+    return this.children[selector];
+  }
 });
 const panel = () => ({ ...element(), open: false, classList: element().classList });
 
@@ -136,6 +143,13 @@ function fakeUi() {
     append(child) {
       // A DocumentFragment contributes its own children when appended.
       (this.children ??= []).push(...(child?.tagName === "#fragment" ? child.children : [child]));
+    },
+    // renderCurrentPage swaps the header icon's src. Kept in its own map so it does
+    // not collide with the child list above.
+    querySelector(selector) {
+      (this.matches ??= {});
+      this.matches[selector] ??= { src: "", attributes: {}, dataset: {} };
+      return this.matches[selector];
     }
   });
   return {

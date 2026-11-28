@@ -125,9 +125,9 @@ test("the settings hand-off page is dressed in the current palette", async () =>
   assert.match(css, /--accent:#B5457A/, "settings.css must carry the brand accent");
   assert.match(css, /--bg:#FAF6F4/, "settings.css must carry the brand page colour");
 
-  // And it must show the same mark as the popup rather than a stand-in character.
+  // And it must show the same artwork as the popup rather than a stand-in character.
   assert.ok(!html.includes("⌁"), "settings.html still uses the placeholder glyph");
-  assert.match(html, /class="bm-star"/, "settings.html needs the brand mark");
+  assert.match(html, /brand\/icons\/icon-[a-z-]+\.svg/, "settings.html needs the kit icon");
   assert.match(html, /远黛/, "settings.html needs the brand wordmark");
   assert.match(html, /Alaxee Proxy/, "the hand-off page must still name the product");
 });
@@ -156,5 +156,24 @@ test("the extension's own icons are the kit artwork at the sizes the manifest as
       `${file} is not a PNG`);
     assert.equal(buffer.readUInt32BE(16), Number(size), `${file}: width`);
     assert.equal(buffer.readUInt32BE(20), Number(size), `${file}: height`);
+  }
+});
+
+test("every icon the UI can show is in the package", async () => {
+  // The header swaps between four kit images at runtime, chosen in JavaScript. The
+  // package closure walks static references, so it saw only the one written into
+  // popup.html and silently omitted the other three - a state that only appears on
+  // a whitelisted or proxied page would have shown a broken image after install.
+  const renderer = await readFile(path.join(root, "src", "popup-render.js"), "utf8");
+  const referenced = [...renderer.matchAll(/"\/?(src\/brand\/icons\/[^"]+)"/g)].map((match) => match[1]);
+  assert.ok(referenced.length >= 4, `expected one icon per state, found ${referenced.length}`);
+
+  const packaged = execFileSync("node", [path.join(root, "scripts", "runtime-files.mjs")], {
+    cwd: root,
+    encoding: "utf8"
+  });
+  for (const icon of referenced) {
+    assert.ok(packaged.includes(icon), `${icon} is referenced but not packaged`);
+    assert.ok(existsSync(path.join(root, icon)), `${icon} does not exist`);
   }
 });

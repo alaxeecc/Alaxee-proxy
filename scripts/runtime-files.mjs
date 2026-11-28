@@ -44,7 +44,7 @@ const EXTERNAL_REF = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;
 // so a failed canvas draw can fall back to a shipped file. A pure import walk
 // would silently drop them from the package, so string literals rooted at an
 // asset directory are treated as file references and must exist.
-const ASSET_ROOTS = ["icons/", "assets/"];
+const ASSET_ROOTS = ["icons/", "assets/", "brand/", "src/brand/"];
 const ASSET_LITERAL = /["'`]([^"'`\s]+\.(?:png|jpe?g|svg|gif|webp|ico|bmp))["'`]/gi;
 
 function assetRefs(source) {
@@ -52,14 +52,34 @@ function assetRefs(source) {
   for (const match of source.matchAll(ASSET_LITERAL)) {
     const ref = match[1].trim();
     if (EXTERNAL_REF.test(ref)) continue;
-    if (!ASSET_ROOTS.some((root) => ref.startsWith(root))) continue;
-    refs.add(ref);
+    // A leading slash means "extension root", so strip it before matching a root -
+    // otherwise /src/brand/icons/x.svg never matches "src/brand/".
+    const bare = ref.replace(/^\/+/, "");
+    if (!ASSET_ROOTS.some((root) => bare.startsWith(root))) continue;
+    // Keep the leading slash when it was there: it tells resolveRef the path is
+    // extension-root-relative rather than relative to the importing script.
+    refs.add(ref.startsWith("/") ? ref : bare);
   }
   return [...refs];
 }
 
 function toPosix(value) {
   return value.split(path.sep).join("/").replace(/^\.\//, "");
+}
+
+/**
+ * Joins a reference onto the directory that referenced it, extension-style.
+ *
+ * A leading slash in a web-extension reference means "from the extension root", not
+ * "from the filesystem root". Resolving /src/brand/icons/x.svg with path.join gives a
+ * host-absolute path, which the walker then rejects - so an icon referenced absolutely
+ * (which is correct in script, where img.src resolves against the document URL) would
+ * be reported as missing rather than packaged.
+ */
+function resolveRef(directory, ref) {
+  // Extension-root references (leading slash) are already root-relative.
+  if (ref.startsWith("/")) return ref.slice(1);
+  return toPosix(path.join(directory, ref));
 }
 
 /** Collects every file the manifest points at, before transitive resolution. */
@@ -169,7 +189,7 @@ export async function resolveRuntimeFiles(root = process.cwd()) {
     }
 
     for (const ref of refs) {
-      const resolved = toPosix(path.join(path.dirname(relative), ref));
+      const resolved = resolveRef(path.dirname(relative), ref);
       if (!seen.has(resolved)) queue.push(resolved);
     }
   }
