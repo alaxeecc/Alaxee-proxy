@@ -11,24 +11,19 @@ catch, and it is the one thing it still does.
 
 The icons themselves
 --------------------
-icons/status/{proxy,direct,forced,unknown}{16,32}.png are the brand kit's own PNGs,
-copied byte for byte from alaxee-kit/brand/icons/png/. tests/icons.test.js compares
-the bytes, so a re-encode that happens to look the same still fails.
+icons/status/{proxy,direct,forced,unknown}{16,32}.png are drawn by
+scripts/toolbar-icons.py. They are no longer the kit's artwork: the kit files are
+gradient illustrations that resolve to a pale smudge at 16px, two of them measured
+0.0097 apart in OKLab, and no brand colour clears 3:1 against both a light and a
+dark toolbar. The toolbar needs shapes, so it gets shapes.
 
-This script verifies them. It generates nothing, and it should not: two earlier
-versions drew the icons programmatically and both produced artwork that was *like*
-the identity rather than the identity.
+The kit art is still what ships where it is seen at size - the 34px mark in the popup
+header and the store listing icons. See CHANGELOG for the two approaches that were
+rejected first (a shape badge composited onto the kit art, and an action badge with a
+letter).
 
-How the state is shown
-----------------------
-Not by the artwork. The four kit files differ in time of day, not in routing state,
-and at 16px two of them are 0.0097 apart in OKLab - indistinguishable, which is why
-the toolbar used to look the same in every mode.
-
-A shape badge composited into the corner was tried and rejected: the kit's picture
-is not a canvas for app chrome, and it looked like a sticker on a logo. The route is
-now carried by Edge's own action badge - a letter and a colour drawn by the browser
-outside the image - so the artwork is untouched. See ROUTE_BADGES in background.js.
+This script verifies the eight PNGs are structurally valid and the right size. It
+generates nothing.
 
 The state mapping
 -----------------
@@ -58,14 +53,14 @@ OUT_DIR = ROOT / "icons" / "status"
 SIZES = (16, 32)
 ROUTES = ("proxy", "direct", "forced", "unknown")
 
-# Where each shipped file came from in the kit. Recorded so the mapping can be
-# audited and re-applied when the kit is updated, rather than reconstructed from
-# memory by comparing pixels.
-SOURCE_OF = {
-    "proxy": "icon-day",
-    "direct": "icon-night-sleep",
-    "forced": "icon-noon",
-    "unknown": "icon-morning",
+# The shape each shipped file draws. These are no longer copied from the kit -
+# scripts/toolbar-icons.py draws them - so this records the design rather than a
+# source path.
+SHAPE_OF = {
+    "proxy": "filled disc",
+    "direct": "hollow ring",
+    "forced": "filled triangle",
+    "unknown": "dashed ring",
 }
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -138,8 +133,8 @@ def check() -> int:
         return 1
 
     print(f"All {len(ROUTES) * len(SIZES)} toolbar icons present, valid and correctly sized")
-    for route, source in SOURCE_OF.items():
-        print(f"  {route:8} <- {source}")
+    for route, shape in SHAPE_OF.items():
+        print(f"  {route:8} {shape}")
     return 0
 
 
