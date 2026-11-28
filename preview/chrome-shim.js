@@ -62,16 +62,20 @@
   // HTTP and when the shim is loaded from disk by a Node smoke test.
   const coreModule = import(new URL("../src/core.js", document.baseURI).href).catch(() => null);
   let proxyValue = null;
-  const proxyValueNow = () => {
-    if (proxyValue === null) {
-      try {
-        proxyValue = store[SETTINGS_KEY] ? { mode: "pac_script", pacScript: { data: "/* initialising */" } } : { mode: "direct" };
-      } catch {
-        proxyValue = { mode: "direct" };
-      }
+  // The placeholder is a *fallback*, never cached. It is returned while the real
+  // core module is still loading, and caching it meant the popup read "initialising"
+  // once - before the module resolved - and kept reporting an unknown route for the
+  // rest of the session. Only a value built from core is stored.
+  const placeholder = () => {
+    try {
+      return store[SETTINGS_KEY]
+        ? { mode: "pac_script", pacScript: { data: "/* initialising */" } }
+        : { mode: "direct" };
+    } catch {
+      return { mode: "direct" };
     }
-    return proxyValue;
   };
+  const proxyValueNow = () => proxyValue ?? placeholder();
   let levelOfControl = params.get("control") ?? "controlled_by_this_extension";
   let tabUrl = params.get("tab") ?? "https://github.com/alaxeecc/Alaxee-proxy";
 
