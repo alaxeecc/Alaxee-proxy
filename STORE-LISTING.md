@@ -4,23 +4,24 @@
 Alaxee Proxy
 
 ## Short description
-A lightweight Edge proxy switcher: point the browser at any HTTP or SOCKS5 server, with per-site direct and force-proxy lists.
+轻量的 Edge 代理控制器：将浏览器指向你自己运行的 HTTP 或 SOCKS5 服务器，支持直连白名单与强制代理黑名单。
 
 ## Detailed description
-Alaxee Proxy is a small, local-only proxy control panel for Microsoft Edge. It points Edge's browser proxy at a listener you already run - any HTTP or SOCKS5 endpoint, such as Clash/mihomo, sing-box, v2ray, a corporate HTTP proxy, or an SSH tunnel. It does not provide proxy servers, nodes, subscriptions, or VPN service, and it does not integrate with any particular proxy application.
 
-Features:
-- Switch Edge between your configured proxy server and direct connection.
-- Configure the proxy protocol, address, and port.
-- Local addresses (localhost, 127.0.0.1, ::1, *.local) always connect directly, so local dev servers keep working.
-- Search and sort the domain rule lists, and see which rule matches the current page.
-- Add the current website to a direct-connection bypass list from the toolbar popup.
-- Choose whether a bypass entry applies only to the hostname or also to its subdomains.
-- Keep settings locally in Edge; no account or cloud service is required.
-- Back up and restore the whole configuration as a local JSON file.
-- Optionally sync settings and rules across the user's own devices through the browser's built-in sync storage. Off by default.
+Alaxee Proxy 是一个只在本机运行的 Edge 代理控制面板。它把 Edge 的浏览器代理指向你自己已经在运行的代理程序——任意 HTTP 或 SOCKS5 端点，例如 Clash/mihomo、sing-box、v2ray、公司 HTTP 代理，或一条 SSH 隧道。它不提供代理服务器、节点、订阅或 VPN 服务，也不与任何特定的代理软件绑定。
 
-The extension does not read or change any proxy application's configuration. Websites not in the direct list continue through the configured listener, where that program's own rules decide how to route them. The extension reports what the browser is configured to do; it does not health-check the listener.
+主要功能：
+- 在「走代理服务器」和「直接连接」之间切换 Edge 的浏览器代理。
+- 设置代理协议、地址和端口。
+- 本机地址（localhost、127.0.0.1、::1、*.local）始终直连，本地开发服务器不受影响。
+- 搜索和排序域名规则列表，并查看当前页面命中了哪一条规则。
+- 从工具栏面板把当前网站一键加入直连白名单。
+- 选择一条规则只作用于该主机名，还是同时作用于它的子域名。
+- 设置保存在 Edge 本地；不需要账号，也不依赖任何云服务。
+- 把整套配置导出为本地 JSON 文件，随时恢复。
+- 可选：通过浏览器自带的同步存储，在你自己的多台设备之间同步设置和规则。默认关闭。
+
+本扩展不会读取或修改任何代理软件的配置。不在直连名单里的网站会继续交给所配置的代理程序处理，由那个程序自己的规则决定如何分流。本扩展只报告浏览器被配置成什么，不对代理端点做可用性探测。
 
 ## Permission justifications
 

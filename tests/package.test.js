@@ -11,6 +11,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { BACKUP_VERSION } from "../src/backup.js";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -260,4 +261,17 @@ test("the comparison harness cannot leak into the package", async () => {
     assert.ok(!name.includes("compare"), `unexpected runtime file: ${name}`);
     assert.ok(!name.startsWith("scripts/"), `build scripts must not ship: ${name}`);
   }
+});
+
+test("the store-facing name and description are in Chinese", () => {
+  // These two fields are read-only in Partner Center once a package is uploaded:
+  // they populate the store listing and cannot be edited there. Shipping them in
+  // English while the interface, screenshots and listing copy are Chinese made the
+  // store page the only English surface in the product.
+  const m = JSON.parse(readFileSync(path.join(root, "manifest.json"), "utf8"));
+  assert.ok(/[\u4e00-\u9fff]/.test(m.description), "the description must be Chinese");
+  assert.ok(m.description.length <= 132, "store descriptions cap at 132 characters");
+  // The name stays Latin: it is the brand, and it is what users search for.
+  assert.equal(m.name, "Alaxee Proxy");
+  assert.ok(m.name.length <= 45, "extension names cap at 45 characters");
 });
