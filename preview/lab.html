@@ -3,17 +3,21 @@
 <head>
 <meta charset="utf-8">
 <title>Alaxee Proxy · 开发工作台</title>
+<link rel="stylesheet" href="/src/brand/fonts.css">
 <style>
-  :root { color-scheme: light dark; --bg:#eef2f3; --surface:#fff; --ink:#172327; --muted:#6c7a7d; --line:#dbe4e4; --accent:#087f73; }
+  /* Mirrors src/popup.css so the workbench does not read as a different product
+     from the panel it frames. */
+  :root { color-scheme: light dark; --bg:#FAF6F4; --surface:#fff; --ink:#33232C; --muted:#7C6873; --line:rgba(84,44,64,.10); --accent:#B5457A; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#0d1416; --surface:#151e20; --ink:#eaf1ef; --muted:#9aabaa; --line:#263436; --accent:#66c7b6; }
+    :root { --bg:#141013; --surface:#1F171C; --ink:#F3E8EE; --muted:#AD97A3; --line:rgba(255,222,236,.08); --accent:#EE8AB6; }
   }
   * { box-sizing:border-box; }
   body { margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
          font:13px/1.5 Inter,"Segoe UI","Microsoft YaHei",sans-serif; }
   header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
            padding:14px 24px; background:var(--surface); border-bottom:1px solid var(--line); }
-  h1 { margin:0; font-size:15px; letter-spacing:.2px; }
+  h1 { margin:0; font-family:"Noto Serif SC",Georgia,serif; font-size:17px; font-weight:600; letter-spacing:.02em; }
+  .mark { width:26px; height:26px; display:block; }
   .tag { padding:2px 8px; border-radius:99px; background:color-mix(in srgb, var(--accent) 14%, transparent);
          color:var(--accent); font-size:11px; font-weight:700; }
   .controls { display:flex; gap:14px; align-items:center; margin-left:auto; flex-wrap:wrap; }
@@ -42,6 +46,7 @@
 </head>
 <body>
 <header>
+  <img class="mark" src="/src/brand/icons/icon-day-small.svg" alt="" width="26" height="26">
   <h1>Alaxee Proxy</h1>
   <span class="tag">开发工作台</span>
   <div class="controls">
@@ -70,8 +75,22 @@
   // otherwise awkward to reach by hand (empty list, 40 rules, sync on, permission
   // granted), and that editing a stylesheet and reloading this page updates all of
   // them at once. Nothing here is packaged.
+  // Seeded settings for the routing scenes. The popup reads a real PAC built from
+  // these, so each pane lands on a genuinely different route rather than a label.
+  const ROUTING_BASE = {
+    mode: "proxy", host: "127.0.0.1", port: "7890", scheme: "socks5",
+    includeSubdomains: true, localBypass: true, whitelist: [], blacklist: [],
+  };
+  const withBlacklist = (settings) => JSON.stringify({ ...ROUTING_BASE, blacklist: settings });
+  const withWhitelist = (settings) => JSON.stringify({ ...ROUTING_BASE, whitelist: settings });
+
   const SCENES = [
     { label: "快捷面板 · 概览", cls: "popup", query: { tab: "https://github.com/alaxeecc/Alaxee-proxy" } },
+    // The four toolbar states, side by side. "forced" is the one with no other way to
+    // reach it: it needs a host that matches the blacklist on a proxied connection.
+    { label: "状态 · 交给代理", cls: "popup", query: { tab: "https://example.org/page", settings: withBlacklist([{ host: "blocked.example", includeSubdomains: true }]) } },
+    { label: "状态 · 黑名单强制", cls: "popup", query: { tab: "https://blocked.example/page", settings: withBlacklist([{ host: "blocked.example", includeSubdomains: true }]) } },
+    { label: "状态 · 浏览器直连", cls: "popup", query: { tab: "https://github.com/alaxeecc/Alaxee-proxy", settings: withWhitelist([{ host: "github.com", includeSubdomains: true }]) } },
     { label: "快捷面板 · 空规则", cls: "popup", query: { rules: "0" } },
     { label: "快捷面板 · 40 条规则", cls: "popup", query: { rules: "40" } },
     { label: "完整设置", cls: "full", query: { full: "1", rules: "12" } },

@@ -1,0 +1,26 @@
+/* Alaxee 曦 · Noto Serif SC (思源宋体), SIL OFL, commercial use permitted.
+
+   The full SC face is 1.47 MB; this subset carries only the characters the panel can
+   actually render, which is 82 KB. Regenerate it after adding UI copy:
+
+       python3 scripts/subset-font.py --source <NotoSerifSC-Regular.otf>
+
+   The two faces divide the work by unicode-range: the Latin face owns U+0000-00FF and
+   U+2000-206F, the CJK face everything else. tests/brand.test.js reads the shipped
+   cmap directly and fails when a character appears in the UI that the subset lacks,
+   so a missing glyph is caught in CI rather than seen as a stray system-font word. */
+
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("fonts/serif-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+2000-206F;
+}
+
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("fonts/serif-sc-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}

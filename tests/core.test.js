@@ -22,6 +22,7 @@ import {
   readPacFingerprint,
   reconcileRuleLists,
   requiresProxyEndpoint,
+  iconStateFor,
   resolveDomainRoute,
   resolveGlobalRoute,
   resolveTabRoute,
@@ -414,4 +415,25 @@ test("reconciling an already-clean pair changes nothing", () => {
     blacklist: [{ host: "b.example", includeSubdomains: false }]
   };
   assert.deepEqual(reconcileRuleLists(input), input);
+});
+
+test("a blacklisted page gets its own icon state, other routes do not", () => {
+  // The toolbar has four artwork states but only three routes. "forced" exists so the
+  // user can tell "I put this site on the blacklist" from "everything is proxied",
+  // without adding a route the PAC generator would have to understand.
+  const settings = { blacklist: [{ host: "forced.example", includeSubdomains: true }] };
+  assert.equal(iconStateFor("proxy", "forced.example", settings), "forced");
+  assert.equal(iconStateFor("proxy", "deep.forced.example", settings), "forced");
+  assert.equal(iconStateFor("proxy", "other.example", settings), "proxy");
+  assert.equal(iconStateFor("direct", "forced.example", settings), "direct");
+  assert.equal(iconStateFor("unknown", "forced.example", settings), "unknown");
+});
+
+test("icon state falls back to the route when there is no host or no settings", () => {
+  // A tab without a usable URL (browser pages, chrome://) resolves to unknown, and a
+  // missing settings object must not throw inside the service worker's refresh loop.
+  assert.equal(iconStateFor("proxy", "", { blacklist: [{ host: "a.example" }] }), "proxy");
+  assert.equal(iconStateFor("proxy", null, { blacklist: [] }), "proxy");
+  assert.equal(iconStateFor("unknown", "a.example", undefined), "unknown");
+  assert.equal(iconStateFor("proxy", "a.example", undefined), "proxy");
 });

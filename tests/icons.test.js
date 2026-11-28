@@ -13,13 +13,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 const root = process.cwd();
 const manifest = JSON.parse(await readFile(path.join(root, "manifest.json"), "utf8"));
-const STATES = ["proxy", "direct", "unknown"];
+const STATES = ["proxy", "direct", "forced", "unknown"];
 const SIZES = [16, 32];
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -122,13 +123,13 @@ test("the manifest toolbar icon pair exists at both densities", async () => {
   }
 });
 
-test("committed icons match the generator in scripts/render-icons.py", () => {
-  // Establishes the artwork's source of truth. Without this, the PNGs are opaque
-  // binaries that can only be fixed by finding the original asset - which is why
-  // the corrupt files survived.
-  const output = execFileSync("python3", [path.join(root, "scripts/render-icons.py"), "--check"], {
+test("the shipped toolbar icons are valid and correctly sized", () => {
+  // The icons are the brand kit's own files, copied in rather than generated, so
+  // what has to be guarded is not "the generator still agrees" but "the committed
+  // bytes are usable". Three of these were once corrupt and nothing noticed.
+  const output = execFileSync("python3", [path.join(root, "scripts", "render-icons.py"), "--check"], {
     cwd: root,
     encoding: "utf8"
   });
-  assert.match(output, /match/);
+  assert.match(output, /toolbar icons present, valid and correctly sized/);
 });

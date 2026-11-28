@@ -157,12 +157,24 @@ test("popup keeps one bounded scroll container and respects reduced motion", asy
 });
 
 test("every toolbar state has a distinct visual treatment in the popup", async () => {
+  // The mark used to swap between three separate silhouettes. It is now one shape
+  // recoloured per state, so what has to stay true is not "three paths exist" but
+  // "every state the toolbar can show is styled, and no two share a colour".
   const html = await readFile(path.join(root, "src/popup.html"), "utf8");
   const css = await readFile(path.join(root, "src/popup.css"), "utf8");
   assert.match(html, /id="brandMark"/);
-  for (const route of ["proxy", "direct", "unknown"]) {
-    assert.ok(html.includes(`route-shape route-${route}`), `missing ${route} silhouette`);
-    assert.ok(css.includes(`data-route="${route}"`), `missing ${route} styling`);
+  assert.match(html, /class="brand-icon"/, "the header mark must be the kit's artwork");
+
+  // The mark is now four distinct images rather than one shape recoloured, so the
+  // invariant is "every state points at its own file".
+  const renderer = await readFile(path.join(root, "src", "popup-render.js"), "utf8");
+  const icons = new Set();
+  for (const route of ["proxy", "direct", "forced", "unknown"]) {
+    const rule = new RegExp(`\\b${route}:\\s*"(?:/)?(src/brand/icons/[^"]+)"`).exec(renderer);
+    assert.ok(rule, `${route} has no icon file`);
+    assert.ok(!icons.has(rule[1]), `${route} reuses ${rule[1]}`);
+    icons.add(rule[1]);
+    assert.ok(existsSync(path.join(root, rule[1])), `${rule[1]} does not exist`);
   }
 });
 

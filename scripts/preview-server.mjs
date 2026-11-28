@@ -57,9 +57,11 @@ function injectShim(html) {
   // resolve to /popup.css, which does not exist, so the stylesheet and the controller
   // both 404 and the page renders unstyled and dead. Rewriting them to absolute paths
   // makes the response independent of the URL it was requested from.
+  // Every relative reference in the document, not just the two that existed when this
+  // was written. Adding brand/fonts.css broke the alias because it was not listed -
+  // tests/preview.test.js caught it, which is the whole reason that test exists.
   const absolute = html
-    .replace(/href="popup\.css"/g, 'href="/src/popup.css"')
-    .replace(/src="popup-controller\.js"/g, 'src="/src/popup-controller.js"');
+    .replace(/(href|src)="(?!https?:|\/|data:|#)([^"]+)"/g, (_match, attr, value) => `${attr}="/src/${value}"`);
   return absolute.replace(
     '<script type="module"',
     '<script src="/preview/chrome-shim.js"></script>\n  <script type="module"'

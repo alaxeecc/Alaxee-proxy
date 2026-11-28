@@ -19,7 +19,6 @@ Features:
 - Keep settings locally in Edge; no account or cloud service is required.
 - Back up and restore the whole configuration as a local JSON file.
 - Optionally sync settings and rules across the user's own devices through the browser's built-in sync storage. Off by default.
-- Local addresses (localhost, 127.0.0.1, ::1, *.local) always connect directly.
 
 The extension does not read or change any proxy application's configuration. Websites not in the direct list continue through the configured listener, where that program's own rules decide how to route them. The extension reports what the browser is configured to do; it does not health-check the listener.
 
@@ -33,8 +32,19 @@ The extension does not read or change any proxy application's configuration. Web
 ## Privacy
 See `PRIVACY.md`. Publish a publicly accessible privacy policy URL before submitting the store listing if Partner Center requires it for the declared data practices.
 
-## Store visual assets still needed
+## Store visual assets
 
-- Store logo / icon asset in the required Partner Center dimensions.
-- Small promotional tile.
-- At least one accurate screenshot of the final Edge popup/settings UI.
+The store logo is covered by the brand kit: `icons/icon128.png` is the kit's
+`icon-day-128`, byte-identical, and Partner Center accepts it directly. A 1024px
+render exists at `alaxee-kit/brand/icons/png/icon-day-1024.png` if a larger source
+is asked for.
+
+Still to produce by hand, because neither can be generated without a live browser:
+
+- **Screenshots** - at least one, showing the popup and the settings view. The
+  sandbox this project was built in has no browser, so these come from a real Edge
+  window. Requirements and the exact steps are in `docs/EDGE-ADDONS-PUBLISHING.md`.
+  Save them under `store-assets/`, which is ignored by Git.
+- **Small promotional tile** - optional; Partner Center only uses it if promoted.
+
+Do not redraw the logo to fit a size. Scale the kit file proportionally.

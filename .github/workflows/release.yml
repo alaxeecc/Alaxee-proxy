@@ -1,0 +1,116 @@
+name: Release to Edge Add-ons
+
+# Publishing is triggered by a version tag, never by a push to main.
+#
+# The reason is not ceremony: a submission to the store goes into Microsoft's
+# certification queue, and a run that fires on every merge would submit whatever
+# happened to land, including work in progress. A tag is the one moment someone has
+# deliberately said "this build is the release".
+on:
+  push:
+    tags:
+      - "v*"
+  # Re-running a release for an already-pushed tag is a normal repair (a credential
+  # rotated, a submission rejected). Without this the only way to retry would be to
+  # delete and re-push the tag, which rewrites history for anyone who fetched it.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to submit, for example v0.2.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Two simultaneous submissions for the same product would both upload a package
+  # and both publish, and the second would win with no record of the first.
+  group: edge-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # A workflow_dispatch run has to check out the tag named in the input; a
+          # tag push checks out the tag itself.
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # The tag says v0.2.0; the manifest and package.json have to agree with it.
+      # A mismatch has shipped before (a stale manifest produced a zip labelled with
+      # the wrong version), so this fails the release rather than the store.
+      - name: Verify the tag matches the manifest
+        env:
+          TAG_REF: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          tag_version="${TAG_REF#v}"
+          manifest_version="$(node -p "require('./manifest.json').version")"
+          package_version="$(node -p "require('./package.json').version")"
+          echo "tag=$tag_version manifest=$manifest_version package=$package_version"
+          if [ "$tag_version" != "$manifest_version" ] || [ "$manifest_version" != "$package_version" ]; then
+            echo "::error::Tag, manifest.json and package.json versions must all match."
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check JavaScript syntax and icons
+        run: npm run check
+
+      # Packaging runs the same script a developer runs, so the released zip is built
+      # from the derived runtime closure rather than a list maintained for CI.
+      - name: Build the store package
+        run: npm run package:extension
+
+      # Kept as an artifact so a rejected certification can be inspected after the
+      # fact without rebuilding the tag.
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-package-${{ inputs.tag || github.ref_name }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Submit to Edge Add-ons
+        env:
+          EDGE_ADDONS_PRODUCT_ID: ${{ secrets.EDGE_ADDONS_PRODUCT_ID }}
+          EDGE_ADDONS_CLIENT_ID: ${{ secrets.EDGE_ADDONS_CLIENT_ID }}
+          EDGE_ADDONS_API_KEY: ${{ secrets.EDGE_ADDONS_API_KEY }}
+          EDGE_ADDONS_PUBLISH_NOTES: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          zip_path="$(ls dist/*.zip | head -n 1)"
+          node scripts/publish-edge-addons.mjs "$zip_path"
+
+      # The store listing is public, so the release is not done until the version the
+      # API accepted matches what the tag promised.
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "## Edge Add-ons submission"
+            echo ""
+            echo "- Tag: \`${{ inputs.tag || github.ref_name }}\`"
+            echo "- Package: $(ls dist/*.zip 2>/dev/null || echo 'not built')"
+            echo ""
+            echo "A successful API submission means Microsoft accepted the package and"
+            echo "queued it for certification. Certification and rollout are Microsoft's;"
+            echo "watch the submission in Partner Center."
+          } >> "$GITHUB_STEP_SUMMARY"
