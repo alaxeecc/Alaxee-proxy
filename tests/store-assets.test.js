@@ -8,7 +8,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -46,22 +46,23 @@ test("scaling preserves aspect ratio", () => {
   assert.match(script, /Image\.LANCZOS/);
 });
 
-test("generated images match their declared sizes", { skip: !existsSync(path.join(root, "store-assets")) }, () => {
-  const logo = path.join(root, "store-assets", "logo-300.png");
-  const tile = path.join(root, "store-assets", "tile-440x280.png");
-  assert.ok(existsSync(logo), "run: python3 scripts/store-assets.py");
-  assert.ok(existsSync(tile), "run: python3 scripts/store-assets.py");
-  assert.deepEqual(pngSize(logo), { width: 300, height: 300 });
-  assert.deepEqual(pngSize(tile), { width: 440, height: 280 });
+test("the committed logo and tile are the declared sizes", () => {
+  // These live in store-uploads/, which is committed, so this runs everywhere -
+  // unlike store-assets/, which is the gitignored working directory and does not
+  // exist in CI. Checking the committed copies means the assertion actually
+  // guards the files someone downloads.
+  const dir = path.join(root, "store-uploads");
+  assert.deepEqual(pngSize(path.join(dir, "logo-300.png")), { width: 300, height: 300 });
+  assert.deepEqual(pngSize(path.join(dir, "tile-440x280.png")), { width: 440, height: 280 });
 });
 
-test("any fitted screenshot on disk is exactly 1280x800", { skip: !existsSync(path.join(root, "store-assets")) }, () => {
-  // Screenshots are produced by hand from a live browser and named by the author,
-  // so the only invariant worth enforcing is that whatever landed in store-assets
-  // is a size Partner Center accepts. A 1200x750 capture would otherwise sit there
-  // looking finished.
-  const dir = path.join(root, "store-assets");
+test("every committed screenshot is exactly 1280x800", () => {
+  // Microsoft accepts two sizes and nothing else, so a capture that landed at
+  // 1200x750 would sit in the repository looking finished and be rejected at
+  // upload. Checking the committed directory covers both CI and a fresh clone.
+  const dir = path.join(root, "store-uploads");
   const shots = readdirSync(dir).filter((f) => /^\d\d-.*\.png$/.test(f));
+  assert.ok(shots.length >= 1, "at least one screenshot should be committed");
   for (const name of shots) {
     assert.deepEqual(pngSize(path.join(dir, name)), { width: 1280, height: 800 },
       `${name} must be 1280x800`);
@@ -95,4 +96,14 @@ test("the screenshot fitter only offers the two sizes Microsoft accepts", () => 
   const body = shot.slice(shot.indexOf("def fit"), shot.indexOf("def main"));
   const containPath = body.slice(body.indexOf('if mode == "cover"') + body.slice(body.indexOf('if mode == "cover"')).indexOf("box ="));
   assert.ok(!containPath.includes("crop("), "contain mode must not crop the capture");
+});
+
+test("store images are never packaged into the extension", () => {
+  // store-uploads/ exists so the finished images are downloadable from GitHub.
+  // It sits in the repository root next to files that ARE packaged, so a change to
+  // the runtime-file resolver could sweep it in. Microsoft rejects a package
+  // containing unexplained PNGs, and the size would jump by 600 KB.
+  const runtime = readFileSync(path.join(root, "scripts", "runtime-files.mjs"), "utf8");
+  assert.ok(!/store-uploads/.test(runtime), "the packager must not reference store-uploads");
+  assert.ok(!/store-assets/.test(runtime), "the packager must not reference store-assets");
 });
