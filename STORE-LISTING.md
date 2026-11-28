@@ -19,7 +19,6 @@ Features:
 - Keep settings locally in Edge; no account or cloud service is required.
 - Back up and restore the whole configuration as a local JSON file.
 - Optionally sync settings and rules across the user's own devices through the browser's built-in sync storage. Off by default.
-- Local addresses (localhost, 127.0.0.1, ::1, *.local) always connect directly.
 
 The extension does not read or change any proxy application's configuration. Websites not in the direct list continue through the configured listener, where that program's own rules decide how to route them. The extension reports what the browser is configured to do; it does not health-check the listener.
 

@@ -29,6 +29,13 @@ jobs:
         run: npm run check
       - name: Validate manifest JSON
         run: python3 -m json.tool manifest.json >/dev/null
+      - name: Install Pillow for store asset generation
+        run: pip install --quiet Pillow
+      # The store images are generated from the brand kit rather than committed, so
+      # this is the only check that they still render at the sizes Partner Center
+      # requires. A kit update that broke the source icon fails here, not at upload.
+      - name: Verify store assets render at the required sizes
+        run: python3 scripts/store-assets.py --check
       - name: Build extension package
         run: npm run package:extension
 

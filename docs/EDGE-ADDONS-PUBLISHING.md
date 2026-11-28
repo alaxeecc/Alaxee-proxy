@@ -46,147 +46,312 @@ The Edge Add-ons API supports package upload, operation-status checks, submissio
 
 ---
 
-# 第一次上架：完整操作清单
+# 上传到 Edge 商店：逐步操作
 
-这一节是给「现在就要传到 Edge 商店」写的。按顺序做，每一步都标了能不能自动化。
+这一节按 Partner Center 左侧导航的实际顺序写。每一步都标了：
 
-## 第 0 步：先确认包是对的
+- **[手动]** 只能在网页上点，自动化做不了
+- **[已备好]** 仓库里已经有文件，直接上传
+- **[生成]** 用仓库脚本一条命令生成
+
+先说一句结论：**截图不是必填项**（微软文档标为 Optional，最多 6 张）。没有截图可以提交，只是商店页面会空一些。所以不要让它卡住你。
+
+---
+
+## 准备：要上传的文件在哪
 
 ```bash
-npm test                 # 236 项，含版本一致性、图标完整性、字体覆盖
-npm run check            # 语法 + 8 张图标 + 打包闭包
-npm run package:extension
+npm test && npm run check && npm run package:extension
+python3 scripts/store-assets.py        # 生成 Logo 和促销图
 ```
 
-产物在 `dist/Alaxee-Proxy-v0.2.0.zip`，32 个文件。**不要手动改这个 zip**——它由 `scripts/runtime-files.mjs` 从 manifest 推导，改了就和非运行时文件混在一起。
+跑完你会得到：
 
-## 第 1 步：注册开发者账号（手动，一次）
+| 文件 | 用途 | 状态 |
+| --- | --- | --- |
+| `dist/Alaxee-Proxy-v0.2.0.zip` | 扩展包本体 | 32 个文件，来自 `runtime-files.mjs` |
+| `store-assets/logo-300.png` | Extension logo（300×300） | 脚本生成，套件等比缩放 |
+| `store-assets/tile-440x280.png` | Small promotional tile（440×280） | 脚本生成，可选 |
+| 截图 | Screenshots（640×480 或 1280×800） | **需要你本机截，见附录** |
 
-1. 打开 <https://partner.microsoft.com/dashboard/microsoftedge>
-2. 用你的 Microsoft 账号注册 Edge 开发者计划。目前**免费**。
-3. 等账号审核通过（通常 1–3 个工作日）。
+Partner Center 对图片的硬要求（照抄微软文档）：
 
-## 第 2 步：创建产品并填清单（手动，一次）
+- **Extension logo**：1:1，推荐 300×300，最小 128×128
+- **Small promotional tile**：正好 440×280
+- **Large promotional tile**：正好 1400×560（本项目没做，可选）
+- **Screenshots**：只能是 640×480 **或** 1280×800，最多 6 张
 
-在 Partner Center → Microsoft Edge → 新建扩展。需要填：
+---
 
-| 项目 | 从哪里来 |
+## 第 1 步：注册开发者账号 **[手动，一次]**
+
+1. 打开 <https://partner.microsoft.com/dashboard/microsoftedge/public/login>
+2. 用你的 Microsoft 账号登录，注册 Edge 扩展开发者计划
+3. 目前**没有注册费**
+4. 等审核（通常 1–3 个工作日）
+
+账号下来后会登录到一个叫 **Home** 的页面，`Workspaces` 区域里有 **Edge** 卡片。
+
+---
+
+## 第 2 步：创建扩展、上传包 **[手动]**
+
+这一步就上传 zip，还不用填文案。
+
+1. Home 页 → `Workspaces` → 点 **Edge** 卡片
+2. 点 **Create new extension**（带 + 号）
+3. 打开 **Upload package (.zip file)** 页面
+4. 把 `dist/Alaxee-Proxy-v0.2.0.zip` **拖到 `Drag your package here (.zip)` 区域**，或点 **Browse your files** 选择
+5. 等页面显示包已校验通过。**有校验错误就说明包有问题，不要绕过**
+6. 左侧点 **Extension overview**，再点 **Packages**
+7. 点 **Continue**
+
+> 上传后，manifest 里的 `name` 和 `description` 会**自动填进商店列表且变成只读**。所以要改名称或简短描述，只能改 `manifest.json`、重新打包、重新上传。当前的 manifest 是：
+>
+> - name：`Alaxee Proxy`
+> - description：`A lightweight Edge proxy controller: point the browser at any HTTP or SOCKS5 server, with direct and force-proxy domain rules.`
+
+---
+
+## 第 3 步：Availability（可用性） **[手动]**
+
+左侧点 **Availability**。
+
+| 字段 | 选什么 | 说明 |
+| --- | --- | --- |
+| **Visibility** | `Public` | 选 `Hidden` 就从搜索里消失，只能靠链接安装 |
+| **Markets** | 默认「所有市场」 | 不选就包含以后新增的市场。点 **Change markets** 才能挑国家 |
+
+然后点右上角 **Save & Continue**。
+
+> 注意：如果以后把某个市场去掉，那个市场的用户**能继续用已装的版本，但收不到后续更新**。这一点微软文档明确写了。
+
+---
+
+## 第 4 步：Properties（属性） **[手动]**
+
+左侧点 **Properties**。
+
+| 字段 | 必填 | 填什么 |
+| --- | --- | --- |
+| **Category** | ✅ 必填 | `Developer tools`（代理控制归这类最合适） |
+| **Website** | 可选 | 建议留空，或填仓库地址。文档说必须是**你自己的网站**，不能填商店页面 |
+| **Support contact detail** | 可选 | 填 `https://github.com/alaxeecc/Alaxee-proxy/issues` 或你的邮箱 |
+| **Mature content** | 可选 | **不勾** |
+
+点 **Save & Continue**。
+
+---
+
+## 第 5 步：Privacy（隐私） **[手动，但文案已写好]**
+
+左侧点 **Privacy**。这页有 5 个小节，**审核最容易卡在这里**。
+
+### 5.1 Single Purpose
+
+一个文本框。填一句话，说清楚这个扩展只做一件事：
+
+```
+Alaxee Proxy only configures Microsoft Edge's built-in browser proxy setting,
+so the user can point the browser at a proxy endpoint they already run, and
+switch between that endpoint and a direct connection.
+```
+
+### 5.2 Permission justification
+
+页面会**按 manifest 自动列出每一项权限**，每项一个文本框。本项目声明了 3 项权限 + 1 项可选权限：
+
+| 权限 | 填这段 |
 | --- | --- |
-| 名称 | `Alaxee Proxy` |
-| 简短描述 | `STORE-LISTING.md` 的「Short description」 |
-| 详细描述 | 同上「Detailed description」，直接复制 |
-| 权限说明 | 同上「Permission justifications」——**这一项审核最常打回**，务必写清 `proxy`/`storage`/`activeTab` 各自的用途 |
-| 隐私政策 URL | 见第 3 步 |
-| 商店图标 | `icons/icon128.png`（已与套件一致，1024px 版在 `alaxee-kit/brand/icons/png/icon-day-1024.png`） |
-| 截图 | **必须你本机截**，见下 |
+| `proxy` | Sets Edge's browser-level proxy configuration, including the PAC script that implements the domain rules. Without it the extension cannot do anything. |
+| `storage` | Saves the user's proxy endpoint and domain rules locally, and optionally in the browser's own sync storage when the user turns cross-device sync on. |
+| `activeTab` | Reads the hostname of the active page, only after the user clicks the toolbar button, to show which rule matches and to offer a one-click bypass. |
+| `tabs`（可选权限） | Requested at runtime only if the user enables per-tab toolbar status. Reads tab URLs locally to select the matching state icon; never reads page contents. |
 
-### 截图怎么做（只能手动）
+> ⚠️ 微软在这里明确说了：如果列表里有你**不需要**的权限，必须先删掉再重新上传包。我们的 3 项都是必需的，不要删。
 
-沙箱里没有浏览器，我无法生成真实截图。在 Edge 里：
+### 5.3 Are you using remote code?
 
-1. `edge://extensions` → 打开开发者模式 → **加载解压缩的扩展** → 选仓库根目录
-2. 点工具栏图标弹出面板 → 截图（380×600 的区域）
-3. 同一个面板点「⚙ 设置」→ 全页设置界面 → 再截一张
-4. 建议第三张：规则列表里有几条规则的界面（演示按域名分流）
+选 **No, I am not using remote code**。
 
-截图要求：PNG、最短边 ≥ 640px、最长边 ≤ 1280px。**把 380px 的截图放大到 640 宽即可**（等比放大，不要拉伸变形）。
+这是真的：本项目是 Manifest V3，所有 JS 都打包在 zip 里，不加载任何远程脚本。
 
-保存到 `store-assets/` 目录（已加进 `.gitignore`，避免大图进仓库）。
+### 5.4 Data usage
 
-## 第 3 步：隐私政策要有公开 URL（手动，一次性配置）
+**What user data do you plan to collect from users now or in the future?**
 
-Partner Center 要求一个可访问的 URL，指向 `PRIVACY.md` 的内容。三个免费选项：
+全部**不勾**。理由：设置和规则都存在本地（或用户自己的浏览器同步空间），不上传到任何服务器。这个扩展没有任何后端。
 
-- **GitHub Pages**：仓库 Settings → Pages → Source 选 `main` 分支 `/docs`。然后把 `PRIVACY.md` 复制成 `docs/privacy.html`（或直接用 `https://github.com/alaxeecc/Alaxee-proxy/blob/main/PRIVACY.md`，多数情况可接受）
-- **Gist**：把 `PRIVACY.md` 内容贴成公开 Gist
-- **Cloudflare Pages / Vercel**：静态托管，免费
+下面 **I certify that the following disclosures are true** 的勾选框**全部勾上**。
 
-填进 Partner Center 后**这一项以后不用再改**。
+> 这两个区块必须和 `PRIVACY.md` 的内容一致。如果以后加了遥测，这里和 `PRIVACY.md` 都要改，否则就是虚假声明。
 
-## 第 4 步：提交第一个版本（手动，一次）
+### 5.5 Privacy policy
 
-1. Partner Center → 你的产品 → Packages → **上传** `dist/Alaxee-Proxy-v0.2.0.zip`
-2. 填「Notes for certification」（给审核员看的说明，**建议写**）：
-   ```
-   This extension only sets Edge's own browser proxy configuration.
-   It ships with no proxy server and does not provide VPN service.
-   The proxy address field is empty on first install; nothing is proxied until
-   the user enters an address they already run.
-   Tab URLs are read only after the user clicks the toolbar button, and only to
-   show which host the current page is routed to. Nothing is sent anywhere.
-   ```
-3. 点 **Publish** → 进入认证队列
-4. 等认证（通常 1–7 个工作日）
+**Privacy Policy URL**。仓库是 public，所以可以直接用：
 
-**认证通过后商店上线，这一步没有自动化替代。**
+```
+https://github.com/alaxeecc/Alaxee-proxy/blob/main/PRIVACY.md
+```
 
-## 第 5 步：配置自动更新（手动，一次，之后就全自动了）
+微软只要求「URL 可访问、内容最新」。想更正式可以用 GitHub Pages 或 Gist，但不是必须。
 
-这是你问的「以后都能自动更新」的核心。
+点 **Save & Continue**。
 
-### 5.1 在 Partner Center 拿三样东西
+---
 
-Partner Center → 你的产品 → **Microsoft Edge → Publish API**：
+## 第 6 步：Store listings（商店列表） **[手动，文案已备好]**
+
+左侧点 **Store listings**，表格里会有一行 `English (United States)`。点那一行的 **Edit details** 按钮。
+
+| 字段 | 必填 | 填什么 |
+| --- | --- | --- |
+| **Extension name** | 至少一种语言必填 | 自动从 manifest 带入，只读 |
+| **Description** | ✅ **每个语言都必填** | 见下 |
+| **Extension logo** | ✅ **每个语言都必填** | 上传 `store-assets/logo-300.png` |
+| **Small promotional tile** | 可选 | 上传 `store-assets/tile-440x280.png` |
+| **Large promotional tile** | 可选 | 跳过（需要 1400×560） |
+| **Screenshots** | 可选 | **可以跳过**，见附录 |
+| **YouTube video URL** | 可选 | 跳过。如果填，视频里不能有广告 |
+| **Short description** | 至少一种语言必填 | 自动从 manifest 带入，只读 |
+| **Search terms** | 可选 | 见下 |
+
+### Description 怎么填
+
+**要求：250–10,000 字符**，要讲清全部功能。
+
+直接把 `STORE-LISTING.md` 里 `## Detailed description` 下面那段**整段复制**过去即可（1474 字符，已核对合规）。
+
+### Search terms 建议
+
+最多 7 个词/词组，总计不超过 21 个词，每个不超过 30 字符：
+
+```
+proxy, socks5, http proxy, proxy switcher, pac script, domain rules, bypass list
+```
+
+### 上传图片的小技巧
+
+Logo 上传后，图片下方会出现 **Duplicate** 链接（「Duplicate this logo for all languages」）。如果你加了多种语言，用它一次复制到所有语言，不用重传。
+
+填完点右上角 **Save draft**。
+
+---
+
+## 第 7 步：提交认证 **[手动]**
+
+1. 回到 **Store listings** 页面，确认每行 **Status** 列显示 **Complete**
+2. 右上角 **Publish** 按钮此时才可点（灰色说明还有必填项没填）
+3. 点 **Publish** → 打开 **Submit your extension** 页面
+4. 在 **Notes for certification** 里填给审核员看的说明——**建议一定要填**，这个扩展涉及网络代理，不解释容易被判风险：
+
+```
+This extension only sets Edge's own browser proxy configuration. It ships with
+no proxy server, no nodes, no subscriptions, and provides no VPN service.
+
+The proxy address field is empty on first install. Nothing is proxied until the
+user types in an endpoint they already run themselves. To test: open the popup,
+leave the address empty, and confirm the page still loads normally.
+
+The proxy permission is used only for chrome.proxy.settings and for building the
+PAC script from the user's own domain rules. No page content is read. Tab URLs
+are read only after the user clicks the toolbar button, and only to display
+which rule matches the current host. Nothing is transmitted anywhere; there is
+no backend server and no telemetry.
+
+There are no test accounts because there is no account system.
+```
+
+5. 再点一次右上角 **Publish**
+6. 进入认证队列。微软文档写**最多 7 个工作日**
+7. 通过后状态变成 **In the Store**，商店页面就上线了
+
+> 如果点击时报 `Something went wrong. Please try again. correlationId : undefined`，微软给的办法是：清 cookie 和缓存、换 InPrivate 模式、或换一个浏览器再试。这是 Partner Center 自己的老问题，不是你的包有问题。
+
+---
+
+## 第 8 步：配置自动发布（上线后再做） **[手动，一次]**
+
+扩展上线之后才能配 API。**上架前不用管这步。**
+
+### 8.1 拿三样东西
+
+Partner Center → 你的扩展 → **Microsoft Edge → Publish API**：
 
 1. 启用 **new API experience**
 2. 点 **Create API credentials**
-3. 记下：
-   - **Client ID**（一串 GUID）
-   - **API Key**（只显示一次，务必立刻保存）
-4. 回到产品概览页，复制 **Product ID**（另一个 GUID）
+3. 记下 **Client ID** 和 **API Key**——**API Key 只显示一次**，立刻存好
+4. 回 **Extension overview** 页面，复制 **Product ID**
 
-### 5.2 存进 GitHub Secrets
+### 8.2 存进 GitHub
 
-仓库 → Settings → Secrets and variables → Actions → **New repository secret**：
+仓库 → Settings → Secrets and variables → Actions → **New repository secret**，加三条：
 
 | 名称 | 值 |
 | --- | --- |
-| `EDGE_ADDONS_PRODUCT_ID` | 产品 GUID |
+| `EDGE_ADDONS_PRODUCT_ID` | Product ID |
 | `EDGE_ADDONS_CLIENT_ID` | Client ID |
 | `EDGE_ADDONS_API_KEY` | API Key |
 
-⚠️ **API Key 有效期约 72 天**，过期后发布 workflow 会报 401。到期前在 Partner Center 重新生成并更新 Secret。这是微软的限制，绕不过去。
+⚠️ **API Key 约 72 天过期**。过期后发布 workflow 报 401，去 Partner Center 重新生成并更新这条 secret。这是微软的限制。
 
-### 5.3 以后每次发版的完整流程
+### 8.3 以后每次发版
 
 ```bash
-# 1. 改版本号（两处必须一致，测试会检查）
-#    manifest.json 和 package.json 都改成 0.2.1
-
-# 2. 本地验证
+# 1. 改版本号：manifest.json 和 package.json 都要改，必须一致
+# 2. 验证
 npm test && npm run check
-
-# 3. 提交并推送到 main
+# 3. 推送代码
 git add -A && git commit -m "Release 0.2.1" && git push origin main
-
-# 4. 打标签 —— 这一步触发自动发布
-git tag v0.2.1
-git push origin v0.2.1
+# 4. 打标签 —— 这一下触发全部自动化
+git tag v0.2.1 && git push origin v0.2.1
 ```
 
-推送标签后，`.github/workflows/release.yml` 自动：
+workflow 会自动：校验版本三方一致 → 跑测试 → 打包 → 调微软 API 上传并提交认证 → 存 zip 为 artifact（90 天）。
 
-1. 校验标签 / `manifest.json` / `package.json` 三者版本一致（不一致直接失败）
-2. 跑全部测试
-3. 打包
-4. 调 Microsoft 的 API 上传并提交认证
-5. 上传 zip 作为 Actions artifact，保留 90 天
+失败了不用删标签重推——去 Actions → **Release to Edge Add-ons** → **Run workflow**，输入那个标签重跑。
 
-然后你去 Partner Center 看认证状态。**认证通过后，所有通过商店安装的用户会在 Edge 下次检查更新时自动收到新版本**——这由 Edge 自己的更新机制完成，不需要你做任何事。
+---
 
-### 5.4 如果发布失败了
+# 附录：截图怎么做
 
-- 在 GitHub Actions 页面找到失败的 run，看日志
-- 修好后，去 **Actions → Release to Edge Add-ons → Run workflow**，输入那个已经存在的标签（比如 `v0.2.1`）重跑
-- 不要删除再重推标签——那会重写别人已经拉取过的历史
+**截图是选填的**，没有也能提交。但有一张真实截图对转化率影响很大，建议做。
 
-## 关于「自动更新」的准确边界
+沙箱里没有浏览器（`which chromium chromium-browser google-chrome firefox` 全部为空），所以这一步只能在你的机器上做。
 
-| 环节 | 谁来做 | 频率 |
-| --- | --- | --- |
-| 改代码、改版本号、打标签 | 你 | 每次发版 |
-| 打包、校验、上传、提交认证 | GitHub Actions | 自动 |
-| 认证审核 | 微软 | 1–7 天，不可控 |
-| 推送给已安装用户 | Edge 浏览器 | 自动，无需操作 |
+1. `edge://extensions` → 打开右下角**开发者模式**
+2. 点 **加载解压缩的扩展** → 选择本仓库根目录
+3. 点工具栏的扩展图标，弹出面板
+4. 用系统截图工具截这个面板
 
-**真正省下的**：不用每次手动打包、登录 Partner Center、上传、点发布。省不掉的是打标签和等微软审核。
+**尺寸只有两种选择：640×480 或 1280×800。** 面板本身是 380 宽，所以：
+
+- 截完在图片编辑器里**建一个 1280×800 的画布**，把面板截图**等比**放进去，背景填 `#FAF6F4`（`--bg`）
+- **不要拉伸**——等比缩放才不会变形
+
+建议三张：
+
+| 场景 | 怎么弄 |
+| --- | --- |
+| 主面板（显示当前路由状态） | 直接截弹窗 |
+| 设置页 | 弹窗里点 ⚙ → 截整页 |
+| 规则列表 | 先加两三条规则，截那个列表，能体现按域名分流 |
+
+存到 `store-assets/`（已在 `.gitignore` 里，不会进仓库）。
+
+---
+
+# 附录：一张表看完
+
+| # | 步骤 | 谁做 | 需要什么 |
+| --- | --- | --- | --- |
+| 1 | 注册开发者账号 | 你 | Microsoft 账号 |
+| 2 | 创建扩展 + 上传 zip | 你 | 跑一次打包 |
+| 3 | Availability | 你 | 选 Public |
+| 4 | Properties | 你 | 选 Category |
+| 5 | Privacy | 你 | 上面 5.1–5.5 的文案，直接抄 |
+| 6 | Store listings | 你 | Description + Logo（已生成） |
+| 7 | 提交认证 | 你 | Notes for certification（已写好） |
+| — | 微软审核 | 微软 | 最多 7 个工作日 |
+| 8 | 配 API + secrets | 你 | 上线后做，一次 |
+| 之后 | 每次发版 | CI | `git tag && git push` |
