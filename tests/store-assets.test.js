@@ -61,3 +61,16 @@ test("store assets stay out of Git", () => {
   const ignore = readFileSync(path.join(root, ".gitignore"), "utf8");
   assert.match(ignore, /^store-assets\/$/m);
 });
+
+test("the screenshot fitter only offers the two sizes Microsoft accepts", () => {
+  // Offering a free-form size would let a 1200x900 capture through, and Partner
+  // Center rejects that at upload with no useful error.
+  const shot = readFileSync(path.join(root, "scripts", "store-shot.py"), "utf8");
+  assert.match(shot, /ACCEPTED\s*=\s*\{[^}]*"1280x800"\s*:\s*\(\s*1280\s*,\s*800\s*\)/);
+  assert.match(shot, /ACCEPTED\s*=\s*\{[^}]*"640x480"\s*:\s*\(\s*640\s*,\s*480\s*\)/);
+  // Same rule as the logo: scale the capture, never draw over it or stretch it.
+  assert.match(shot, /min\(box\[0\] \/ src\.width, box\[1\] \/ src\.height\)/);
+  for (const prim of ["ImageDraw", "crop(", "transpose("]) {
+    assert.ok(!shot.includes(prim), `the fitter must not alter the capture: found "${prim}"`);
+  }
+});
