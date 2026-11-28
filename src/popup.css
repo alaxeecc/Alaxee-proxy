@@ -163,28 +163,6 @@ input, select { transition: border-color var(--ui-duration) var(--ease-ui), box-
 }
 .brand-icon { width: 34px; height: 34px; display: block; }
 
-/* The mark breathes only while the browser is actually going through the proxy.
-   The animation is not decoration: it is the one signal on a still panel that says
-   the extension is doing something right now, and it is absent in the three states
-   where nothing is flowing. That also keeps the popup calm - a mark that always
-   moved would say nothing.
-
-   The kit's curve and period, .84 -> 1.26 over 3.6s. The scale is applied to the
-   image rather than the 42px slot so the layout does not shift. */
-/* The kit's scale is .84 -> 1.26, but 1.26 puts a 34px mark at 42.84px inside a
-   42px slot, so overflow:hidden clipped the peak of every breath - the animation
-   would have looked cut off rather than breathing. Compressed to .80 -> 1.20, which
-   keeps the same ratio between the extremes and the same midpoint at 1.0, so the
-   mark is never larger than the slot and never smaller than it started. */
-@keyframes mark-breath {
-  0%, 100% { transform: scale(.80); }
-  50% { transform: scale(1.20); }
-}
-.brand-icon { transform-origin: 50% 50%; }
-.brand-mark[data-route="proxy"] .brand-icon {
-  animation: mark-breath var(--breath) var(--ease-breath) infinite;
-}
-
 /* The wordmark stacks rather than sitting on one line: "远黛 YUANDAI" side by side
    measured 128px against the 101px the 380px popup can spare once the mark and the
    header actions are placed, and the failure mode was a squeezed, clipped label -
@@ -798,10 +776,6 @@ html.full-page #rulesList { max-height: none; }
 @media (prefers-reduced-motion: reduce) {
   .mode-panel, .config-panel, .site-panel, .list-panel,
   .rules-panel, .sync-panel, .backup-panel, .bypass-panel {
-    animation: none;
-  }
-  /* The breath restates what the pill already says in words, so it can go. */
-  .brand-mark[data-route="proxy"] .brand-icon {
     animation: none;
   }
 }
