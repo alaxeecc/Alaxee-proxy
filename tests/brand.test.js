@@ -14,7 +14,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { woff2CodePoints } from "../scripts/woff2-cmap.mjs";
@@ -130,4 +130,31 @@ test("the settings hand-off page is dressed in the current palette", async () =>
   assert.match(html, /class="bm-star"/, "settings.html needs the brand mark");
   assert.match(html, /远黛/, "settings.html needs the brand wordmark");
   assert.match(html, /Alaxee Proxy/, "the hand-off page must still name the product");
+});
+
+test("the development preview pages use the current palette", async () => {
+  // The workbench is what I look at while iterating, and it long kept the previous
+  // teal chrome around a freshly rebranded popup - which makes every visual review
+  // slightly wrong, because the surrounding frame sets the reference.
+  for (const file of ["preview/lab.html", "preview/compare.html"]) {
+    const html = await readFile(path.join(root, file), "utf8");
+    for (const stale of ["#087f73", "#0a7568", "#66c7b6", "#eef2f3", "#0d1416"]) {
+      assert.ok(!html.includes(stale), `${file} still uses the previous palette (${stale})`);
+    }
+    assert.match(html, /--accent:#B5457A/, `${file} must carry the brand accent`);
+  }
+});
+
+test("the extension's own icons are the kit artwork at the sizes the manifest asks for", () => {
+  // These four are a hand-off from the brand kit rather than generated output, so
+  // nothing links them to the manifest. A wrong-size file is the failure mode that
+  // survives review: it appears stretched in the extension list and in the store.
+  const manifest = JSON.parse(readFileSync(path.join(root, "manifest.json"), "utf8"));
+  for (const [size, file] of Object.entries(manifest.icons)) {
+    const buffer = readFileSync(path.join(root, file));
+    assert.ok(buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+      `${file} is not a PNG`);
+    assert.equal(buffer.readUInt32BE(16), Number(size), `${file}: width`);
+    assert.equal(buffer.readUInt32BE(20), Number(size), `${file}: height`);
+  }
 });
