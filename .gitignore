@@ -18,3 +18,8 @@ Thumbs.db
 
 # Baseline worktree created by scripts/preview-compare.mjs
 .preview-baseline/
+
+# Store listing screenshots and promotional images. These are large, and they are
+# regenerated from the live UI rather than being source - keeping them out of Git
+# stops the repository growing with every listing refresh.
+store-assets/
