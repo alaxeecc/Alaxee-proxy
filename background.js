@@ -60,39 +60,20 @@ async function readContext() {
 /**
  * How the toolbar shows the route.
  *
- * The icon is the brand's own artwork and is never altered. An earlier attempt
- * composited a shape badge into its corner to make the four states tell apart, and
- * it looked like a sticker stuck on a logo - the kit's picture is not a canvas for
- * app chrome.
+ * The four icons carry the state in their silhouette - filled disc, hollow ring,
+ * filled triangle, dashed ring - and in their colour. Nothing is drawn over them by
+ * the extension and no badge is composited: the shape is the state.
  *
- * Edge has a native mechanism for exactly this: a badge in the corner of the action
- * icon, drawn by the browser outside the artwork. A letter and a colour say the
- * state without touching a pixel of the mark, and the badge keeps its own contrast
- * on light and dark toolbars because Edge renders it.
- *
- * Letters are single characters because the badge is about 8px wide on a 16px icon.
+ * An action badge was tried here and rejected. The icons already say which route is
+ * active, so a letter on top of an icon that already means something read as two
+ * competing labels, and the badge covered part of the shape at 16px.
  */
-const ROUTE_BADGES = Object.freeze({
-  proxy: { text: "P", colour: "#B5457A" },
-  direct: { text: "D", colour: "#1F6B5F" },
-  forced: { text: "F", colour: "#8F5713" },
-  // A dot rather than a letter: "unknown" must not claim knowledge, but an empty
-  // string hides the badge entirely in Edge, which would leave this state with no
-  // marker at all - the original complaint.
-  unknown: { text: "\u2022", colour: "#7C6873" }
-});
-
 async function setActionState(route, tabId) {
   const safeRoute = ICON_PATHS[route] ? route : "unknown";
   const target = tabId == null ? {} : { tabId };
   await chromeCall(chrome.action, "setIcon", { path: ICON_PATHS[safeRoute], ...target });
   await chromeCall(chrome.action, "setTitle", { title: ICON_TITLES[safeRoute], ...target });
 
-  const badge = ROUTE_BADGES[safeRoute];
-  // setBadgeBackgroundColor before setBadgeText: setting the colour after the text
-  // repaints the badge, which flickers on every tab switch.
-  await chromeCall(chrome.action, "setBadgeBackgroundColor", { color: badge.colour, ...target });
-  await chromeCall(chrome.action, "setBadgeText", { text: badge.text, ...target });
 }
 
 async function refreshTab(tabId, context) {
